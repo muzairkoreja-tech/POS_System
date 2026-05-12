@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Viewer - POS System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .reports-nav {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 0 24px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .reports-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .reports-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .reports-header h1 {
+            font-size: 26px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .reports-header h1 i {
+            color: #3498db;
+        }
+        .filter-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+        .filter-bar h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #2c3e50;
+        }
+        .filter-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 180px;
+        }
+        .filter-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #7f8c8d;
+        }
+        .filter-group select,
+        .filter-group input {
+            padding: 10px 12px;
+            border: 2px solid #eee;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 160px;
+        }
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .btn-filter {
+            padding: 10px 24px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            height: 40px;
+        }
+        .btn-filter:hover {
+            background: #2980b9;
+        }
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            background: #d5dbdb;
+        }
+        .btn-download {
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-download:hover {
+            background: #229954;
+        }
+        .btn-back {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-back:hover {
+            background: #7f8c8d;
+        }
+        .report-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .report-table-wrapper {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .report-table-wrapper table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .report-table-wrapper th {
+            background: #f8f9fa;
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #7f8c8d;
+            border-bottom: 2px solid #eee;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .report-table-wrapper td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+        }
+        .report-table-wrapper tr:hover {
+            background: #f8f9fa;
+        }
+        .report-table-wrapper tfoot tr {
+            background: #f8f9fa;
+            font-weight: 700;
+        }
+        .report-table-wrapper tfoot td {
+            border-bottom: none;
+            border-top: 2px solid #eee;
+        }
+        .report-title {
+            margin-bottom: 0;
+        }
+        .report-subtitle {
+            font-size: 13px;
+            color: #7f8c8d;
+            font-weight: normal;
+        }
+        .export-options {
+            display: flex;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body style="background:#f5f6fa;min-height:100vh;">
+    <nav class="reports-nav">
+        <div style="display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600;">
+            <i class="fas fa-chart-bar"></i>
+            <span>Report Viewer</span>
+        </div>
+        <button class="btn-back" onclick="window.history.back()">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+    </nav>
+
+    <div class="reports-container">
+        <div class="reports-header">
+            <h1>
+                <i class="fas fa-file-alt"></i>
+                <span id="reportTitle">Loading...</span>
+            </h1>
+            <div class="export-options">
+                <button class="btn-download" onclick="downloadExcel()">
+                    <i class="fas fa-file-excel"></i> Download Excel
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <h3><i class="fas fa-sliders-h"></i> Filters</h3>
+            <div class="filter-row" id="filterRow">
+                <!-- Filters will be injected by JavaScript -->
+            </div>
+        </div>
+
+        <div class="report-table-wrapper">
+            <table>
+                <thead id="reportHead">
+                    <tr>
+                        <th colspan="4" style="text-align:center;padding:30px;color:#7f8c8d;">
+                            <i class="fas fa-spinner fa-spin"></i> Loading report data...
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="reportBody">
+                </tbody>
+                <tfoot id="reportFoot">
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const REPORT_CONFIG = {
+            'stock-report': {
+                title: 'Stock Report',
+                columns: ['Product', 'Category', 'Supplier', 'Stock', 'Unit', 'Price'],
+                fields: ['name', 'category', 'supplier', 'stock', 'unit', 'price'],
+                api: '/api/reports/stock-report'
+            },
+            'expiry-report': {
+                title: 'Expiry Report',
+                columns: ['Product', 'Batch No', 'Expiry Date', 'Stock', 'Days Remaining'],
+                fields: ['name', 'batch_no', 'expiry_date', 'stock', 'days_remaining'],
+                api: '/api/reports/expiry-report'
+            },
+            'price-list': {
+                title: 'Price List',
+                columns: ['Product', 'Barcode', 'Category', 'Supplier', 'Selling Price', 'Cost Price', 'MRP', 'Discount %'],
+                fields: ['name', 'barcode', 'category', 'supplier', 'selling_price', 'cost_price', 'mrp', 'discount_percent'],
+                api: '/api/reports/price-list'
+            },
+            'slow-moving': {
+                title: 'Slow Moving Items',
+                columns: ['Product', 'Category', 'Stock', 'Last Sold', 'Days Since'],
+                fields: ['name', 'category', 'stock', 'last_sold', 'days_since'],
+                api: '/api/reports/slow-moving'
+            },
+            'vendor-payment': {
+                title: 'Vendor Payments',
+                columns: ['Order ID', 'Vendor', 'Order Date', 'Total', 'Paid', 'Pending', 'Status'],
+                fields: ['_id', 'vendor_name', 'order_date', 'total_amount', 'paid_amount', 'pending_amount', 'payment_status'],
+                api: '/api/reports/vendor-payment'
+            },
+            'daily-products': {
+                title: 'Daily Products Added',
+                columns: ['Product', 'Category', 'Supplier', 'Stock'],
+                fields: ['name', 'category', 'supplier', 'stock'],
+                api: '/api/reports/daily-products'
+            }
+        };
+
+        let currentReport = null;
+        let reportData = [];
+        let filters = {};
+
+        // Parse report type from server-side variable
+        const reportType = '{{ report_type }}';
+        currentReport = REPORT_CONFIG[reportType];
+
+        if (!currentReport) {
+            document.getElementById('reportTitle').textContent = 'Invalid Report';
+            document.getElementById('reportBody').innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;color:#e74c3c;">Report not found</td></tr>';
+        } else {
+            document.getElementById('reportTitle').textContent = currentReport.title;
+            loadReportData();
+        }
+
+        async function loadReportData() {
+            const params = new URLSearchParams();
+            for (const key in filters) {
+                if (filters[key]) params.append(key, filters[key]);
+            }
+
+            try {
+                const response = await fetch(`${currentReport.api}?${params.toString()}`);
+                const data = await response.json();
+                
+                // Compute derived fields for specific reports
+                if (reportType === 'expiry-report') {
+                    data.forEach(p => {
+                        if (p.expiry_date) {
+                            const exp = new Date(p.expiry_date);
+                            const now = new Date();
+                            const diffTime = exp - now;
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            p.days_remaining = diffDays >= 0 ? diffDays : 0;
+                        } else {
+                            p.days_remaining = '-';
+                        }
+                    });
+                }
+                
+                reportData = data;
+                renderTable(data);
+            } catch (error) {
+                console.error('Failed to load report:', error);
+                document.getElementById('reportBody').innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;color:#e74c3c;">Failed to load report data</td></tr>';
+            }
+        }
+
+        function renderTable(data) {
+            const thead = document.getElementById('reportHead');
+            const tbody = document.getElementById('reportBody');
+            const tfoot = document.getElementById('reportFoot');
+
+            // Build header row
+            const headerRow = currentReport.columns.map(col => `<th>${col}</th>`).join('');
+            thead.innerHTML = `<tr>${headerRow}</tr>`;
+
+            // Build body rows
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="' + currentReport.columns.length + '" style="padding:30px;text-align:center;color:#999;">No data found</td></tr>';
+                tfoot.innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = data.map(row => {
+                const cells = currentReport.fields.map(field => {
+                    let val = row[field];
+                    if (val === null || val === undefined) return '<td>-</td>';
+                    // Format numbers
+                    if (typeof val === 'number') {
+                        return `<td style="text-align:right;">${val.toLocaleString()}</td>`;
+                    }
+                    // Format dates
+                    if (field.includes('date') && typeof val === 'string') {
+                        const date = new Date(val);
+                        return `<td>${date.toLocaleDateString()}</td>`;
+                    }
+                    return `<td>${val}</td>`;
+                }).join('');
+                return `<tr>${cells}</tr>`;
+            }).join('');
+
+            // Totals row if applicable
+            if (data.some(row => row.total || row.subtotal)) {
+                const totalColIndex = currentReport.columns.length - 1;
+                let totalHtml = '<tr>';
+                for (let i = 0; i < currentReport.columns.length; i++) {
+                    if (i === totalColIndex) {
+                        const sum = data.reduce((acc, row) => acc + (parseFloat(row.total || row.subtotal || 0)), 0);
+                        totalHtml += `<td style="text-align:right;font-weight:700;color:#27ae60;">PKR ${sum.toLocaleString(undefined,{minimumFractionDigits:2})}</td>`;
+                    } else {
+                        totalHtml += '<td></td>';
+                    }
+                }
+                totalHtml += '</tr>';
+                tfoot.innerHTML = totalHtml;
+            } else {
+                tfoot.innerHTML = '';
+            }
+        }
+
+        function downloadExcel() {
+            if (!reportData.length) {
+                alert('No data to export');
+                return;
+            }
+
+            // Simple CSV export (can be enhanced with proper Excel)
+            const headers = currentReport.columns.join(',');
+            const rows = reportData.map(row => {
+                return currentReport.fields.map(field => {
+                    const val = row[field];
+                    // Escape quotes and wrap in quotes if contains comma
+                    const str = (val === null || val === undefined) ? '' : String(val);
+                    return str.includes(',') ? `"${str.replace(/"/g, '""')}"` : str;
+                }).join(',');
+            });
+
+            const csv = [headers, ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${currentReport.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Filter configuration per report type
+        const FILTER_CONFIG = {
+            'stock-report': [
+                { type: 'text', key: 'vendor', label: 'Vendor / Supplier', placeholder: 'Filter by vendor name...' },
+                { type: 'text', key: 'product', label: 'Product ID', placeholder: 'Specific product ID' }
+            ],
+            'expiry-report': [
+                { type: 'text', key: 'vendor', label: 'Vendor / Supplier', placeholder: 'Filter by vendor name...' },
+                { type: 'date', key: 'from', label: 'From Date' },
+                { type: 'date', key: 'to', label: 'To Date' }
+            ],
+            'price-list': [
+                { type: 'text', key: 'vendor', label: 'Vendor / Supplier', placeholder: 'Filter by vendor name...' }
+            ],
+            'slow-moving': [
+                { type: 'number', key: 'days', label: 'Days Threshold', value: 30, min: 1, max: 365 }
+            ],
+            'vendor-payment': [
+                { type: 'text', key: 'vendor_id', label: 'Vendor ID', placeholder: 'Vendor ID...' },
+                { type: 'date', key: 'from', label: 'From Date' },
+                { type: 'date', key: 'to', label: 'To Date' }
+            ],
+            'daily-products': [
+                { type: 'date', key: 'date', label: 'Date' },
+                { type: 'text', key: 'vendor', label: 'Vendor / Supplier', placeholder: 'Filter by vendor name...' },
+                { type: 'text', key: 'category', label: 'Category', placeholder: 'Filter by category...' }
+            ]
+        };
+
+        function buildFilters() {
+            const filterRow = document.getElementById('filterRow');
+            const config = FILTER_CONFIG[reportType] || [];
+            
+            if (config.length === 0) {
+                filterRow.innerHTML = '<span style="color:#7f8c8d;font-size:13px">No filters available for this report</span>';
+                return;
+            }
+
+            let html = '';
+            config.forEach(f => {
+                let input;
+                if (f.type === 'text' || f.type === 'number') {
+                    const extra = f.type === 'number' ? `min="${f.min||''}" max="${f.max||''}"` : '';
+                    const val = f.value ? `value="${f.value}"` : '';
+                    input = `<input type="${f.type}" id="filter_${f.key}" ${extra} ${val} placeholder="${f.placeholder||''}" onchange="updateFilter('${f.key}', this.value)">`;
+                } else if (f.type === 'date') {
+                    input = `<input type="date" id="filter_${f.key}" onchange="updateFilter('${f.key}', this.value)">`;
+                }
+                html += `<div class="filter-group"><label>${f.label}</label>${input}</div>`;
+            });
+
+            html += `<div class="filter-group" style="display:flex;align-items:flex-end"><button class="btn-filter" onclick="applyFilters()"><i class="fas fa-filter"></i> Apply</button></div>`;
+
+            filterRow.innerHTML = html;
+        }
+
+        // Optional: keep updateFilter for compatibility
+        function updateFilter(key, value) {
+            filters[key] = value;
+        }
+
+        function applyFilters() {
+            filters = {};
+            const filterConfig = FILTER_CONFIG[reportType] || [];
+            filterConfig.forEach(f => {
+                const el = document.getElementById('filter_' + f.key);
+                if (el) {
+                    filters[f.key] = el.value;
+                }
+            });
+            loadReportData();
+        }
+
+        buildFilters();
+    </script>
+</body>
+</html>

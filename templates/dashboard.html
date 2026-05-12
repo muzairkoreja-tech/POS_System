@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - POS System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dashboard-body" style="overflow-y: auto;">
+    <div class="dashboard-container">
+        <!-- Dashboard Header -->
+        <header class="dashboard-header">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <h1><i class="fas fa-chart-bar"></i> Dashboard</h1>
+                <a href="/" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to POS
+                </a>
+            </div>
+            <div class="date-time" id="dateTime"></div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="dashboard-stats">
+            <div class="stat-card blue">
+                <div class="stat-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="todaySales">$0.00</h3>
+                    <p>Today's Sales</p>
+                </div>
+            </div>
+
+            <div class="stat-card green">
+                <div class="stat-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="todayTransactions">0</h3>
+                    <p>Transactions</p>
+                </div>
+            </div>
+
+            <div class="stat-card orange">
+                <div class="stat-icon">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalProducts">0</h3>
+                    <p>Products</p>
+                </div>
+            </div>
+
+            <div class="stat-card red">
+                <div class="stat-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="lowStock">0</h3>
+                    <p>Low Stock Items</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px;">
+            <div class="card" style="background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h3 style="margin-bottom: 20px; color: var(--dark);">Sales Trend (Last 7 Days)</h3>
+                <canvas id="salesChart"></canvas>
+            </div>
+
+            <div class="card" style="background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h3 style="margin-bottom: 20px; color: var(--dark);">Top Selling Products</h3>
+                <canvas id="topProductsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-section" style="margin-bottom: 24px;">
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <label style="font-weight: 600; color: var(--text-light);">Filter by Date:</label>
+                <input type="date" id="fromDate" class="btn btn-small" style="padding: 8px 12px;">
+                <span>to</span>
+                <input type="date" id="toDate" class="btn btn-small" style="padding: 8px 12px;">
+                <button class="btn btn-primary btn-small" onclick="applyDateFilter()">Apply</button>
+                <button class="btn btn-secondary btn-small" onclick="resetFilter()">Reset</button>
+            </div>
+        </div>
+
+        <!-- Recent Transactions Table -->
+        <div class="card" style="background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+            <div style="padding: 20px; border-bottom: 1px solid var(--border);">
+                <h3 style="color: var(--dark);">Recent Transactions</h3>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: var(--light);">
+                        <tr>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: var(--text-light);">Receipt #</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: var(--text-light);">Date</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: var(--text-light);">Items</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: var(--text-light);">Payment</th>
+                            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text-light);">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTableBody">
+                        <!-- Sales data loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Low Stock Alert -->
+        <div class="card" style="background: white; margin-top: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+            <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="color: var(--dark);"><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Low Stock Products (< 10 units)</h3>
+                <a href="/" class="btn btn-small btn-outline">Go to POS</a>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: var(--light);">
+                        <tr>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: var(--text-light);">Product</th>
+                            <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: var(--text-light);">Category</th>
+                            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text-light);">Stock</th>
+                            <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text-light);">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lowStockTable">
+                        <!-- Low stock items -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let salesChart = null;
+        let topProductsChart = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+            updateDateTime();
+            setInterval(updateDateTime, 60000);
+
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('toDate').value = today;
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            document.getElementById('fromDate').value = weekAgo.toISOString().split('T')[0];
+        });
+
+        async function loadDashboardData() {
+            await loadStats();
+            await loadSalesTable();
+            await loadLowStock();
+            await loadCharts();
+            await loadTopProducts();
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/stats/today`);
+                const stats = await response.json();
+                document.getElementById('todaySales').textContent = `$${stats.today_sales?.toFixed(2) || '0.00'}`;
+                document.getElementById('todayTransactions').textContent = stats.today_transactions || 0;
+                document.getElementById('totalProducts').textContent = stats.total_products || 0;
+                document.getElementById('lowStock').textContent = stats.low_stock_products || 0;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        async function loadSalesTable() {
+            try {
+                const response = await fetch(`${API_BASE}/api/sales?limit=50`);
+                const sales = await response.json();
+
+                const tbody = document.getElementById('salesTableBody');
+                tbody.innerHTML = sales.map(sale => {
+                    const date = new Date(sale.timestamp);
+                    const itemCount = sale.items.reduce((sum, item) => sum + item.quantity, 0);
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 12px 16px;">#${sale._id.substring(0, 8).toUpperCase()}</td>
+                            <td style="padding: 12px 16px;">${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                            <td style="padding: 12px 16px;">${itemCount} items</td>
+                            <td style="padding: 12px 16px;">
+                                <span style="padding: 4px 8px; background: ${getPaymentColor(sale.payment_method)}; color: white; border-radius: 4px; font-size: 12px;">
+                                    ${sale.payment_method.toUpperCase()}
+                                </span>
+                            </td>
+                            <td style="padding: 12px 16px; text-align: right; font-weight: 600;">$${sale.total.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to load sales:', error);
+            }
+        }
+
+        async function loadLowStock() {
+            try {
+                const response = await fetch(`${API_BASE}/api/products`);
+                const products = await response.json();
+                const lowStock = products.filter(p => p.stock < 10);
+
+                const tbody = document.getElementById('lowStockTable');
+                tbody.innerHTML = lowStock.map(product => `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 12px 16px;">${product.name}</td>
+                        <td style="padding: 12px 16px;">${product.category}</td>
+                        <td style="padding: 12px 16px; text-align: right; color: var(--warning); font-weight: 600;">${product.stock}</td>
+                        <td style="padding: 12px 16px; text-align: right;">$${parseFloat(product.price).toFixed(2)}</td>
+                    </tr>
+                `).join('');
+
+                if (lowStock.length === 0) {
+                    tbody.innerHTML = `
+                        <tr><td colspan="4" style="padding: 20px; text-align: center; color: var(--text-light);">
+                            All products are well stocked!
+                        </td></tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load low stock:', error);
+            }
+        }
+
+        async function loadCharts() {
+            // Mock sales data - normally this would come from API
+            const ctx1 = document.getElementById('salesChart').getContext('2d');
+            const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const data = [450, 520, 380, 610, 490, 780, 650];
+
+            if (salesChart) salesChart.destroy();
+
+            salesChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Sales ($)',
+                        data: data,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        async function loadTopProducts() {
+            try {
+                const response = await fetch(`${API_BASE}/api/sales/by-category`);
+                const data = await response.json();
+
+                const ctx2 = document.getElementById('topProductsChart').getContext('2d');
+                if (topProductsChart) topProductsChart.destroy();
+
+                topProductsChart = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: data.slice(0, 5).map(p => p.name),
+                        datasets: [{
+                            label: 'Revenue ($)',
+                            data: data.slice(0, 5).map(p => p.revenue),
+                            backgroundColor: [
+                                '#3498db', '#27ae60', '#e67e22', '#e74c3c', '#9b59b6'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load top products:', error);
+            }
+        }
+
+        function getPaymentColor(method) {
+            const colors = { cash: '#27ae60', card: '#3498db', mobile: '#9b59b6' };
+            return colors[method] || '#7f8c8d';
+        }
+
+        async function applyDateFilter() {
+            const from = document.getElementById('fromDate').value;
+            const to = document.getElementById('toDate').value;
+
+            if (!from || !to) {
+                showToast('Please select both dates', 'error');
+                return;
+            }
+
+            // Reload with query params
+            const response = await fetch(`${API_BASE}/api/sales?from_date=${from}&to_date=${to}`);
+            // Note: backend would need to support date filtering
+            showToast('Filter applied (filtering on backend not implemented)', 'success');
+        }
+
+        function resetFilter() {
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+            loadSalesTable();
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('dateTime').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        function showToast(message, type = 'success') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type} show`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        const API_BASE = '';
+    </script>
+</body>
+</html>

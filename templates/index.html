@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS System - Supermarket</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="pos-container">
+        <!-- Left Sidebar - Categories & Search -->
+        <aside class="sidebar">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search products...">
+                <i class="fas fa-search"></i>
+            </div>
+
+            <div class="category-section">
+                <h3>Categories</h3>
+                <div class="category-list" id="categoryList">
+                    <!-- Categories loaded dynamically -->
+                </div>
+            </div>
+
+            <div class="shortcuts-section">
+                <h3>Quick Stats</h3>
+                <div class="stat-item">
+                    <span>Products</span>
+                    <span id="totalProducts">-</span>
+                </div>
+                <div class="stat-item">
+                    <span>Low Stock</span>
+                    <span id="lowStock">-</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Product Area -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1><i class="fas fa-cash-register"></i> POS System</h1>
+                <div class="top-actions">
+                    <button class="btn btn-outline" onclick="showDashboard()">
+                        <i class="fas fa-chart-bar"></i> Dashboard
+                    </button>
+                    <span class="date-time">{{ current_time }}</span>
+                </div>
+            </header>
+
+            <div class="product-area">
+                <div class="products-header">
+                    <h2 id="categoryTitle">All Products</h2>
+                    <div class="view-controls">
+                        <button class="btn btn-small active" id="gridView"><i class="fas fa-th"></i></button>
+                        <button class="btn btn-small" id="listView"><i class="fas fa-list"></i></button>
+                    </div>
+                </div>
+
+                <div class="products-grid" id="productsGrid">
+                    <!-- Products loaded dynamically -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar - Cart -->
+        <aside class="cart-sidebar">
+            <div class="cart-header">
+                <h2><i class="fas fa-shopping-cart"></i> Current Order</h2>
+                <button class="btn btn-icon" onclick="clearCart()" title="Clear Cart">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items loaded dynamically -->
+            </div>
+
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span id="cartSubtotal">$0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (10%):</span>
+                    <span id="cartTax">$0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total:</span>
+                    <span id="cartTotal">$0.00</span>
+                </div>
+            </div>
+
+            <div class="cart-actions">
+                <button class="btn btn-primary btn-large" onclick="openCheckoutModal()">
+                    <i class="fas fa-check-circle"></i> Checkout
+                </button>
+                <div class="quick-actions">
+                    <button class="btn btn-small" onclick="holdOrder()">Hold</button>
+                    <button class="btn btn-small" onclick="recallOrder()">Recall</button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkoutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Checkout</h2>
+                <button class="modal-close" onclick="closeCheckoutModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="order-summary">
+                    <h3>Order Summary</h3>
+                    <div id="checkoutItems"></div>
+                    <div class="total-line">
+                        <span>Total Amount:</span>
+                        <span id="checkoutTotal">$0.00</span>
+                    </div>
+                </div>
+
+                <div class="payment-section">
+                    <h3>Payment Method</h3>
+                    <div class="payment-options">
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="cash" checked>
+                            <div class="option-card">
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>Cash</span>
+                            </div>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="card">
+                            <div class="option-card">
+                                <i class="fas fa-credit-card"></i>
+                                <span>Card</span>
+                            </div>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="mobile">
+                            <div class="option-card">
+                                <i class="fas fa-mobile-alt"></i>
+                                <span>Mobile</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="customer-section">
+                        <label>Customer Name (optional)</label>
+                        <input type="text" id="customerName" placeholder="Enter customer name">
+                    </div>
+                </div>
+
+                <div class="amount-section">
+                    <label>Amount Received</label>
+                    <div class="amount-input-group">
+                        <input type="number" id="amountReceived" placeholder="0.00" step="0.01" min="0">
+                        <button class="btn btn-secondary" onclick="setExactAmount()">Exact</button>
+                    </div>
+                    <div class="change-display">
+                        Change: <span id="changeAmount">$0.00</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCheckoutModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="completeSale()">
+                    <i class="fas fa-check"></i> Complete Sale
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receiptModal" class="modal">
+        <div class="modal-content receipt-content">
+            <div class="receipt" id="receiptContent">
+                <!-- Receipt content -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeReceiptModal()">Close</button>
+                <button class="btn btn-primary" onclick="printReceipt()">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Receipt for Printing -->
+    <div id="printableReceipt" style="display:none;"></div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCategories();
+            loadProducts();
+            loadStats();
+            updateDateTime();
+            setInterval(updateDateTime, 60000);
+        });
+    </script>
+</body>
+</html>

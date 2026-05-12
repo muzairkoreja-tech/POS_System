@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard - POS System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f6fa;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        .dashboard-nav {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .nav-brand i { font-size: 24px; color: #27ae60; }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .nav-user i { font-size: 20px; }
+        .nav-user .role-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-logout {
+            background: rgba(231,76,60,0.8);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        .btn-logout:hover { background: #e74c3c; }
+        .btn-pos {
+            background: rgba(39,174,96,0.8);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-pos:hover { background: #229954; }
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        .page-subtitle {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .empty-dashboard {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .empty-dashboard i {
+            font-size: 80px;
+            color: #bdc3c7;
+            margin-bottom: 20px;
+        }
+        .empty-dashboard h3 {
+            color: #7f8c8d;
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+        .empty-dashboard p {
+            color: #95a5a6;
+            font-size: 14px;
+        }
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        .stat-icon.green { background: rgba(39,174,96,0.1); color: #27ae60; }
+        .stat-icon.blue { background: rgba(52,152,219,0.1); color: #3498db; }
+        .stat-icon.orange { background: rgba(230,126,34,0.1); color: #e67e22; }
+        .stat-icon.red { background: rgba(231,76,60,0.1); color: #e74c3c; }
+        .stat-info h3 { font-size: 26px; color: #2c3e50; margin-bottom: 2px; }
+        .stat-info p { color: #7f8c8d; font-size: 13px; }
+        .actions-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <nav class="dashboard-nav">
+        <div class="nav-brand">
+            <i class="fas fa-cash-register"></i>
+            <span>POS System</span>
+        </div>
+        <div class="nav-right">
+            <div class="nav-user">
+                <i class="fas fa-user-circle"></i>
+                <span id="navUserName">Sales Person</span>
+                <span class="role-badge" id="navRoleBadge">Sales</span>
+            </div>
+            <button class="btn-logout" onclick="handleLogout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <h1 class="page-title"><i class="fas fa-cash-register"></i> Sales Dashboard</h1>
+        <p class="page-subtitle">Point of Sale - Cash Counter Operations</p>
+
+        <div class="actions-row">
+            <button class="btn-pos" onclick="goToPOS()">
+                <i class="fas fa-shopping-cart"></i> Go to POS
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-dollar-sign"></i></div>
+                <div class="stat-info">
+                    <h3 id="todaySales">$0.00</h3>
+                    <p>Today's Sales</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-receipt"></i></div>
+                <div class="stat-info">
+                    <h3 id="todayTransactions">0</h3>
+                    <p>Today's Transactions</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange"><i class="fas fa-boxes"></i></div>
+                <div class="stat-info">
+                    <h3 id="totalProducts">0</h3>
+                    <p>Products in Stock</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="stat-info">
+                    <h3 id="lowStock">0</h3>
+                    <p>Low Stock Items</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="empty-dashboard" id="mainContent">
+            <i class="fas fa-cash-register"></i>
+            <h3>Welcome, Sales Person!</h3>
+            <p>Click "Go to POS" above or use the POS system to start billing customers.</p>
+            <p style="margin-top: 8px; font-size: 13px; color: #bdc3c7;">Your sales dashboard is ready for use.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fullName = sessionStorage.getItem('full_name') || '{{ user }}';
+            const role = sessionStorage.getItem('role') || '{{ role }}';
+            document.getElementById('navUserName').textContent = fullName;
+            document.getElementById('navRoleBadge').textContent = role.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+            loadStats();
+        });
+
+        function loadStats() {
+            Promise.all([
+                fetch('/api/products').then(r => r.json()),
+                fetch('/api/stats/today').then(r => r.json())
+            ])
+            .then(([products, stats]) => {
+                document.getElementById('totalProducts').textContent = products.length;
+                document.getElementById('todaySales').textContent = '$' + (stats.today_sales || 0).toFixed(2);
+                document.getElementById('todayTransactions').textContent = stats.today_transactions || 0;
+                document.getElementById('lowStock').textContent = stats.low_stock_products || 0;
+            })
+            .catch(err => console.error('Failed to load stats:', err));
+        }
+
+        function goToPOS() {
+            window.location.href = '/pos';
+        }
+
+        function handleLogout() {
+            fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(() => {
+                sessionStorage.clear();
+                window.location.href = '/login';
+            })
+            .catch(() => {
+                sessionStorage.clear();
+                window.location.href = '/login';
+            });
+        }
+    </script>
+</body>
+</html>
