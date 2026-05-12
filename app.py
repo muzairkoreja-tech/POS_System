@@ -471,57 +471,6 @@ def send_password_reset_email(user_email, token, username, flask_request):
         print(f"Failed to send email: {e}")
         return False
 
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = 'POS System - Password Reset Request'
-        msg['From'] = SMTP_SENDER
-        msg['To'] = user_email
-
-        html = f"""
-        <html>
-        <body style="font-family: Segoe UI, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #f5f6fa;">
-            <div style="background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                <div style="text-align: center; margin-bottom: 24px;">
-                    <h2 style="color: #2c3e50; margin-bottom: 8px;">Password Reset</h2>
-                    <p style="color: #7f8c8d;">Hello {username},</p>
-                </div>
-                <p style="color: #555; line-height: 1.6;">
-                    We received a request to reset your password for your POS System account.
-                    Click the button below to choose a new password:
-                </p>
-                <div style="text-align: center; margin: 32px 0;">
-                    <a href="{reset_url}"
-                       style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
-                        Reset Password
-                    </a>
-                </div>
-                <p style="font-size: 12px; color: #999; line-height: 1.6;">
-                    If you didn't request a password reset, you can ignore this email.<br>
-                    This link will expire in 24 hours for security reasons.
-                </p>
-                <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-                <p style="font-size: 11px; color: #bbb; text-align: center;">
-                    POS System - Departmental Store Management
-                </p>
-            </div>
-        </body>
-        </html>
-        """
-
-        msg.attach(MIMEText(html, 'html'))
-
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            if SMTP_USE_TLS:
-                server.starttls()
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            server.sendmail(SMTP_SENDER, user_email, msg.as_string())
-
-        print(f"Password reset email sent to {user_email}")
-        return True
-
-    except Exception as e:
-        print(f"Failed to send email: {e}")
-        return False
-
 
 def get_next_id(collection_name):
     if USE_MEMORY_DB:
@@ -2514,5 +2463,6 @@ if __name__ == '__main__':
     print("Initializing POS System...")
     init_db()
     print(f"Database: {'MongoDB' if not USE_MEMORY_DB else 'In-Memory (demo mode)'}")
-    print("Starting POS server on http://localhost:5000")
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    port = int(os.environ.get('PORT', 5000))
+    print(f"Starting POS server on http://0.0.0.0:{port}")
+    app.run(debug=False, port=port, host='0.0.0.0')
