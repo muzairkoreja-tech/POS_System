@@ -2678,6 +2678,8 @@ def dashboard_legacy():
 @app.route('/reports/<report_type>')
 def report_viewer(report_type):
     """HTML report viewer page"""
+    if report_type == 'z-report':
+        return redirect(url_for('z_report_page'))
     valid_reports = [
         'stock-report', 'expiry-report', 'price-list',
         'slow-moving', 'vendor-payment', 'daily-products'
