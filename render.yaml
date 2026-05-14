@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: pos-system
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MONGO_URI
+        value: mongodb://localhost:27017/
+      - key: PYTHON_VERSION
+        value: "3.11"

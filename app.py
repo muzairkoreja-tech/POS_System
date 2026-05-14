@@ -5996,5 +5996,6 @@ if __name__ == '__main__':
     init_db()
     init_gl_accounts()
     print(f"Database: {'MongoDB' if not USE_MEMORY_DB else 'In-Memory (demo mode)'}")
-    print("Starting POS server on http://localhost:5000")
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    port = int(os.environ.get('PORT', 5000))
+    print(f"Starting POS server on http://0.0.0.0:{port}")
+    app.run(debug=False, port=port, host='0.0.0.0')
