@@ -104,6 +104,28 @@ tr:hover td{background:#fafafa}
 .ckpi-dot.off{background:#bdc3c7}
 
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+
+/* Notification bell */
+.notif-wrap{position:relative}
+.notif-bell{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;width:38px;height:38px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .2s}
+.notif-bell:hover{background:rgba(255,255,255,.22)}
+.notif-badge{position:absolute;top:-6px;right:-6px;background:#e74c3c;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;display:none}
+.notif-badge.show{display:flex}
+.notif-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:340px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.18);border:1px solid #e2e8f0;z-index:500;display:none;overflow:hidden}
+.notif-dropdown.open{display:block}
+.notif-header{padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
+.notif-header-title{font-size:13px;font-weight:700;color:#1a1a2e}
+.notif-clear{font-size:11px;color:#3498db;cursor:pointer;background:none;border:none;font-weight:600}
+.notif-list{max-height:320px;overflow-y:auto}
+.notif-item{padding:11px 16px;border-bottom:1px solid #f1f5f9;display:flex;gap:10px;cursor:default}
+.notif-item:last-child{border-bottom:none}
+.notif-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.notif-text{flex:1}
+.notif-msg{font-size:12px;color:#374151;line-height:1.4}
+.notif-time{font-size:10px;color:#94a3b8;margin-top:3px}
+.notif-empty{padding:24px;text-align:center;color:#94a3b8;font-size:13px}
+@keyframes bellShake{0%,100%{transform:rotate(0)}20%{transform:rotate(-15deg)}40%{transform:rotate(15deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(8deg)}}
+.notif-bell.shake{animation:bellShake .5s ease}
 </style>
 </head>
 <body>
@@ -114,6 +136,19 @@ tr:hover td{background:#fafafa}
       <i class="fas fa-user-circle" style="font-size:20px"></i>
       <span id="navUserName">Admin</span>
       <span class="role-badge" id="navRoleBadge">Admin</span>
+    </div>
+    <div class="notif-wrap" id="notifWrap">
+      <button class="notif-bell" id="notifBell" onclick="toggleNotif()" title="Notifications">
+        <i class="fas fa-bell"></i>
+      </button>
+      <span class="notif-badge" id="notifBadge"></span>
+      <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-header">
+          <span class="notif-header-title"><i class="fas fa-bell" style="color:#e74c3c;margin-right:6px"></i>Notifications</span>
+          <button class="notif-clear" onclick="markAllRead()">Mark all read</button>
+        </div>
+        <div class="notif-list" id="notifList"><div class="notif-empty">Loading…</div></div>
+      </div>
     </div>
     <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
   </div>
@@ -268,6 +303,69 @@ tr:hover td{background:#fafafa}
         </div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>This Month</span><strong id="kPmtMonth" style="color:#6366f1">—</strong></div>
         <div class="kpi-footer" style="background:#eef2ff;color:#6366f1">Payment Module &rarr;</div>
+      </a>
+
+      <a href="/pos/returns" class="kpi-new" style="border-top:4px solid #e74c3c">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-undo-alt"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Sales Returns</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Refunds &amp; Restocks</span><strong id="kReturns" style="color:#e74c3c">—</strong></div>
+        <div class="kpi-footer" style="background:#fde8e8;color:#e74c3c">Returns Module &rarr;</div>
+      </a>
+
+      <a href="/reports/z-report" class="kpi-new" style="border-top:4px solid #2c3e50">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#2c3e50,#34495e)"><i class="fas fa-file-invoice"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Z-Report</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>End-of-Day Report</span><i class="fas fa-print" style="color:#636e72"></i></div>
+        <div class="kpi-footer" style="background:#f0f2f5;color:#2c3e50">View Z-Report &rarr;</div>
+      </a>
+
+      <a href="/inventory/adjustments" class="kpi-new" style="border-top:4px solid #8b4513">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#8b4513,#a0522d)"><i class="fas fa-sliders-h"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Stock Adjustments</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Adjustments &amp; Expiry</span><strong id="kExpiring" style="color:#e67e22">—</strong></div>
+        <div class="kpi-footer" style="background:#fdf3e7;color:#8b4513">Adjust Stock &rarr;</div>
+      </a>
+
+      <a href="/credit-sales" class="kpi-new" style="border-top:4px solid #2980b9">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#2980b9,#1a6b9a)"><i class="fas fa-hand-holding-usd"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Credit Sales</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Outstanding AR</span><strong id="kCreditBal" style="color:#2980b9">—</strong></div>
+        <div class="kpi-footer" style="background:#ebf5fb;color:#2980b9">Accounts Receivable &rarr;</div>
+      </a>
+
+      <a href="/audit-log" class="kpi-new" style="border-top:4px solid #475569">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#475569,#334155)"><i class="fas fa-clipboard-list"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Audit Trail</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Activity Log</span><strong id="kAuditToday" style="color:#475569">—</strong></div>
+        <div class="kpi-footer" style="background:#f1f5f9;color:#475569">View Audit Log &rarr;</div>
+      </a>
+
+      <a href="/bundles" class="kpi-new" style="border-top:4px solid #8b5cf6">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)"><i class="fas fa-gift"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Bundles</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Combo Deals</span><strong id="kBundles" style="color:#8b5cf6">—</strong></div>
+        <div class="kpi-footer" style="background:#f5f3ff;color:#8b5cf6">Manage Bundles &rarr;</div>
+      </a>
+
+      <a href="/fbr" class="kpi-new" style="border-top:4px solid #006241">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#006241,#00935a)"><i class="fas fa-file-alt"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">FBR / POS</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Tax Integration</span><span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">PENDING REG.</span></div>
+        <div class="kpi-footer" style="background:#f0fdf4;color:#006241">FBR Dashboard &rarr;</div>
       </a>
 
     </div>
@@ -1324,6 +1422,104 @@ async function loadPaymentKpis(){
     }).join('');
   }catch(e){ console.error('Payment KPI error',e); }
 }
+
+// ── New module KPI loaders ────────────────────────────────────
+async function loadNewModuleKPIs() {
+  try {
+    const [retD, credD, adjD, bundD, auditD] = await Promise.all([
+      fetch('/api/sales/returns/stats').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/credit-sales/stats').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/inventory/expiring?days=7').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/bundles').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/audit-log?page=1').then(r=>r.json()).catch(()=>({})),
+    ]);
+    const fmt = n => 'PKR ' + Number(n||0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    const el = id => document.getElementById(id);
+    if(el('kReturns')) el('kReturns').textContent = retD.total_returns || 0;
+    if(el('kCreditBal')) el('kCreditBal').textContent = fmt(credD.total_outstanding || 0);
+    const expiringItems = Array.isArray(adjD) ? adjD.length : (adjD.count || 0);
+    if(el('kExpiring')) el('kExpiring').textContent = expiringItems + ' expiring';
+    const activeBundles = (bundD.bundles||[]).filter(b=>b.is_active).length;
+    if(el('kBundles')) el('kBundles').textContent = activeBundles + ' active';
+    const today = new Date().toISOString().split('T')[0];
+    const todayEvents = auditD.total || 0;
+    if(el('kAuditToday')) el('kAuditToday').textContent = todayEvents + ' events';
+  } catch(e) { console.error('New module KPIs error', e); }
+}
+
+// ── Notifications ─────────────────────────────────────────────
+let notifData = [], notifOpen = false;
+
+async function loadNotifications() {
+  try {
+    const d = await fetch('/api/notifications').then(r=>r.json());
+    notifData = d.notifications || [];
+    const badge = document.getElementById('notifBadge');
+    const bell = document.getElementById('notifBell');
+    if (notifData.length > 0) {
+      badge.textContent = notifData.length > 9 ? '9+' : notifData.length;
+      badge.classList.add('show');
+      bell.classList.add('shake');
+      setTimeout(() => bell.classList.remove('shake'), 600);
+    } else {
+      badge.classList.remove('show');
+    }
+    renderNotifList();
+  } catch(e) {}
+}
+
+function renderNotifList() {
+  const list = document.getElementById('notifList');
+  if (!notifData.length) {
+    list.innerHTML = '<div class="notif-empty"><i class="fas fa-check-circle" style="color:#27ae60;font-size:24px;display:block;margin-bottom:8px"></i>All clear! No alerts.</div>';
+    return;
+  }
+  const iconMap = {
+    low_stock: {bg:'#fef3c7',color:'#92400e',icon:'fa-exclamation-triangle'},
+    expiring:  {bg:'#fee2e2',color:'#991b1b',icon:'fa-calendar-times'},
+    overdue_invoice: {bg:'#fce7f3',color:'#9d174d',icon:'fa-file-invoice'},
+    pending_payroll: {bg:'#ede9fe',color:'#5b21b6',icon:'fa-users'},
+    overdue_credit:  {bg:'#dbeafe',color:'#1e40af',icon:'fa-hand-holding-usd'},
+  };
+  list.innerHTML = notifData.map(n => {
+    const ic = iconMap[n.type] || {bg:'#f1f5f9',color:'#475569',icon:'fa-bell'};
+    return `<div class="notif-item">
+      <div class="notif-icon" style="background:${ic.bg};color:${ic.color}"><i class="fas ${ic.icon}"></i></div>
+      <div class="notif-text">
+        <div class="notif-msg">${n.message}</div>
+        <div class="notif-time">${n.type.replace(/_/g,' ')}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleNotif() {
+  notifOpen = !notifOpen;
+  document.getElementById('notifDropdown').classList.toggle('open', notifOpen);
+}
+
+function markAllRead() {
+  notifData = [];
+  document.getElementById('notifBadge').classList.remove('show');
+  renderNotifList();
+  document.getElementById('notifDropdown').classList.remove('open');
+  notifOpen = false;
+}
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('notifWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('notifDropdown').classList.remove('open');
+    notifOpen = false;
+  }
+});
+
+// Hook into DOMContentLoaded to run new loaders
+document.addEventListener('DOMContentLoaded', () => {
+  loadNewModuleKPIs();
+  loadNotifications();
+  setInterval(loadNotifications, 120000); // refresh every 2 min
+});
 </script>
 </body>
 </html>

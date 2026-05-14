@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Z-Report / End of Day — POS Supermarket</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
+.nav{background:linear-gradient(135deg,#1a3a5c,#2c5f8a);color:#fff;padding:0 24px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.nav-brand{font-size:18px;font-weight:700;margin-right:8px}
+.nav-sub{font-size:13px;opacity:.85;flex:1}
+.nav-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.nav-btn:hover{background:rgba(255,255,255,.25)}
+.nav-btn.green{background:#27ae60;border-color:#27ae60}
+@media print{.nav,.no-print{display:none}.page{padding:0}.report-card{box-shadow:none}}
+.page{max-width:1100px;margin:0 auto;padding:24px 20px}
+
+/* Date picker bar */
+.date-bar{background:#fff;border-radius:12px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.date-bar label{font-size:13px;font-weight:600;color:#374151}
+.date-bar input[type=date]{border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:14px;color:#1a1a2e;outline:none}
+.date-bar input[type=date]:focus{border-color:#1a3a5c}
+.btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:#1a3a5c;color:#fff}.btn-primary:hover{background:#0f2640}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219150}
+.btn-outline{background:#fff;border:1px solid #e2e8f0;color:#374151}.btn-outline:hover{background:#f8fafc}
+.spacer{flex:1}
+
+/* Report card (printable) */
+.report-card{background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:30px;margin-bottom:20px}
+.report-header{text-align:center;border-bottom:2px solid #f1f5f9;padding-bottom:20px;margin-bottom:24px}
+.report-header h1{font-size:22px;font-weight:800;color:#1a1a2e}
+.report-header p{font-size:13px;color:#64748b;margin-top:4px}
+.report-date{font-size:16px;font-weight:700;color:#1a3a5c;margin-top:8px;background:#f0f7ff;padding:6px 18px;border-radius:20px;display:inline-block}
+
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.kpi{border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.kpi.green{background:#d1fae5;border-left:4px solid #10b981}
+.kpi.blue{background:#dbeafe;border-left:4px solid #3b82f6}
+.kpi.red{background:#fee2e2;border-left:4px solid #ef4444}
+.kpi.orange{background:#fef3c7;border-left:4px solid #f59e0b}
+.kpi.purple{background:#f3e8ff;border-left:4px solid #8b5cf6}
+.kpi.indigo{background:#eef2ff;border-left:4px solid #6366f1}
+.kpi-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#374151}
+.kpi-val{font-size:20px;font-weight:800;color:#1a1a2e}
+.kpi-sub{font-size:11px;color:#64748b}
+
+/* Section */
+.sec-title{font-size:13px;font-weight:700;color:#1a3a5c;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:8px;padding-bottom:6px;border-bottom:2px solid #e0f0ff}
+.sec-title::before{content:'';display:inline-block;width:4px;height:16px;background:#1a3a5c;border-radius:2px}
+
+/* Financial summary rows */
+.fin-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px}
+.fin-table tr td{padding:9px 12px;border-bottom:1px solid #f1f5f9}
+.fin-table tr:last-child td{border-bottom:none}
+.fin-table .lbl{color:#64748b}
+.fin-table .val{text-align:right;font-weight:600;color:#1a1a2e}
+.fin-table .subtotal td{background:#f8fafc;font-weight:700}
+.fin-table .grand td{background:#f0f7ff;font-weight:800;color:#1a3a5c;font-size:15px}
+.fin-table .deduct td{color:#ef4444}
+.fin-table .positive td{color:#10b981}
+
+/* Payment breakdown */
+.pay-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.pay-box{background:#f8fafc;border-radius:10px;padding:14px 16px;text-align:center;border:1px solid #e2e8f0}
+.pay-box-lbl{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.pay-box-val{font-size:18px;font-weight:800;color:#1a1a2e}
+.pay-box-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+
+/* Cash reconciliation */
+.cash-rec{background:#f0fdf4;border-radius:10px;padding:16px;border:1px solid #bbf7d0;margin-bottom:20px}
+.cash-rec-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px}
+.cash-rec-row.total{font-weight:700;font-size:15px;border-top:1px solid #86efac;padding-top:10px;margin-top:6px;color:#065f46}
+
+/* Top products */
+.top-table{width:100%;border-collapse:collapse;font-size:13px}
+.top-table th{padding:8px 12px;text-align:left;background:#f8fafc;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b}
+.top-table td{padding:9px 12px;border-bottom:1px solid #f1f5f9}
+.top-table tr:last-child td{border-bottom:none}
+.rank{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#1a3a5c;color:#fff;font-size:11px;font-weight:700}
+
+/* Category chart */
+.chart-wrap{height:220px;position:relative}
+
+/* Empty state */
+.empty-state{text-align:center;padding:60px 20px;color:#94a3b8}
+.empty-state h3{font-size:18px;margin-bottom:8px;color:#64748b}
+
+/* Footer */
+.report-footer{text-align:center;padding-top:20px;border-top:1px dashed #e2e8f0;font-size:11px;color:#94a3b8;margin-top:24px}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-brand">&#9679; POS</span>
+  <span class="nav-sub">End-of-Day Z-Report</span>
+  <a href="/admin" class="nav-btn no-print">&#8592; Admin Dashboard</a>
+  <a href="/sales-dashboard" class="nav-btn no-print">Sales Dashboard</a>
+  <button class="nav-btn green no-print" onclick="window.print()">&#128424; Print Report</button>
+</nav>
+
+<div class="page">
+  <!-- Date selector -->
+  <div class="date-bar no-print">
+    <label>Report Date:</label>
+    <input type="date" id="reportDate">
+    <button class="btn btn-primary" onclick="loadReport()">&#128269; Generate Report</button>
+    <div class="spacer"></div>
+    <button class="btn btn-outline" onclick="goToday()">Today</button>
+    <button class="btn btn-outline" onclick="goYesterday()">Yesterday</button>
+  </div>
+
+  <!-- Report -->
+  <div id="reportContainer">
+    <div class="empty-state">
+      <h3>Select a date and click Generate Report</h3>
+      <p>The Z-Report shows complete end-of-day financial summary for any date.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const pkr = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('reportDate').value = today;
+  loadReport();
+});
+
+function goToday() {
+  document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+  loadReport();
+}
+function goYesterday() {
+  const d = new Date(); d.setDate(d.getDate()-1);
+  document.getElementById('reportDate').value = d.toISOString().split('T')[0];
+  loadReport();
+}
+
+let catChart = null;
+
+async function loadReport() {
+  const date = document.getElementById('reportDate').value;
+  if (!date) { alert('Please select a date'); return; }
+  document.getElementById('reportContainer').innerHTML = '<div class="empty-state"><h3>Loading report...</h3></div>';
+  try {
+    const d = await fetch(`/api/reports/z-report?date=${date}`).then(r=>r.json());
+    renderReport(d);
+  } catch(e) {
+    document.getElementById('reportContainer').innerHTML = '<div class="empty-state"><h3>Failed to load report</h3></div>';
+  }
+}
+
+function renderReport(d) {
+  const dateLabel = new Date(d.report_date + 'T12:00:00').toLocaleDateString('en-PK',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const storeName = sessionStorage.getItem('store_name') || 'POS Supermarket';
+  const overShort = d.expected_cash - d.opening_float;
+
+  const html = `
+  <div class="report-card">
+    <!-- Header -->
+    <div class="report-header">
+      <h1>&#9679; ${storeName}</h1>
+      <p>End-of-Day Z-Report &mdash; Confidential</p>
+      <div class="report-date">&#128197; ${dateLabel}</div>
+      <p style="margin-top:8px;font-size:12px;color:#94a3b8">Generated: ${new Date().toLocaleString('en-PK')}</p>
+    </div>
+
+    <!-- KPI grid -->
+    <div class="kpi-grid">
+      <div class="kpi green"><div class="kpi-lbl">Net Revenue</div><div class="kpi-val">${pkr(d.net_revenue)}</div><div class="kpi-sub">after refunds</div></div>
+      <div class="kpi blue"><div class="kpi-lbl">Transactions</div><div class="kpi-val">${d.transactions}</div><div class="kpi-sub">${d.items_sold} items sold</div></div>
+      <div class="kpi orange"><div class="kpi-lbl">Returns</div><div class="kpi-val">${pkr(d.total_refunds)}</div><div class="kpi-sub">${d.transactions>0?((d.total_refunds/d.gross_sales)*100).toFixed(1)+'% of sales':'—'}</div></div>
+      <div class="kpi purple"><div class="kpi-lbl">Avg. Basket</div><div class="kpi-val">${d.transactions>0?pkr(d.net_sales/d.transactions):'PKR 0'}</div><div class="kpi-sub">per transaction</div></div>
+      <div class="kpi indigo"><div class="kpi-lbl">Tax Collected</div><div class="kpi-val">${pkr(d.tax_collected)}</div><div class="kpi-sub">output GST</div></div>
+      <div class="kpi green"><div class="kpi-lbl">Discounts Given</div><div class="kpi-val">${pkr(d.discounts)}</div><div class="kpi-sub">${d.promo_used} promos used</div></div>
+      <div class="kpi blue"><div class="kpi-lbl">Active Shifts</div><div class="kpi-val">${d.shifts}</div><div class="kpi-sub">cashier shifts</div></div>
+      <div class="kpi red"><div class="kpi-lbl">Cash Refunds</div><div class="kpi-val">${pkr(d.cash_refunds)}</div><div class="kpi-sub">cash out</div></div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="sec-title">Financial Summary</div>
+    <table class="fin-table">
+      <tr><td class="lbl">Gross Sales</td><td class="val">${pkr(d.gross_sales)}</td></tr>
+      <tr class="deduct"><td class="lbl">&nbsp;&nbsp;&minus; Discounts & Promos</td><td class="val" style="color:#ef4444">(${pkr(d.discounts)})</td></tr>
+      <tr class="subtotal"><td class="lbl">Net Sales</td><td class="val">${pkr(d.net_sales)}</td></tr>
+      <tr class="deduct"><td class="lbl">&nbsp;&nbsp;&minus; Refunds</td><td class="val" style="color:#ef4444">(${pkr(d.total_refunds)})</td></tr>
+      <tr class="grand"><td class="lbl">Net Revenue</td><td class="val">${pkr(d.net_revenue)}</td></tr>
+    </table>
+
+    <!-- Payment Breakdown -->
+    <div class="sec-title">Payment Method Breakdown</div>
+    <div class="pay-grid">
+      <div class="pay-box">
+        <div class="pay-box-lbl">&#128181; Cash</div>
+        <div class="pay-box-val">${pkr(d.cash_sales)}</div>
+        <div class="pay-box-sub">${d.gross_sales>0?((d.cash_sales/d.gross_sales)*100).toFixed(1)+'%':'—'}</div>
+      </div>
+      <div class="pay-box">
+        <div class="pay-box-lbl">&#128179; Card / Digital</div>
+        <div class="pay-box-val">${pkr(d.card_sales)}</div>
+        <div class="pay-box-sub">${d.gross_sales>0?((d.card_sales/d.gross_sales)*100).toFixed(1)+'%':'—'}</div>
+      </div>
+      <div class="pay-box">
+        <div class="pay-box-lbl">&#127760; Other</div>
+        <div class="pay-box-val">${pkr(d.other_sales)}</div>
+        <div class="pay-box-sub">${d.gross_sales>0?((d.other_sales/d.gross_sales)*100).toFixed(1)+'%':'—'}</div>
+      </div>
+    </div>
+
+    <!-- Cash Reconciliation -->
+    <div class="sec-title">Cash Reconciliation</div>
+    <div class="cash-rec">
+      <div class="cash-rec-row"><span>Opening Float (all shifts)</span><span>${pkr(d.opening_float)}</span></div>
+      <div class="cash-rec-row"><span>+ Cash Sales</span><span>+ ${pkr(d.cash_sales)}</span></div>
+      <div class="cash-rec-row"><span>&minus; Cash Refunds</span><span>&minus; ${pkr(d.cash_refunds)}</span></div>
+      <div class="cash-rec-row total"><span>Expected Cash in Drawer</span><span>${pkr(d.expected_cash)}</span></div>
+    </div>
+
+    <!-- Top Products + Category Chart side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+      <div>
+        <div class="sec-title">Top 5 Products</div>
+        ${d.top_products && d.top_products.length ? `
+        <table class="top-table">
+          <thead><tr><th>#</th><th>Product</th><th>Qty</th><th>Revenue</th></tr></thead>
+          <tbody>${d.top_products.map((p,i)=>`<tr>
+            <td><span class="rank">${i+1}</span></td>
+            <td>${p.name}</td>
+            <td>${p.qty}</td>
+            <td><strong>${pkr(p.revenue)}</strong></td>
+          </tr>`).join('')}</tbody>
+        </table>` : '<p style="color:#94a3b8;font-size:13px;text-align:center;padding:20px">No sales data</p>'}
+      </div>
+      <div>
+        <div class="sec-title">Sales by Category</div>
+        <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="report-footer">
+      This Z-Report is auto-generated by the POS System &bull; ${storeName} &bull; ${new Date().toLocaleString('en-PK')}
+      <br>Report for: ${dateLabel} &bull; Transactions: ${d.transactions} &bull; Net Revenue: ${pkr(d.net_revenue)}
+    </div>
+  </div>`;
+
+  document.getElementById('reportContainer').innerHTML = html;
+
+  // Category chart
+  const cats   = Object.entries(d.by_category || {}).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const colors = ['#6366f1','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ef4444','#14b8a6','#f97316'];
+  if (cats.length && document.getElementById('catChart')) {
+    if (catChart) catChart.destroy();
+    catChart = new Chart(document.getElementById('catChart').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: cats.map(c=>c[0]),
+        datasets: [{ data: cats.map(c=>c[1]), backgroundColor: colors, borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '55%',
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } },
+          tooltip: { callbacks: { label: ctx => ' ' + pkr(ctx.parsed) } }
+        }
+      }
+    });
+  } else if (!cats.length) {
+    const c = document.getElementById('catChart');
+    if (c) c.parentElement.innerHTML = '<p style="color:#94a3b8;font-size:13px;text-align:center;padding:40px">No category data</p>';
+  }
+}
+</script>
+</body>
+</html>

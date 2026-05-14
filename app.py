@@ -5988,6 +5988,971 @@ def analytics_procurement_kpis():
 
 
 # =============================================================================
+# AUDIT TRAIL
+# =============================================================================
+
+def log_audit(action, module, record_id='', details='', user=None):
+    """Write an audit entry. Call this from any write operation."""
+    try:
+        entry = {
+            'action':     action,
+            'module':     module,
+            'record_id':  str(record_id),
+            'details':    details,
+            'user':       user or session.get('full_name', 'System'),
+            'user_id':    session.get('user_id', ''),
+            'role':       session.get('role', ''),
+            'ip':         request.remote_addr,
+            'created_at': datetime.utcnow().isoformat()
+        }
+        if USE_MEMORY_DB:
+            if not hasattr(db, 'audit_logs'): db.audit_logs = []
+            db.audit_logs.insert(0, entry)
+            if len(db.audit_logs) > 2000: db.audit_logs = db.audit_logs[:2000]
+        else:
+            db.audit_logs.insert_one(entry)
+    except Exception:
+        pass  # never let audit failure break the main flow
+
+
+@app.route('/api/audit-log', methods=['GET'])
+def get_audit_log():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if session.get('role') != 'admin': return jsonify({'error': 'Forbidden'}), 403
+    module = request.args.get('module', '')
+    action = request.args.get('action', '')
+    user   = request.args.get('user', '')
+    dfrom  = request.args.get('from', '')
+    dto    = request.args.get('to', '')
+    page   = int(request.args.get('page', 1))
+    per    = 50
+    if USE_MEMORY_DB:
+        logs = list(getattr(db, 'audit_logs', []))
+        if module: logs = [l for l in logs if l.get('module') == module]
+        if action: logs = [l for l in logs if action.lower() in l.get('action','').lower()]
+        if user:   logs = [l for l in logs if user.lower() in l.get('user','').lower()]
+        if dfrom:  logs = [l for l in logs if l.get('created_at','') >= dfrom]
+        if dto:    logs = [l for l in logs if l.get('created_at','') <= dto + 'T23:59:59']
+        total = len(logs)
+        logs  = logs[(page-1)*per : page*per]
+        for l in logs: l['_id'] = str(l.get('_id',''))
+        return jsonify({'logs': logs, 'total': total, 'page': page, 'pages': -(-total//per)})
+    q = {}
+    if module: q['module'] = module
+    if action: q['action'] = {'$regex': action, '$options': 'i'}
+    if user:   q['user']   = {'$regex': user,   '$options': 'i'}
+    if dfrom or dto:
+        q['created_at'] = {}
+        if dfrom: q['created_at']['$gte'] = dfrom
+        if dto:   q['created_at']['$lte'] = dto + 'T23:59:59'
+    total = db.audit_logs.count_documents(q)
+    logs  = list(db.audit_logs.find(q).sort('created_at', -1).skip((page-1)*per).limit(per))
+    for l in logs: l['_id'] = str(l['_id'])
+    return jsonify({'logs': logs, 'total': total, 'page': page, 'pages': -(-total//per)})
+
+
+@app.route('/audit-log')
+def audit_log_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') != 'admin': return redirect_to_dashboard(session.get('role'))
+    return render_template('audit_log.html')
+
+
+# =============================================================================
+# SALES RETURNS & REFUNDS
+# =============================================================================
+
+def _next_return_num():
+    prefix = f'RET-{datetime.utcnow().strftime("%Y%m")}-'
+    if USE_MEMORY_DB:
+        nums = [int(r.get('return_id','RET-000000-000').split('-')[-1])
+                for r in getattr(db,'sales_returns',[]) if r.get('return_id','').startswith(prefix)]
+        return prefix + f'{(max(nums, default=0)+1):03d}'
+    last = db.sales_returns.find_one({'return_id': {'$regex': f'^{prefix}'}}, sort=[('return_id', -1)])
+    n = int(last['return_id'].split('-')[-1]) + 1 if last else 1
+    return prefix + f'{n:03d}'
+
+
+@app.route('/api/sales/returns', methods=['GET'])
+def get_sales_returns():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    status = request.args.get('status', '')
+    dfrom  = request.args.get('from', '')
+    dto    = request.args.get('to', '')
+    if USE_MEMORY_DB:
+        rets = list(getattr(db, 'sales_returns', []))
+        if status: rets = [r for r in rets if r.get('status') == status]
+        if dfrom:  rets = [r for r in rets if r.get('created_at','') >= dfrom]
+        if dto:    rets = [r for r in rets if r.get('created_at','') <= dto + 'T23:59:59']
+        rets = sorted(rets, key=lambda x: x.get('created_at',''), reverse=True)
+        return jsonify({'returns': [{**dict(r), '_id': str(r.get('_id',''))} for r in rets]})
+    q = {}
+    if status: q['status'] = status
+    if dfrom or dto:
+        q['created_at'] = {}
+        if dfrom: q['created_at']['$gte'] = dfrom
+        if dto:   q['created_at']['$lte'] = dto + 'T23:59:59'
+    rets = list(db.sales_returns.find(q).sort('created_at', -1))
+    for r in rets: r['_id'] = str(r['_id'])
+    return jsonify({'returns': rets})
+
+
+@app.route('/api/sales/returns', methods=['POST'])
+def create_sales_return():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    data    = request.json or {}
+    items   = data.get('items', [])
+    if not items: return jsonify({'error': 'No items provided'}), 400
+    total   = round(sum(float(i.get('subtotal', 0)) for i in items), 2)
+    doc = {
+        'return_id':      _next_return_num(),
+        'original_sale_id': data.get('original_sale_id', ''),
+        'customer_name':  data.get('customer_name', 'Walk-in'),
+        'customer_phone': data.get('customer_phone', ''),
+        'items':          items,
+        'total_refund':   total,
+        'refund_method':  data.get('refund_method', 'cash'),
+        'reason':         data.get('reason', ''),
+        'notes':          data.get('notes', ''),
+        'status':         'completed',
+        'processed_by':   session.get('full_name', 'Cashier'),
+        'created_at':     datetime.utcnow().isoformat()
+    }
+    # Restock items
+    for item in items:
+        pid = item.get('product_id', '')
+        qty = int(item.get('qty', 0))
+        if pid and qty > 0:
+            if USE_MEMORY_DB:
+                prod = next((p for p in getattr(db,'products',[]) if str(p.get('_id')) == pid), None)
+                if prod: prod['quantity'] = int(prod.get('quantity', 0)) + qty
+            else:
+                try: db.products.update_one({'_id': ObjectId(pid)}, {'$inc': {'quantity': qty}})
+                except: pass
+    if USE_MEMORY_DB:
+        doc['_id'] = str(uuid.uuid4())
+        if not hasattr(db, 'sales_returns'): db.sales_returns = []
+        db.sales_returns.append(doc)
+        log_audit('RETURN_CREATED', 'Sales Returns', doc['_id'], f"Return {doc['return_id']} — PKR {total}")
+        return jsonify({'success': True, 'return': doc}), 201
+    result = db.sales_returns.insert_one(doc)
+    doc['_id'] = str(result.inserted_id)
+    log_audit('RETURN_CREATED', 'Sales Returns', doc['_id'], f"Return {doc['return_id']} — PKR {total}")
+    return jsonify({'success': True, 'return': doc}), 201
+
+
+@app.route('/api/sales/returns/<rid>', methods=['GET'])
+def get_sales_return(rid):
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if USE_MEMORY_DB:
+        r = next((x for x in getattr(db,'sales_returns',[]) if str(x.get('_id'))==rid or x.get('return_id')==rid), None)
+    else:
+        try: r = db.sales_returns.find_one({'_id': ObjectId(rid)})
+        except: r = db.sales_returns.find_one({'return_id': rid})
+    if not r: return jsonify({'error': 'Not found'}), 404
+    rc = dict(r); rc['_id'] = str(rc.get('_id','')); return jsonify(rc)
+
+
+@app.route('/api/sales/returns/stats', methods=['GET'])
+def returns_stats():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    month = datetime.utcnow().strftime('%Y-%m')
+    if USE_MEMORY_DB:
+        rets = list(getattr(db, 'sales_returns', []))
+        today_rets = [r for r in rets if r.get('created_at','').startswith(today)]
+        month_rets = [r for r in rets if r.get('created_at','').startswith(month)]
+        return jsonify({
+            'total_returns':      len(rets),
+            'today_returns':      len(today_rets),
+            'today_refund':       sum(r.get('total_refund',0) for r in today_rets),
+            'month_returns':      len(month_rets),
+            'month_refund':       sum(r.get('total_refund',0) for r in month_rets),
+            'total_refund_alltime': sum(r.get('total_refund',0) for r in rets),
+        })
+    today_rets = list(db.sales_returns.find({'created_at': {'$gte': today}}))
+    month_rets = list(db.sales_returns.find({'created_at': {'$gte': month}}))
+    all_rets   = list(db.sales_returns.find())
+    return jsonify({
+        'total_returns':      len(all_rets),
+        'today_returns':      len(today_rets),
+        'today_refund':       sum(r.get('total_refund',0) for r in today_rets),
+        'month_returns':      len(month_rets),
+        'month_refund':       sum(r.get('total_refund',0) for r in month_rets),
+        'total_refund_alltime': sum(r.get('total_refund',0) for r in all_rets),
+    })
+
+
+@app.route('/pos/returns')
+def pos_returns_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') not in ['admin', 'sales_manager', 'sales_person']:
+        return redirect_to_dashboard(session.get('role'))
+    return render_template('pos_returns.html')
+
+
+# =============================================================================
+# END-OF-DAY Z-REPORT
+# =============================================================================
+
+@app.route('/api/reports/z-report', methods=['GET'])
+def get_z_report():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    report_date = request.args.get('date', datetime.utcnow().strftime('%Y-%m-%d'))
+    date_start  = report_date + 'T00:00:00'
+    date_end    = report_date + 'T23:59:59'
+
+    if USE_MEMORY_DB:
+        sales   = [s for s in getattr(db,'sales',[]) if date_start <= s.get('created_at','') <= date_end]
+        returns = [r for r in getattr(db,'sales_returns',[]) if date_start <= r.get('created_at','') <= date_end]
+        shifts  = [sh for sh in getattr(db,'shifts',[]) if sh.get('date','') == report_date or
+                   sh.get('opened_at','').startswith(report_date)]
+    else:
+        sales   = list(db.sales.find({'created_at': {'$gte': date_start, '$lte': date_end}}))
+        returns = list(db.sales_returns.find({'created_at': {'$gte': date_start, '$lte': date_end}}))
+        shifts  = list(db.shifts.find({'$or': [
+            {'date': report_date},
+            {'opened_at': {'$gte': date_start, '$lte': date_end}}
+        ]}))
+
+    gross_sales   = sum(s.get('total', 0) for s in sales)
+    discounts     = sum(s.get('discount_amount', 0) for s in sales)
+    tax_collected = sum(s.get('tax_amount', 0) for s in sales)
+    net_sales     = gross_sales - discounts
+    total_refunds = sum(r.get('total_refund', 0) for r in returns)
+    net_revenue   = net_sales - total_refunds
+
+    cash_sales  = sum(s.get('total', 0) for s in sales if s.get('payment_method') == 'cash')
+    card_sales  = sum(s.get('total', 0) for s in sales if s.get('payment_method') in ['card','credit_card','debit_card'])
+    other_sales = gross_sales - cash_sales - card_sales
+
+    opening_float = sum(sh.get('opening_float', 0) for sh in shifts)
+    cash_refunds  = sum(r.get('total_refund', 0) for r in returns if r.get('refund_method') == 'cash')
+    expected_cash = opening_float + cash_sales - cash_refunds
+
+    promo_used    = len([s for s in sales if s.get('promo_code')])
+    items_sold    = sum(sum(int(i.get('qty', 1)) for i in s.get('items', [])) for s in sales)
+
+    by_category = {}
+    for s in sales:
+        for item in s.get('items', []):
+            cat = item.get('category', 'Uncategorized')
+            by_category[cat] = by_category.get(cat, 0) + float(item.get('subtotal', 0))
+
+    top_products = {}
+    for s in sales:
+        for item in s.get('items', []):
+            name = item.get('name', '')
+            if name:
+                if name not in top_products:
+                    top_products[name] = {'qty': 0, 'revenue': 0}
+                top_products[name]['qty']     += int(item.get('qty', 1))
+                top_products[name]['revenue'] += float(item.get('subtotal', 0))
+    top5 = sorted(top_products.items(), key=lambda x: x[1]['revenue'], reverse=True)[:5]
+
+    return jsonify({
+        'report_date':     report_date,
+        'transactions':    len(sales),
+        'items_sold':      items_sold,
+        'gross_sales':     round(gross_sales, 2),
+        'discounts':       round(discounts, 2),
+        'tax_collected':   round(tax_collected, 2),
+        'net_sales':       round(net_sales, 2),
+        'total_refunds':   round(total_refunds, 2),
+        'net_revenue':     round(net_revenue, 2),
+        'cash_sales':      round(cash_sales, 2),
+        'card_sales':      round(card_sales, 2),
+        'other_sales':     round(other_sales, 2),
+        'cash_refunds':    round(cash_refunds, 2),
+        'opening_float':   round(opening_float, 2),
+        'expected_cash':   round(expected_cash, 2),
+        'promo_used':      promo_used,
+        'shifts':          len(shifts),
+        'by_category':     by_category,
+        'top_products':    [{'name': k, **v} for k, v in top5],
+    })
+
+
+@app.route('/reports/z-report')
+def z_report_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') not in ['admin', 'sales_manager']:
+        return redirect_to_dashboard(session.get('role'))
+    return render_template('z_report.html')
+
+
+# =============================================================================
+# STOCK ADJUSTMENTS & PHYSICAL COUNT
+# =============================================================================
+
+def _next_adj_num():
+    prefix = f'ADJ-{datetime.utcnow().strftime("%Y%m")}-'
+    if USE_MEMORY_DB:
+        nums = [int(a.get('adj_id','ADJ-000000-000').split('-')[-1])
+                for a in getattr(db,'stock_adjustments',[]) if a.get('adj_id','').startswith(prefix)]
+        return prefix + f'{(max(nums, default=0)+1):03d}'
+    last = db.stock_adjustments.find_one({'adj_id': {'$regex': f'^{prefix}'}}, sort=[('adj_id', -1)])
+    n = int(last['adj_id'].split('-')[-1]) + 1 if last else 1
+    return prefix + f'{n:03d}'
+
+
+@app.route('/api/inventory/adjustments', methods=['GET'])
+def get_adjustments():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    adj_type = request.args.get('type', '')
+    dfrom    = request.args.get('from', '')
+    dto      = request.args.get('to', '')
+    if USE_MEMORY_DB:
+        adjs = list(getattr(db, 'stock_adjustments', []))
+        if adj_type: adjs = [a for a in adjs if a.get('adj_type') == adj_type]
+        if dfrom:    adjs = [a for a in adjs if a.get('created_at','') >= dfrom]
+        if dto:      adjs = [a for a in adjs if a.get('created_at','') <= dto + 'T23:59:59']
+        adjs = sorted(adjs, key=lambda x: x.get('created_at',''), reverse=True)
+        return jsonify({'adjustments': [{**dict(a), '_id': str(a.get('_id',''))} for a in adjs]})
+    q = {}
+    if adj_type: q['adj_type'] = adj_type
+    if dfrom or dto:
+        q['created_at'] = {}
+        if dfrom: q['created_at']['$gte'] = dfrom
+        if dto:   q['created_at']['$lte'] = dto + 'T23:59:59'
+    adjs = list(db.stock_adjustments.find(q).sort('created_at', -1))
+    for a in adjs: a['_id'] = str(a['_id'])
+    return jsonify({'adjustments': adjs})
+
+
+@app.route('/api/inventory/adjustments', methods=['POST'])
+def create_adjustment():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if session.get('role') not in ['admin', 'procurement_manager']:
+        return jsonify({'error': 'Forbidden'}), 403
+    data     = request.json or {}
+    items    = data.get('items', [])
+    adj_type = data.get('adj_type', 'manual')  # manual, damage, expiry, physical_count, transfer
+    if not items: return jsonify({'error': 'No items provided'}), 400
+    doc = {
+        'adj_id':    _next_adj_num(),
+        'adj_type':  adj_type,
+        'reason':    data.get('reason', ''),
+        'notes':     data.get('notes', ''),
+        'items':     items,
+        'status':    'completed',
+        'created_by': session.get('full_name', 'System'),
+        'created_at': datetime.utcnow().isoformat()
+    }
+    # Apply qty changes
+    for item in items:
+        pid   = item.get('product_id', '')
+        delta = int(item.get('delta', 0))  # +ve = add, -ve = remove
+        if pid and delta != 0:
+            if USE_MEMORY_DB:
+                prod = next((p for p in getattr(db,'products',[]) if str(p.get('_id')) == pid), None)
+                if prod:
+                    prod['quantity'] = max(0, int(prod.get('quantity', 0)) + delta)
+            else:
+                try: db.products.update_one({'_id': ObjectId(pid)}, {'$inc': {'quantity': delta}})
+                except: pass
+    if USE_MEMORY_DB:
+        doc['_id'] = str(uuid.uuid4())
+        if not hasattr(db, 'stock_adjustments'): db.stock_adjustments = []
+        db.stock_adjustments.append(doc)
+    else:
+        result = db.stock_adjustments.insert_one(doc)
+        doc['_id'] = str(result.inserted_id)
+    log_audit('ADJUSTMENT_CREATED', 'Inventory', doc['_id'],
+              f"{doc['adj_id']} — {adj_type} — {len(items)} items")
+    return jsonify({'success': True, 'adjustment': doc}), 201
+
+
+@app.route('/api/inventory/adjustments/stats', methods=['GET'])
+def adjustment_stats():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    month = datetime.utcnow().strftime('%Y-%m')
+    if USE_MEMORY_DB:
+        adjs = list(getattr(db, 'stock_adjustments', []))
+        month_adjs = [a for a in adjs if a.get('created_at','').startswith(month)]
+        by_type = {}
+        for a in adjs:
+            t = a.get('adj_type','manual')
+            by_type[t] = by_type.get(t, 0) + 1
+        return jsonify({'total': len(adjs), 'this_month': len(month_adjs), 'by_type': by_type})
+    total = db.stock_adjustments.count_documents({})
+    mo    = db.stock_adjustments.count_documents({'created_at': {'$gte': month}})
+    pipe  = [{'$group': {'_id': '$adj_type', 'count': {'$sum': 1}}}]
+    by_type = {r['_id']: r['count'] for r in db.stock_adjustments.aggregate(pipe)}
+    return jsonify({'total': total, 'this_month': mo, 'by_type': by_type})
+
+
+@app.route('/inventory/adjustments')
+def stock_adjustments_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') not in ['admin', 'procurement_manager']:
+        return redirect_to_dashboard(session.get('role'))
+    return render_template('stock_adjustments.html')
+
+
+# =============================================================================
+# EXPIRY DATE TRACKING
+# =============================================================================
+
+@app.route('/api/inventory/expiring', methods=['GET'])
+def get_expiring_products():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    days    = int(request.args.get('days', 30))
+    today   = datetime.utcnow().date()
+    cutoff  = (today + timedelta(days=days)).isoformat()
+    today_s = today.isoformat()
+    if USE_MEMORY_DB:
+        prods = list(getattr(db, 'products', []))
+        expiring = []
+        for p in prods:
+            exp = p.get('expiry_date', '')
+            if exp and exp <= cutoff:
+                pc = dict(p); pc['_id'] = str(pc.get('_id',''))
+                pc['days_to_expiry'] = (datetime.fromisoformat(exp).date() - today).days
+                pc['is_expired'] = exp < today_s
+                expiring.append(pc)
+        expiring.sort(key=lambda x: x.get('expiry_date',''))
+        return jsonify({'products': expiring, 'count': len(expiring)})
+    q = {'expiry_date': {'$exists': True, '$ne': '', '$lte': cutoff}}
+    prods = list(db.products.find(q).sort('expiry_date', 1))
+    expiring = []
+    for p in prods:
+        p['_id'] = str(p['_id'])
+        exp = p.get('expiry_date','')
+        try: p['days_to_expiry'] = (datetime.fromisoformat(exp).date() - today).days
+        except: p['days_to_expiry'] = 0
+        p['is_expired'] = exp < today_s
+        expiring.append(p)
+    return jsonify({'products': expiring, 'count': len(expiring)})
+
+
+# =============================================================================
+# CREDIT SALES / ACCOUNTS RECEIVABLE
+# =============================================================================
+
+def _next_credit_num():
+    prefix = f'CR-{datetime.utcnow().strftime("%Y%m")}-'
+    if USE_MEMORY_DB:
+        nums = [int(c.get('credit_id','CR-000000-000').split('-')[-1])
+                for c in getattr(db,'credit_sales',[]) if c.get('credit_id','').startswith(prefix)]
+        return prefix + f'{(max(nums, default=0)+1):03d}'
+    last = db.credit_sales.find_one({'credit_id': {'$regex': f'^{prefix}'}}, sort=[('credit_id', -1)])
+    n = int(last['credit_id'].split('-')[-1]) + 1 if last else 1
+    return prefix + f'{n:03d}'
+
+
+@app.route('/api/credit-sales', methods=['GET'])
+def get_credit_sales():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    status = request.args.get('status', '')
+    search = request.args.get('search', '')
+    if USE_MEMORY_DB:
+        cs = list(getattr(db, 'credit_sales', []))
+        if status: cs = [c for c in cs if c.get('status') == status]
+        if search: cs = [c for c in cs if search.lower() in (c.get('customer_name','') + c.get('customer_phone','')).lower()]
+        cs = sorted(cs, key=lambda x: x.get('created_at',''), reverse=True)
+        return jsonify({'credit_sales': [{**dict(c), '_id': str(c.get('_id',''))} for c in cs]})
+    q = {}
+    if status: q['status'] = status
+    if search: q['$or'] = [{'customer_name': {'$regex': search, '$options':'i'}},
+                            {'customer_phone': {'$regex': search}}]
+    cs = list(db.credit_sales.find(q).sort('created_at', -1))
+    for c in cs: c['_id'] = str(c['_id'])
+    return jsonify({'credit_sales': cs})
+
+
+@app.route('/api/credit-sales', methods=['POST'])
+def create_credit_sale():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    data   = request.json or {}
+    amount = round(float(data.get('amount', 0)), 2)
+    if not amount: return jsonify({'error': 'Amount required'}), 400
+    if not data.get('customer_name','').strip(): return jsonify({'error': 'Customer name required'}), 400
+    due_date = data.get('due_date', (datetime.utcnow() + timedelta(days=30)).strftime('%Y-%m-%d'))
+    doc = {
+        'credit_id':       _next_credit_num(),
+        'customer_name':   data.get('customer_name','').strip(),
+        'customer_phone':  data.get('customer_phone','').strip(),
+        'customer_id':     data.get('customer_id',''),
+        'original_sale_id': data.get('original_sale_id',''),
+        'items':           data.get('items', []),
+        'amount':          amount,
+        'amount_paid':     0.0,
+        'balance':         amount,
+        'due_date':        due_date,
+        'notes':           data.get('notes',''),
+        'status':          'outstanding',
+        'payments':        [],
+        'created_by':      session.get('full_name','Cashier'),
+        'created_at':      datetime.utcnow().isoformat()
+    }
+    if USE_MEMORY_DB:
+        doc['_id'] = str(uuid.uuid4())
+        if not hasattr(db, 'credit_sales'): db.credit_sales = []
+        db.credit_sales.append(doc)
+    else:
+        result = db.credit_sales.insert_one(doc)
+        doc['_id'] = str(result.inserted_id)
+    log_audit('CREDIT_CREATED', 'Credit Sales', doc['_id'],
+              f"{doc['credit_id']} — {doc['customer_name']} — PKR {amount}")
+    return jsonify({'success': True, 'credit_sale': doc}), 201
+
+
+@app.route('/api/credit-sales/<cid>/pay', methods=['POST'])
+def pay_credit_sale(cid):
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    data   = request.json or {}
+    amount = round(float(data.get('amount', 0)), 2)
+    if not amount: return jsonify({'error': 'Amount required'}), 400
+    pmt = {
+        'amount': amount,
+        'method': data.get('method', 'cash'),
+        'reference': data.get('reference',''),
+        'paid_at': datetime.utcnow().isoformat(),
+        'received_by': session.get('full_name','Cashier')
+    }
+    if USE_MEMORY_DB:
+        cr = next((c for c in getattr(db,'credit_sales',[]) if str(c.get('_id'))==cid or c.get('credit_id')==cid), None)
+        if not cr: return jsonify({'error': 'Not found'}), 404
+        if 'payments' not in cr: cr['payments'] = []
+        cr['payments'].append(pmt)
+        cr['amount_paid'] = round(cr.get('amount_paid',0) + amount, 2)
+        cr['balance']     = round(cr.get('amount',0) - cr['amount_paid'], 2)
+        cr['status']      = 'settled' if cr['balance'] <= 0 else 'partial'
+        log_audit('CREDIT_PAYMENT', 'Credit Sales', cid, f"PKR {amount} received")
+        return jsonify({'success': True, 'balance': cr['balance'], 'status': cr['status']})
+    try:
+        cr = db.credit_sales.find_one({'_id': ObjectId(cid)})
+    except:
+        cr = db.credit_sales.find_one({'credit_id': cid})
+    if not cr: return jsonify({'error': 'Not found'}), 404
+    new_paid    = round(float(cr.get('amount_paid',0)) + amount, 2)
+    new_balance = round(float(cr.get('amount',0)) - new_paid, 2)
+    new_status  = 'settled' if new_balance <= 0 else 'partial'
+    try:
+        db.credit_sales.update_one({'_id': ObjectId(cid)}, {
+            '$push': {'payments': pmt},
+            '$set':  {'amount_paid': new_paid, 'balance': new_balance, 'status': new_status}
+        })
+    except: pass
+    log_audit('CREDIT_PAYMENT', 'Credit Sales', cid, f"PKR {amount} received")
+    return jsonify({'success': True, 'balance': new_balance, 'status': new_status})
+
+
+@app.route('/api/credit-sales/stats', methods=['GET'])
+def credit_sales_stats():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if USE_MEMORY_DB:
+        cs = list(getattr(db, 'credit_sales', []))
+        outstanding = [c for c in cs if c.get('status') == 'outstanding']
+        partial     = [c for c in cs if c.get('status') == 'partial']
+        overdue     = [c for c in cs if c.get('status') not in ['settled'] and
+                       c.get('due_date','') < datetime.utcnow().strftime('%Y-%m-%d')]
+        return jsonify({
+            'total_accounts':    len(cs),
+            'outstanding_count': len(outstanding) + len(partial),
+            'total_outstanding': round(sum(c.get('balance',0) for c in cs if c.get('status')!='settled'), 2),
+            'overdue_count':     len(overdue),
+            'overdue_amount':    round(sum(c.get('balance',0) for c in overdue), 2),
+            'settled_count':     len([c for c in cs if c.get('status')=='settled']),
+        })
+    total   = db.credit_sales.count_documents({})
+    pipe    = [{'$match': {'status': {'$ne': 'settled'}}},
+               {'$group': {'_id': None, 'count': {'$sum':1}, 'bal': {'$sum':'$balance'}}}]
+    res     = list(db.credit_sales.aggregate(pipe))
+    today   = datetime.utcnow().strftime('%Y-%m-%d')
+    overdue = list(db.credit_sales.find({'status': {'$ne':'settled'}, 'due_date': {'$lt': today}}))
+    return jsonify({
+        'total_accounts':    total,
+        'outstanding_count': res[0]['count'] if res else 0,
+        'total_outstanding': res[0]['bal']   if res else 0,
+        'overdue_count':     len(overdue),
+        'overdue_amount':    round(sum(c.get('balance',0) for c in overdue), 2),
+        'settled_count':     db.credit_sales.count_documents({'status':'settled'}),
+    })
+
+
+@app.route('/credit-sales')
+def credit_sales_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') not in ['admin', 'sales_manager', 'finance_manager']:
+        return redirect_to_dashboard(session.get('role'))
+    return render_template('credit_sales.html')
+
+
+# =============================================================================
+# NOTIFICATIONS & ALERTS
+# =============================================================================
+
+@app.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    role  = session.get('role', '')
+    notes = []
+
+    # Low stock alerts
+    try:
+        if USE_MEMORY_DB:
+            prods = [p for p in getattr(db,'products',[]) if int(p.get('quantity',0)) <= int(p.get('reorder_level',10))]
+        else:
+            prods = list(db.products.find({'$expr': {'$lte': ['$quantity', '$reorder_level']}}))
+        for p in prods[:10]:
+            notes.append({'type':'low_stock','level':'warning',
+                          'title':f"Low Stock: {p.get('name','')}",
+                          'message':f"Only {p.get('quantity',0)} units left (reorder at {p.get('reorder_level',10)})",
+                          'link':'/procurement/stock','created_at':datetime.utcnow().isoformat()})
+    except: pass
+
+    # Expiring products (within 7 days)
+    try:
+        cutoff = (datetime.utcnow().date() + timedelta(days=7)).isoformat()
+        today  = datetime.utcnow().strftime('%Y-%m-%d')
+        if USE_MEMORY_DB:
+            exp_prods = [p for p in getattr(db,'products',[])
+                         if p.get('expiry_date','') and p.get('expiry_date','') <= cutoff]
+        else:
+            exp_prods = list(db.products.find({'expiry_date': {'$exists':True,'$ne':'','$lte':cutoff}}))
+        for p in exp_prods[:5]:
+            exp = p.get('expiry_date','')
+            days = (datetime.fromisoformat(exp).date() - datetime.utcnow().date()).days if exp else 0
+            level = 'danger' if days <= 0 else 'warning'
+            notes.append({'type':'expiry','level':level,
+                          'title':f"{'EXPIRED' if days<=0 else 'Expiring Soon'}: {p.get('name','')}",
+                          'message':f"{'Expired' if days<=0 else f'Expires in {days} day(s)'} — {exp}",
+                          'link':'/inventory/adjustments','created_at':datetime.utcnow().isoformat()})
+    except: pass
+
+    # Overdue vendor invoices
+    if role in ['admin', 'procurement_manager', 'finance_manager']:
+        try:
+            today = datetime.utcnow().strftime('%Y-%m-%d')
+            if USE_MEMORY_DB:
+                inv = [i for i in getattr(db,'vendor_invoices',[])
+                       if i.get('status') not in ['paid'] and i.get('due_date','') and i.get('due_date','') < today]
+            else:
+                inv = list(db.vendor_invoices.find({'status':{'$ne':'paid'},
+                                                     'due_date':{'$lt':today,'$exists':True,'$ne':''}}))
+            if inv:
+                notes.append({'type':'overdue_invoice','level':'danger',
+                              'title':f"{len(inv)} Overdue Vendor Invoice(s)",
+                              'message':f"PKR {sum(float(i.get('total',0)) for i in inv):,.2f} overdue",
+                              'link':'/procurement/invoices','created_at':datetime.utcnow().isoformat()})
+        except: pass
+
+    # Pending payroll
+    if role in ['admin', 'finance_manager']:
+        try:
+            if USE_MEMORY_DB:
+                pending_pr = [p for p in getattr(db,'payroll',[]) if p.get('status') == 'pending']
+            else:
+                pending_pr = list(db.payroll.find({'status':'pending'}))
+            if pending_pr:
+                notes.append({'type':'payroll','level':'info',
+                              'title':f"{len(pending_pr)} Payroll Record(s) Pending",
+                              'message':f"PKR {sum(float(p.get('net_salary',0)) for p in pending_pr):,.2f} to be processed",
+                              'link':'/hr','created_at':datetime.utcnow().isoformat()})
+        except: pass
+
+    # Overdue credit sales
+    if role in ['admin', 'sales_manager', 'finance_manager']:
+        try:
+            today = datetime.utcnow().strftime('%Y-%m-%d')
+            if USE_MEMORY_DB:
+                over_cr = [c for c in getattr(db,'credit_sales',[])
+                           if c.get('status') not in ['settled'] and c.get('due_date','') < today]
+            else:
+                over_cr = list(db.credit_sales.find({'status':{'$ne':'settled'},
+                                                      'due_date':{'$lt':today,'$exists':True,'$ne':''}}))
+            if over_cr:
+                notes.append({'type':'credit','level':'warning',
+                              'title':f"{len(over_cr)} Overdue Credit Account(s)",
+                              'message':f"PKR {sum(float(c.get('balance',0)) for c in over_cr):,.2f} outstanding",
+                              'link':'/credit-sales','created_at':datetime.utcnow().isoformat()})
+        except: pass
+
+    return jsonify({'notifications': notes, 'count': len(notes),
+                    'unread': len([n for n in notes if n['level'] in ['danger','warning']])})
+
+
+# =============================================================================
+# TAX / GST REPORT
+# =============================================================================
+
+@app.route('/api/reports/tax', methods=['GET'])
+def get_tax_report():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if session.get('role') not in ['admin', 'finance_manager']:
+        return jsonify({'error': 'Forbidden'}), 403
+    period_type = request.args.get('period', 'month')  # month or quarter
+    year  = int(request.args.get('year',  datetime.utcnow().year))
+    month = int(request.args.get('month', datetime.utcnow().month))
+
+    if period_type == 'quarter':
+        q_start_month = ((month - 1) // 3) * 3 + 1
+        date_start = f'{year}-{q_start_month:02d}-01'
+        end_month  = q_start_month + 2
+        end_year   = year + (1 if end_month > 12 else 0)
+        end_month  = end_month if end_month <= 12 else end_month - 12
+        import calendar
+        date_end = f'{end_year}-{end_month:02d}-{calendar.monthrange(end_year, end_month)[1]}'
+    else:
+        import calendar
+        date_start = f'{year}-{month:02d}-01'
+        date_end   = f'{year}-{month:02d}-{calendar.monthrange(year, month)[1]}'
+
+    date_start_iso = date_start + 'T00:00:00'
+    date_end_iso   = date_end   + 'T23:59:59'
+
+    if USE_MEMORY_DB:
+        sales = [s for s in getattr(db,'sales',[])
+                 if date_start_iso <= s.get('created_at','') <= date_end_iso]
+        invoices = [i for i in getattr(db,'vendor_invoices',[])
+                    if date_start_iso <= i.get('created_at','') <= date_end_iso]
+    else:
+        sales    = list(db.sales.find({'created_at': {'$gte': date_start_iso, '$lte': date_end_iso}}))
+        invoices = list(db.vendor_invoices.find({'created_at': {'$gte': date_start_iso, '$lte': date_end_iso}}))
+
+    output_tax  = round(sum(float(s.get('tax_amount', 0)) for s in sales), 2)
+    gross_sales = round(sum(float(s.get('total', 0)) for s in sales), 2)
+    input_tax   = round(sum(float(i.get('tax_amount', 0)) for i in invoices), 2)
+    net_tax     = round(output_tax - input_tax, 2)
+
+    # Monthly breakdown within period
+    monthly = {}
+    for s in sales:
+        mo = s.get('created_at','')[:7]
+        if mo not in monthly: monthly[mo] = {'output_tax':0,'gross_sales':0,'transactions':0}
+        monthly[mo]['output_tax']   += float(s.get('tax_amount',0))
+        monthly[mo]['gross_sales']  += float(s.get('total',0))
+        monthly[mo]['transactions'] += 1
+
+    return jsonify({
+        'period': {'type': period_type, 'from': date_start, 'to': date_end},
+        'output_tax':   output_tax,
+        'input_tax':    input_tax,
+        'net_tax':      net_tax,
+        'gross_sales':  gross_sales,
+        'transactions': len(sales),
+        'monthly':      [{'month': k, **v} for k, v in sorted(monthly.items())],
+    })
+
+
+# =============================================================================
+# FBR / POS INTEGRATION (UI SHELL — pending FBR registration)
+# =============================================================================
+
+@app.route('/fbr')
+def fbr_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') != 'admin': return redirect_to_dashboard(session.get('role'))
+    return render_template('fbr_dashboard.html')
+
+
+@app.route('/api/fbr/status', methods=['GET'])
+def fbr_status():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    # Returns placeholder status until FBR registration is complete
+    return jsonify({
+        'registered':     False,
+        'registration_no': '',
+        'pos_id':         '',
+        'status':         'pending_registration',
+        'message':        'FBR registration pending. Module will activate after IRIS registration.',
+        'invoices_sent':  0,
+        'last_sync':      None,
+    })
+
+
+# =============================================================================
+# PRODUCT BUNDLES / COMBO DEALS
+# =============================================================================
+
+def _next_bundle_num():
+    prefix = 'BND-'
+    if USE_MEMORY_DB:
+        nums = [int(b.get('bundle_id','BND-0000').split('-')[-1])
+                for b in getattr(db,'bundles',[]) if b.get('bundle_id','').startswith(prefix)]
+        return prefix + f'{(max(nums, default=0)+1):04d}'
+    last = db.bundles.find_one({'bundle_id': {'$regex': f'^{prefix}'}}, sort=[('bundle_id', -1)])
+    n = int(last['bundle_id'].split('-')[-1]) + 1 if last else 1
+    return prefix + f'{n:04d}'
+
+
+@app.route('/api/bundles', methods=['GET'])
+def get_bundles():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if USE_MEMORY_DB:
+        bundles = list(getattr(db, 'bundles', []))
+        return jsonify({'bundles': [{**dict(b), '_id': str(b.get('_id',''))} for b in bundles]})
+    bundles = list(db.bundles.find().sort('created_at', -1))
+    for b in bundles: b['_id'] = str(b['_id'])
+    return jsonify({'bundles': bundles})
+
+
+@app.route('/api/bundles', methods=['POST'])
+def create_bundle():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if session.get('role') not in ['admin', 'sales_manager']:
+        return jsonify({'error': 'Forbidden'}), 403
+    data  = request.json or {}
+    items = data.get('items', [])
+    if not data.get('name','').strip(): return jsonify({'error': 'Bundle name required'}), 400
+    if len(items) < 2: return jsonify({'error': 'Bundle must have at least 2 items'}), 400
+    regular_price = round(sum(float(i.get('unit_price',0)) * int(i.get('qty',1)) for i in items), 2)
+    bundle_price  = round(float(data.get('bundle_price', regular_price)), 2)
+    doc = {
+        'bundle_id':     _next_bundle_num(),
+        'name':          data.get('name','').strip(),
+        'description':   data.get('description',''),
+        'items':         items,
+        'regular_price': regular_price,
+        'bundle_price':  bundle_price,
+        'discount_pct':  round((1 - bundle_price/regular_price)*100, 1) if regular_price else 0,
+        'is_active':     data.get('is_active', True),
+        'valid_from':    data.get('valid_from',''),
+        'valid_to':      data.get('valid_to',''),
+        'created_by':    session.get('full_name','Admin'),
+        'created_at':    datetime.utcnow().isoformat()
+    }
+    if USE_MEMORY_DB:
+        doc['_id'] = str(uuid.uuid4())
+        if not hasattr(db, 'bundles'): db.bundles = []
+        db.bundles.append(doc)
+        return jsonify({'success': True, 'bundle': doc}), 201
+    result = db.bundles.insert_one(doc)
+    doc['_id'] = str(result.inserted_id)
+    return jsonify({'success': True, 'bundle': doc}), 201
+
+
+@app.route('/api/bundles/<bid>', methods=['PUT'])
+def update_bundle(bid):
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    data  = request.json or {}
+    items = data.get('items', [])
+    regular_price = round(sum(float(i.get('unit_price',0)) * int(i.get('qty',1)) for i in items), 2) if items else 0
+    bundle_price  = round(float(data.get('bundle_price', regular_price)), 2)
+    upd = {
+        'name': data.get('name',''), 'description': data.get('description',''),
+        'items': items, 'regular_price': regular_price, 'bundle_price': bundle_price,
+        'discount_pct': round((1 - bundle_price/regular_price)*100, 1) if regular_price else 0,
+        'is_active': data.get('is_active', True),
+        'valid_from': data.get('valid_from',''), 'valid_to': data.get('valid_to',''),
+    }
+    if USE_MEMORY_DB:
+        b = next((x for x in getattr(db,'bundles',[]) if str(x.get('_id'))==bid or x.get('bundle_id')==bid), None)
+        if not b: return jsonify({'error':'Not found'}), 404
+        b.update(upd); return jsonify({'success':True,'bundle':b})
+    try: db.bundles.update_one({'_id': ObjectId(bid)}, {'$set': upd})
+    except: db.bundles.update_one({'bundle_id': bid}, {'$set': upd})
+    return jsonify({'success': True})
+
+
+@app.route('/api/bundles/<bid>', methods=['DELETE'])
+def delete_bundle(bid):
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if USE_MEMORY_DB:
+        bundles = getattr(db,'bundles',[])
+        db.bundles = [b for b in bundles if str(b.get('_id'))!=bid and b.get('bundle_id')!=bid]
+        return jsonify({'success': True})
+    try: db.bundles.delete_one({'_id': ObjectId(bid)})
+    except: db.bundles.delete_one({'bundle_id': bid})
+    return jsonify({'success': True})
+
+
+@app.route('/bundles')
+def bundles_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') not in ['admin', 'sales_manager']:
+        return redirect_to_dashboard(session.get('role'))
+    return render_template('bundles.html')
+
+
+# =============================================================================
+# SUPPLIER PRICE HISTORY
+# =============================================================================
+
+@app.route('/api/vendors/<vid>/price-history', methods=['GET'])
+def vendor_price_history(vid):
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    product = request.args.get('product', '')
+    if USE_MEMORY_DB:
+        pos = list(getattr(db,'purchase_orders',[]))
+        history = []
+        for po in pos:
+            if str(po.get('vendor_id','')) != vid and po.get('vendor_id','') != vid: continue
+            for item in po.get('items',[]):
+                if product and product.lower() not in item.get('product_name','').lower(): continue
+                history.append({
+                    'po_number':    po.get('po_number',''),
+                    'date':         po.get('created_at','')[:10],
+                    'product_name': item.get('product_name',''),
+                    'product_id':   item.get('product_id',''),
+                    'unit_price':   item.get('unit_price', item.get('unit_cost',0)),
+                    'qty':          item.get('qty', item.get('quantity',0)),
+                    'status':       po.get('status',''),
+                })
+        history.sort(key=lambda x: x['date'], reverse=True)
+        return jsonify({'history': history})
+    q = {'vendor_id': vid}
+    pos = list(db.purchase_orders.find(q).sort('created_at',-1).limit(50))
+    history = []
+    for po in pos:
+        for item in po.get('items',[]):
+            if product and product.lower() not in item.get('product_name','').lower(): continue
+            history.append({
+                'po_number':    po.get('po_number',''),
+                'date':         po.get('created_at','')[:10],
+                'product_name': item.get('product_name',''),
+                'product_id':   str(item.get('product_id','')),
+                'unit_price':   item.get('unit_price', item.get('unit_cost',0)),
+                'qty':          item.get('qty', item.get('quantity',0)),
+                'status':       po.get('status',''),
+            })
+    return jsonify({'history': history})
+
+
+# =============================================================================
+# DATA EXPORT (CSV)
+# =============================================================================
+
+@app.route('/api/export/<module>', methods=['GET'])
+def export_csv(module):
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    allowed = {
+        'sales':       ('sales',       ['created_at','receipt_number','customer_name','total','payment_method','cashier_name']),
+        'products':    ('products',    ['name','sku','category','quantity','sale_price','cost_price','reorder_level']),
+        'employees':   ('employees',   ['emp_id','name','department','designation','basic_salary','gross_salary','net_salary','status']),
+        'payments':    ('payments',    ['payment_id','type','payee','amount','method','date','status']),
+        'returns':     ('sales_returns',['return_id','customer_name','total_refund','refund_method','reason','created_at']),
+        'credit_sales':('credit_sales',['credit_id','customer_name','customer_phone','amount','amount_paid','balance','due_date','status']),
+        'adjustments': ('stock_adjustments',['adj_id','adj_type','reason','created_by','created_at']),
+        'vendors':     ('vendors',     ['name','contact_person','email','phone','city','status']),
+        'payroll':     ('payroll',     ['payroll_number','employee_name','month','basic_salary','gross_salary','net_salary','status']),
+    }
+    if module not in allowed: return jsonify({'error': 'Unknown module'}), 400
+    collection_name, fields = allowed[module]
+    if USE_MEMORY_DB:
+        rows = list(getattr(db, collection_name, []))
+    else:
+        rows = list(getattr(db, collection_name).find({}, {f: 1 for f in fields}))
+    output = BytesIO()
+    writer_text = []
+    writer_text.append(','.join(fields))
+    for row in rows:
+        line = []
+        for f in fields:
+            val = str(row.get(f,'')).replace(',','').replace('\n',' ')
+            line.append(val)
+        writer_text.append(','.join(line))
+    csv_content = '\n'.join(writer_text)
+    output = BytesIO(csv_content.encode('utf-8'))
+    output.seek(0)
+    filename = f'{module}_{datetime.utcnow().strftime("%Y%m%d_%H%M%S")}.csv'
+    return send_file(output, mimetype='text/csv',
+                     as_attachment=True, download_name=filename)
+
+
+# =============================================================================
 # MAIN ENTRY
 # =============================================================================
 

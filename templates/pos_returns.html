@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Sales Returns — POS Supermarket</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
+.nav{background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;padding:0 24px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.nav-brand{font-size:18px;font-weight:700;margin-right:8px}
+.nav-sub{font-size:13px;opacity:.85;flex:1}
+.nav-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.nav-btn:hover{background:rgba(255,255,255,.25)}
+.nav-btn.green{background:#27ae60;border-color:#27ae60}
+.page{max-width:1300px;margin:0 auto;padding:24px 20px}
+.stats-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid #e2e8f0}
+.stat-card.red{border-left-color:#e74c3c}.stat-card.orange{border-left-color:#f59e0b}
+.stat-card.blue{border-left-color:#3498db}.stat-card.green{border-left-color:#27ae60}
+.stat-card.purple{border-left-color:#8b5cf6}.stat-card.indigo{border-left-color:#6366f1}
+.stat-lbl{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.stat-val{font-size:20px;font-weight:700;color:#1a1a2e;margin-top:4px}
+.stat-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+.filter-bar{background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.filter-bar label{font-size:12px;color:#64748b;font-weight:600}
+.filter-bar select,.filter-bar input{border:1px solid #e2e8f0;border-radius:8px;padding:7px 11px;font-size:13px;outline:none}
+.filter-bar select:focus,.filter-bar input:focus{border-color:#e74c3c}
+.spacer{flex:1}
+.btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.btn-danger{background:#e74c3c;color:#fff}.btn-danger:hover{background:#c0392b}
+.btn-outline{background:#fff;border:1px solid #e2e8f0;color:#374151}.btn-outline:hover{background:#f8fafc}
+.btn-sm{padding:5px 12px;font-size:12px}
+.table-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden;margin-bottom:24px}
+.table-head{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9}
+.table-title{font-size:15px;font-weight:700}
+.cnt{font-size:12px;color:#94a3b8;background:#f1f5f9;padding:3px 10px;border-radius:20px}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 16px;text-align:left;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+td{padding:11px 16px;font-size:13px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:hover td{background:#fafafa}
+.empty td{text-align:center;padding:40px;color:#94a3b8;font-style:italic}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}.badge-red{background:#fee2e2;color:#991b1b}
+.badge-blue{background:#dbeafe;color:#1e40af}.badge-orange{background:#fef3c7;color:#92400e}
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;width:680px;max-width:95vw;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{padding:18px 22px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1}
+.modal-head h2{font-size:16px;font-weight:700;color:#e74c3c}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8}
+.modal-body{padding:22px}
+.modal-foot{padding:14px 22px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#fff}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:600;color:#374151}
+.form-ctrl{border:1px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:13px;width:100%;outline:none;font-family:inherit}
+.form-ctrl:focus{border-color:#e74c3c}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.section-div{font-size:11px;font-weight:700;color:#e74c3c;text-transform:uppercase;letter-spacing:.8px;padding-bottom:6px;border-bottom:2px solid #fee2e2;margin:14px 0 10px}
+/* Items table in modal */
+.items-wrap{border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:12px}
+.items-wrap table th{background:#fef2f2;color:#991b1b}
+.items-wrap table td input{border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;font-size:12px;width:70px;text-align:center}
+.summary-box{background:#fef2f2;border-radius:10px;padding:14px 16px}
+.sum-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#374151}
+.sum-row.total{font-weight:700;font-size:15px;border-top:1px solid #fca5a5;padding-top:10px;margin-top:6px}
+/* Detail modal */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.d-item{display:flex;flex-direction:column;gap:2px}
+.d-lbl{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.d-val{font-size:14px;color:#1a1a2e;font-weight:600}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-brand">&#9679; POS</span>
+  <span class="nav-sub">Sales Returns & Refunds</span>
+  <a href="/pos" class="nav-btn">&#8592; POS Terminal</a>
+  <a href="/sales-dashboard" class="nav-btn" id="btnSalesDash" style="display:none">Sales Dashboard</a>
+  <button class="nav-btn green" onclick="openReturnModal()">&#43; New Return</button>
+</nav>
+
+<div class="page">
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-card red"><div class="stat-lbl">Total Returns</div><div class="stat-val" id="sTotalRet">—</div><div class="stat-sub">all time</div></div>
+    <div class="stat-card orange"><div class="stat-lbl">Today Returns</div><div class="stat-val" id="sTodayRet">—</div><div class="stat-sub" id="sTodayAmt">—</div></div>
+    <div class="stat-card blue"><div class="stat-lbl">This Month</div><div class="stat-val" id="sMonthRet">—</div><div class="stat-sub" id="sMonthAmt">—</div></div>
+    <div class="stat-card green"><div class="stat-lbl">Total Refunded</div><div class="stat-val" id="sTotalAmt">—</div><div class="stat-sub">all time</div></div>
+    <div class="stat-card purple"><div class="stat-lbl">Cash Refunds</div><div class="stat-val" id="sCash">—</div><div class="stat-sub">method</div></div>
+    <div class="stat-card indigo"><div class="stat-lbl">Items Restocked</div><div class="stat-val" id="sItems">—</div><div class="stat-sub">units returned</div></div>
+  </div>
+
+  <!-- FILTER -->
+  <div class="filter-bar">
+    <label>Status</label>
+    <select id="fStatus" onchange="applyFilters()">
+      <option value="">All</option>
+      <option value="completed">Completed</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+    <label>From</label><input type="date" id="fFrom" onchange="applyFilters()">
+    <label>To</label><input type="date" id="fTo" onchange="applyFilters()">
+    <div class="spacer"></div>
+    <button class="btn btn-outline btn-sm" onclick="clearFilters()">Clear</button>
+    <button class="btn btn-outline btn-sm" onclick="loadReturns()">&#8635; Refresh</button>
+    <button class="btn btn-danger btn-sm" onclick="exportCSV()">&#8595; Export CSV</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-head">
+      <span class="table-title">Return Records</span>
+      <span class="cnt" id="retCount">0</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Return ID</th><th>Customer</th><th>Items</th><th>Refund Amount</th>
+        <th>Method</th><th>Reason</th><th>Date</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody id="retBody"><tr class="empty"><td colspan="9">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- NEW RETURN MODAL -->
+<div class="overlay" id="returnModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>&#8617; Process Return / Refund</h2>
+      <button class="modal-close" onclick="closeReturnModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="section-div">Customer Information</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Customer Name</label>
+          <input type="text" class="form-ctrl" id="retCustName" placeholder="Walk-in Customer">
+        </div>
+        <div class="form-group">
+          <label>Customer Phone</label>
+          <input type="text" class="form-ctrl" id="retCustPhone" placeholder="+92 XXX XXXXXXX">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Original Sale / Receipt No. (optional)</label>
+        <input type="text" class="form-ctrl" id="retSaleId" placeholder="e.g. RCP-202501-001">
+      </div>
+
+      <div class="section-div">Return Items</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <select class="form-ctrl" id="retProductSel" style="flex:1" onchange="onRetProductChange()">
+          <option value="">— Select Product to Return —</option>
+        </select>
+        <button class="btn btn-danger btn-sm" onclick="addReturnItem()">Add Item</button>
+      </div>
+
+      <div class="items-wrap">
+        <table>
+          <thead><tr><th>Product</th><th>Qty Returned</th><th>Unit Price</th><th>Subtotal</th><th></th></tr></thead>
+          <tbody id="retItemsBody"><tr class="empty"><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8">No items added yet</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="section-div">Refund Details</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Refund Method *</label>
+          <select class="form-ctrl" id="retMethod">
+            <option value="cash">Cash</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="store_credit">Store Credit</option>
+            <option value="exchange">Exchange</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Reason *</label>
+          <select class="form-ctrl" id="retReason">
+            <option value="defective">Defective / Damaged Item</option>
+            <option value="wrong_item">Wrong Item Received</option>
+            <option value="expired">Expired Product</option>
+            <option value="customer_changed_mind">Customer Changed Mind</option>
+            <option value="overcharge">Overcharge / Billing Error</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea class="form-ctrl" id="retNotes" rows="2" placeholder="Additional notes..."></textarea>
+      </div>
+
+      <div class="summary-box">
+        <div class="sum-row"><span>Items</span><span id="sumItems">0</span></div>
+        <div class="sum-row"><span>Units Returned</span><span id="sumUnits">0</span></div>
+        <div class="sum-row total"><span>Total Refund</span><span id="sumTotal">PKR 0.00</span></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeReturnModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="saveReturn()">&#8617; Process Return</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detailModal">
+  <div class="modal" style="width:580px">
+    <div class="modal-head">
+      <h2>Return Detail</h2>
+      <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="detailBody">Loading...</div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeDetailModal()">Close</button></div>
+  </div>
+</div>
+
+<script>
+const pkr = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+let allReturns = [];
+let products   = [];
+let retItems   = [];
+let selectedProduct = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const role = sessionStorage.getItem('role');
+  if (['admin','sales_manager'].includes(role)) document.getElementById('btnSalesDash').style.display = '';
+  await Promise.all([loadStats(), loadReturns(), loadProducts()]);
+});
+
+async function loadStats() {
+  try {
+    const d = await fetch('/api/sales/returns/stats').then(r=>r.json());
+    document.getElementById('sTotalRet').textContent = d.total_returns || 0;
+    document.getElementById('sTodayRet').textContent = d.today_returns || 0;
+    document.getElementById('sTodayAmt').textContent = pkr(d.today_refund||0);
+    document.getElementById('sMonthRet').textContent = d.month_returns || 0;
+    document.getElementById('sMonthAmt').textContent = pkr(d.month_refund||0);
+    document.getElementById('sTotalAmt').textContent = pkr(d.total_refund_alltime||0);
+  } catch(e) {}
+}
+
+async function loadProducts() {
+  try {
+    const d = await fetch('/api/products').then(r=>r.json());
+    products = d || [];
+    const sel = document.getElementById('retProductSel');
+    sel.innerHTML = '<option value="">— Select Product to Return —</option>' +
+      products.map(p => `<option value="${p._id}" data-price="${p.sale_price||p.price||0}" data-name="${p.name}">${p.name} — ${pkr(p.sale_price||p.price||0)}</option>`).join('');
+  } catch(e) {}
+}
+
+async function loadReturns() {
+  try {
+    const d = await fetch('/api/sales/returns').then(r=>r.json());
+    allReturns = d.returns || [];
+    // count items/units from all returns
+    let totalItems = 0, cashRefunds = 0;
+    allReturns.forEach(r => {
+      totalItems += (r.items||[]).reduce((s,i) => s + parseInt(i.qty||0), 0);
+      if (r.refund_method === 'cash') cashRefunds++;
+    });
+    document.getElementById('sItems').textContent = totalItems;
+    document.getElementById('sCash').textContent = cashRefunds;
+    applyFilters();
+  } catch(e) {
+    document.getElementById('retBody').innerHTML = '<tr class="empty"><td colspan="9">Failed to load returns</td></tr>';
+  }
+}
+
+function applyFilters() {
+  const status = document.getElementById('fStatus').value;
+  const from   = document.getElementById('fFrom').value;
+  const to     = document.getElementById('fTo').value;
+  let data = allReturns.filter(r => {
+    if (status && r.status !== status) return false;
+    if (from && r.created_at < from) return false;
+    if (to   && r.created_at > to + 'T23:59:59') return false;
+    return true;
+  });
+  renderTable(data);
+}
+
+function clearFilters() {
+  document.getElementById('fStatus').value = '';
+  document.getElementById('fFrom').value = '';
+  document.getElementById('fTo').value = '';
+  applyFilters();
+}
+
+function renderTable(data) {
+  document.getElementById('retCount').textContent = data.length;
+  if (!data.length) {
+    document.getElementById('retBody').innerHTML = '<tr class="empty"><td colspan="9">No returns found</td></tr>';
+    return;
+  }
+  const methodLabel = {cash:'Cash',bank_transfer:'Bank Transfer',store_credit:'Store Credit',exchange:'Exchange'};
+  document.getElementById('retBody').innerHTML = data.map(r => {
+    const items = r.items||[];
+    const units = items.reduce((s,i)=>s+parseInt(i.qty||0),0);
+    const stCls = r.status==='completed'?'badge-green':'badge-red';
+    return `<tr>
+      <td><span style="font-family:monospace;font-size:12px;color:#e74c3c">${r.return_id||'—'}</span></td>
+      <td><strong>${r.customer_name||'Walk-in'}</strong><br><small style="color:#94a3b8">${r.customer_phone||''}</small></td>
+      <td>${items.length} item(s) · ${units} unit(s)</td>
+      <td><strong>${pkr(r.total_refund)}</strong></td>
+      <td><span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">${methodLabel[r.refund_method]||r.refund_method}</span></td>
+      <td style="color:#64748b;font-size:12px">${r.reason||'—'}</td>
+      <td style="color:#64748b;font-size:12px">${fmtDate(r.created_at)}</td>
+      <td><span class="badge ${stCls}">&#9679; ${(r.status||'').charAt(0).toUpperCase()+(r.status||'').slice(1)}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick="viewDetail('${r._id}')">View</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RETURN MODAL ──
+function openReturnModal() {
+  retItems = [];
+  document.getElementById('retCustName').value = '';
+  document.getElementById('retCustPhone').value = '';
+  document.getElementById('retSaleId').value = '';
+  document.getElementById('retNotes').value = '';
+  document.getElementById('retProductSel').value = '';
+  renderRetItems();
+  updateSummary();
+  document.getElementById('returnModal').classList.add('open');
+}
+function closeReturnModal() { document.getElementById('returnModal').classList.remove('open'); }
+
+function onRetProductChange() {
+  const sel = document.getElementById('retProductSel');
+  const opt = sel.selectedOptions[0];
+  if (!opt || !sel.value) { selectedProduct = null; return; }
+  selectedProduct = { id: sel.value, name: opt.dataset.name, price: parseFloat(opt.dataset.price)||0 };
+}
+
+function addReturnItem() {
+  if (!selectedProduct) { alert('Please select a product first'); return; }
+  const existing = retItems.find(i => i.product_id === selectedProduct.id);
+  if (existing) { existing.qty++; existing.subtotal = existing.qty * existing.unit_price; }
+  else retItems.push({ product_id: selectedProduct.id, name: selectedProduct.name,
+                       unit_price: selectedProduct.price, qty: 1, subtotal: selectedProduct.price });
+  renderRetItems();
+  updateSummary();
+  document.getElementById('retProductSel').value = '';
+  selectedProduct = null;
+}
+
+function renderRetItems() {
+  const tb = document.getElementById('retItemsBody');
+  if (!retItems.length) {
+    tb.innerHTML = '<tr class="empty"><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8">No items added yet</td></tr>';
+    return;
+  }
+  tb.innerHTML = retItems.map((item, idx) => `<tr>
+    <td>${item.name}</td>
+    <td><input type="number" value="${item.qty}" min="1" style="width:60px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;text-align:center" onchange="updateQty(${idx}, this.value)"></td>
+    <td>${pkr(item.unit_price)}</td>
+    <td>${pkr(item.subtotal)}</td>
+    <td><button onclick="removeItem(${idx})" style="background:#fee2e2;border:none;color:#991b1b;border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px">&#10005;</button></td>
+  </tr>`).join('');
+}
+
+function updateQty(idx, val) {
+  retItems[idx].qty = parseInt(val)||1;
+  retItems[idx].subtotal = retItems[idx].qty * retItems[idx].unit_price;
+  renderRetItems(); updateSummary();
+}
+function removeItem(idx) { retItems.splice(idx,1); renderRetItems(); updateSummary(); }
+
+function updateSummary() {
+  const units = retItems.reduce((s,i)=>s+i.qty,0);
+  const total = retItems.reduce((s,i)=>s+i.subtotal,0);
+  document.getElementById('sumItems').textContent = retItems.length;
+  document.getElementById('sumUnits').textContent = units;
+  document.getElementById('sumTotal').textContent = pkr(total);
+}
+
+async function saveReturn() {
+  if (!retItems.length) { alert('Please add at least one item'); return; }
+  const payload = {
+    customer_name:   document.getElementById('retCustName').value.trim() || 'Walk-in',
+    customer_phone:  document.getElementById('retCustPhone').value.trim(),
+    original_sale_id: document.getElementById('retSaleId').value.trim(),
+    items:           retItems,
+    refund_method:   document.getElementById('retMethod').value,
+    reason:          document.getElementById('retReason').value,
+    notes:           document.getElementById('retNotes').value,
+  };
+  try {
+    const r = await fetch('/api/sales/returns', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Failed');
+    closeReturnModal();
+    await Promise.all([loadStats(), loadReturns()]);
+    alert(`Return ${d.return.return_id} processed. Refund: ${pkr(d.return.total_refund)}`);
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ── DETAIL MODAL ──
+async function viewDetail(id) {
+  document.getElementById('detailBody').innerHTML = 'Loading...';
+  document.getElementById('detailModal').classList.add('open');
+  try {
+    const r = await fetch('/api/sales/returns/' + id).then(x=>x.json());
+    const items = r.items||[];
+    document.getElementById('detailBody').innerHTML = `
+      <div class="detail-grid">
+        <div class="d-item"><span class="d-lbl">Return ID</span><span class="d-val" style="color:#e74c3c;font-family:monospace">${r.return_id||'—'}</span></div>
+        <div class="d-item"><span class="d-lbl">Status</span><span><span class="badge badge-green">&#9679; ${r.status||'—'}</span></span></div>
+        <div class="d-item"><span class="d-lbl">Customer</span><span class="d-val">${r.customer_name||'Walk-in'}</span></div>
+        <div class="d-item"><span class="d-lbl">Phone</span><span class="d-val">${r.customer_phone||'—'}</span></div>
+        <div class="d-item"><span class="d-lbl">Refund Amount</span><span class="d-val" style="color:#27ae60;font-size:18px">${pkr(r.total_refund)}</span></div>
+        <div class="d-item"><span class="d-lbl">Method</span><span class="d-val">${r.refund_method||'—'}</span></div>
+        <div class="d-item"><span class="d-lbl">Reason</span><span class="d-val">${r.reason||'—'}</span></div>
+        <div class="d-item"><span class="d-lbl">Processed By</span><span class="d-val">${r.processed_by||'—'}</span></div>
+        <div class="d-item"><span class="d-lbl">Date</span><span class="d-val">${fmtDate(r.created_at)}</span></div>
+        <div class="d-item"><span class="d-lbl">Original Sale</span><span class="d-val">${r.original_sale_id||'—'}</span></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#e74c3c;text-transform:uppercase;letter-spacing:.8px;padding-bottom:6px;border-bottom:2px solid #fee2e2;margin:14px 0 10px">Returned Items</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#fef2f2"><th style="padding:8px 12px;text-align:left">Product</th><th style="padding:8px 12px;text-align:center">Qty</th><th style="padding:8px 12px;text-align:right">Unit Price</th><th style="padding:8px 12px;text-align:right">Subtotal</th></tr></thead>
+        <tbody>${items.map(i=>`<tr style="border-bottom:1px solid #f1f5f9">
+          <td style="padding:8px 12px">${i.name}</td>
+          <td style="padding:8px 12px;text-align:center">${i.qty}</td>
+          <td style="padding:8px 12px;text-align:right">${pkr(i.unit_price)}</td>
+          <td style="padding:8px 12px;text-align:right;font-weight:600">${pkr(i.subtotal)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+      ${r.notes ? `<div style="margin-top:14px;background:#f8fafc;border-radius:8px;padding:12px;font-size:13px"><strong>Notes:</strong> ${r.notes}</div>` : ''}
+    `;
+  } catch(e) { document.getElementById('detailBody').innerHTML = '<p style="color:#e74c3c">Failed to load</p>'; }
+}
+function closeDetailModal() { document.getElementById('detailModal').classList.remove('open'); }
+
+function exportCSV() { window.location.href = '/api/export/returns'; }
+
+window.addEventListener('click', e => {
+  if (e.target.id === 'returnModal') closeReturnModal();
+  if (e.target.id === 'detailModal') closeDetailModal();
+});
+</script>
+</body>
+</html>

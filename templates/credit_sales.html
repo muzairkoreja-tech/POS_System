@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Credit Sales / Accounts Receivable — POS Supermarket</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
+.nav{background:linear-gradient(135deg,#0f4c75,#1b6ca8);color:#fff;padding:0 24px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.nav-brand{font-size:18px;font-weight:700;margin-right:8px}
+.nav-sub{font-size:13px;opacity:.85;flex:1}
+.nav-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.nav-btn:hover{background:rgba(255,255,255,.25)}
+.nav-btn.primary{background:#e67e22;border-color:#e67e22;font-weight:600}
+.page{max-width:1300px;margin:0 auto;padding:24px 20px}
+
+.stats-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid #e2e8f0}
+.stat-card.blue{border-left-color:#1b6ca8}.stat-card.red{border-left-color:#e74c3c}
+.stat-card.orange{border-left-color:#e67e22}.stat-card.green{border-left-color:#27ae60}
+.stat-card.purple{border-left-color:#8b5cf6}.stat-card.gray{border-left-color:#94a3b8}
+.stat-lbl{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.stat-val{font-size:20px;font-weight:700;color:#1a1a2e;margin-top:4px}
+.stat-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+
+.overdue-strip{background:linear-gradient(135deg,#7f1d1d,#dc2626);color:#fff;border-radius:12px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.overdue-strip h3{font-size:14px;font-weight:700}
+.overdue-strip p{font-size:12px;opacity:.9;margin-top:2px}
+
+.filter-bar{background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.filter-bar label{font-size:12px;color:#64748b;font-weight:600}
+.filter-bar select,.filter-bar input{border:1px solid #e2e8f0;border-radius:8px;padding:7px 11px;font-size:13px;outline:none}
+.filter-bar select:focus,.filter-bar input:focus{border-color:#1b6ca8}
+.spacer{flex:1}
+.btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.btn-primary{background:#1b6ca8;color:#fff}.btn-primary:hover{background:#0f4c75}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219150}
+.btn-outline{background:#fff;border:1px solid #e2e8f0;color:#374151}.btn-outline:hover{background:#f8fafc}
+.btn-danger{background:#e74c3c;color:#fff}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+.table-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden;margin-bottom:24px}
+.table-head{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9}
+.table-title{font-size:15px;font-weight:700}
+.cnt{font-size:12px;color:#94a3b8;background:#f1f5f9;padding:3px 10px;border-radius:20px}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 16px;text-align:left;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+td{padding:11px 16px;font-size:13px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:hover td{background:#fafafa}
+tr.overdue td{background:#fff5f5}
+.empty td{text-align:center;padding:40px;color:#94a3b8;font-style:italic}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}.badge-red{background:#fee2e2;color:#991b1b}
+.badge-orange{background:#fef3c7;color:#92400e}.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-gray{background:#f1f5f9;color:#475569}
+
+.progress-bar{background:#e2e8f0;border-radius:10px;height:6px;overflow:hidden;margin-top:4px}
+.progress-fill{background:#1b6ca8;height:100%;border-radius:10px;transition:width .3s}
+
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;width:640px;max-width:95vw;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{padding:18px 22px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1}
+.modal-head h2{font-size:16px;font-weight:700;color:#0f4c75}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8}
+.modal-body{padding:22px}
+.modal-foot{padding:14px 22px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#fff}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:600;color:#374151}
+.form-ctrl{border:1px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:13px;width:100%;outline:none;font-family:inherit}
+.form-ctrl:focus{border-color:#1b6ca8}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.section-div{font-size:11px;font-weight:700;color:#1b6ca8;text-transform:uppercase;letter-spacing:.8px;padding-bottom:6px;border-bottom:2px solid #dbeafe;margin:14px 0 10px}
+
+.acct-summary{background:#f0f7ff;border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.acct-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#374151}
+.acct-row.balance{font-weight:700;font-size:15px;border-top:1px solid #93c5fd;padding-top:10px;margin-top:6px;color:#1e40af}
+
+.pay-history{max-height:180px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px}
+.pay-history-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:12px}
+.pay-history-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-brand">&#9679; POS</span>
+  <span class="nav-sub">Credit Sales / Accounts Receivable</span>
+  <a href="/admin" class="nav-btn">&#8592; Admin</a>
+  <a href="/sales-dashboard" class="nav-btn">Sales Dashboard</a>
+  <button class="nav-btn primary" onclick="openNewModal()">&#43; New Credit Sale</button>
+</nav>
+
+<div class="page">
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-card blue"><div class="stat-lbl">Total Accounts</div><div class="stat-val" id="sTotal">—</div><div class="stat-sub">all time</div></div>
+    <div class="stat-card orange"><div class="stat-lbl">Outstanding</div><div class="stat-val" id="sOutstanding">—</div><div class="stat-sub" id="sOutAmt">—</div></div>
+    <div class="stat-card red"><div class="stat-lbl">Overdue</div><div class="stat-val" id="sOverdue">—</div><div class="stat-sub" id="sOverAmt">—</div></div>
+    <div class="stat-card green"><div class="stat-lbl">Settled</div><div class="stat-val" id="sSettled">—</div><div class="stat-sub">accounts closed</div></div>
+    <div class="stat-card purple"><div class="stat-lbl">Total AR Balance</div><div class="stat-val" id="sARBal">—</div><div class="stat-sub">receivable</div></div>
+    <div class="stat-card gray"><div class="stat-lbl">Overdue Amount</div><div class="stat-val" id="sOverdueAmt">—</div><div class="stat-sub">needs collection</div></div>
+  </div>
+
+  <!-- Overdue alert -->
+  <div id="overdueStrip" style="display:none" class="overdue-strip">
+    <div>
+      <h3>&#9888; Overdue Credit Accounts</h3>
+      <p id="overdueMsg">Some accounts have passed their due date</p>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="document.getElementById('fStatus').value='outstanding';document.getElementById('fSort').value='due_date';applyFilters()">Show Overdue &rarr;</button>
+  </div>
+
+  <!-- FILTER -->
+  <div class="filter-bar">
+    <label>Status</label>
+    <select id="fStatus" onchange="applyFilters()">
+      <option value="">All</option>
+      <option value="outstanding">Outstanding</option>
+      <option value="partial">Partial</option>
+      <option value="settled">Settled</option>
+    </select>
+    <label>Search</label>
+    <input type="text" id="fSearch" placeholder="Name or phone..." oninput="applyFilters()" style="width:180px">
+    <label>Sort</label>
+    <select id="fSort" onchange="applyFilters()">
+      <option value="date_desc">Newest First</option>
+      <option value="due_date">Due Date (Soonest)</option>
+      <option value="balance_desc">Balance (Highest)</option>
+    </select>
+    <div class="spacer"></div>
+    <button class="btn btn-outline btn-sm" onclick="clearFilters()">Clear</button>
+    <button class="btn btn-outline btn-sm" onclick="loadAll()">&#8635; Refresh</button>
+    <button class="btn btn-outline btn-sm" onclick="window.location.href='/api/export/credit_sales'">&#8595; Export</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-head">
+      <span class="table-title">Credit Accounts</span>
+      <span class="cnt" id="crCount">0</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Credit ID</th><th>Customer</th><th>Amount</th><th>Paid</th>
+        <th>Balance</th><th>Progress</th><th>Due Date</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody id="crBody"><tr class="empty"><td colspan="9">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- NEW CREDIT SALE MODAL -->
+<div class="overlay" id="newModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>&#128203; New Credit Sale</h2>
+      <button class="modal-close" onclick="closeNewModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="section-div">Customer Information</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Customer Name *</label>
+          <input type="text" class="form-ctrl" id="crName" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="text" class="form-ctrl" id="crPhone" placeholder="+92 XXX XXXXXXX">
+        </div>
+      </div>
+      <div class="section-div">Credit Details</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Credit Amount (PKR) *</label>
+          <input type="number" class="form-ctrl" id="crAmount" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label>Due Date *</label>
+          <input type="date" class="form-ctrl" id="crDueDate">
+        </div>
+        <div class="form-group">
+          <label>Original Sale / Receipt No.</label>
+          <input type="text" class="form-ctrl" id="crSaleId" placeholder="Optional reference">
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <input type="text" class="form-ctrl" id="crNotes" placeholder="Additional notes">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeNewModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCreditSale()">&#10003; Create Credit Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNT DETAIL / PAY MODAL -->
+<div class="overlay" id="detailModal">
+  <div class="modal" style="width:600px">
+    <div class="modal-head">
+      <h2 id="detailTitle">Account Detail</h2>
+      <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="detailBody">Loading...</div>
+    <div class="modal-foot" id="detailFoot">
+      <button class="btn btn-outline" onclick="closeDetailModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="overlay" id="payModal">
+  <div class="modal" style="width:480px">
+    <div class="modal-head">
+      <h2>&#128176; Record Payment</h2>
+      <button class="modal-close" onclick="closePayModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="payCrId">
+      <div id="payBalance" style="background:#f0f7ff;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:14px;color:#1e40af;font-weight:700">Balance: —</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Amount Received (PKR) *</label>
+          <input type="number" class="form-ctrl" id="payAmt" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label>Payment Method</label>
+          <select class="form-ctrl" id="payMethod">
+            <option value="cash">Cash</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="cheque">Cheque</option>
+            <option value="online">Online / JazzCash / Easypaisa</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:span 2">
+          <label>Reference No.</label>
+          <input type="text" class="form-ctrl" id="payRef" placeholder="Transaction / cheque no.">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closePayModal()">Cancel</button>
+      <button class="btn btn-success" onclick="confirmPayment()">&#10003; Record Payment</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const pkr = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fmtDate = d => d ? new Date(d+'T12:00:00').toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+const today = () => new Date().toISOString().split('T')[0];
+
+let allCredits = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const due = new Date(); due.setDate(due.getDate()+30);
+  document.getElementById('crDueDate').value = due.toISOString().split('T')[0];
+  await Promise.all([loadStats(), loadCredits()]);
+});
+
+async function loadStats() {
+  try {
+    const d = await fetch('/api/credit-sales/stats').then(r=>r.json());
+    document.getElementById('sTotal').textContent      = d.total_accounts || 0;
+    document.getElementById('sOutstanding').textContent = d.outstanding_count || 0;
+    document.getElementById('sOutAmt').textContent     = pkr(d.total_outstanding||0);
+    document.getElementById('sOverdue').textContent    = d.overdue_count || 0;
+    document.getElementById('sOverAmt').textContent    = d.overdue_count+' accounts';
+    document.getElementById('sSettled').textContent    = d.settled_count || 0;
+    document.getElementById('sARBal').textContent      = pkr(d.total_outstanding||0);
+    document.getElementById('sOverdueAmt').textContent = pkr(d.overdue_amount||0);
+    if (d.overdue_count > 0) {
+      document.getElementById('overdueStrip').style.display = '';
+      document.getElementById('overdueMsg').textContent = `${d.overdue_count} account(s) — PKR ${Number(d.overdue_amount||0).toLocaleString()} past due`;
+    }
+  } catch(e) {}
+}
+
+async function loadCredits() {
+  try {
+    const d = await fetch('/api/credit-sales').then(r=>r.json());
+    allCredits = d.credit_sales || [];
+    applyFilters();
+  } catch(e) {}
+}
+
+async function loadAll() { await Promise.all([loadStats(), loadCredits()]); }
+
+function applyFilters() {
+  const status = document.getElementById('fStatus').value;
+  const search = document.getElementById('fSearch').value.toLowerCase();
+  const sort   = document.getElementById('fSort').value;
+  const todayS = today();
+  let data = allCredits.filter(c => {
+    if (status && c.status !== status) return false;
+    if (search && !(c.customer_name||'').toLowerCase().includes(search) && !(c.customer_phone||'').includes(search)) return false;
+    return true;
+  });
+  if (sort === 'due_date') data.sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''));
+  else if (sort === 'balance_desc') data.sort((a,b)=>b.balance-a.balance);
+  else data.sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  renderTable(data, todayS);
+}
+
+function clearFilters() {
+  document.getElementById('fStatus').value = '';
+  document.getElementById('fSearch').value = '';
+  document.getElementById('fSort').value   = 'date_desc';
+  applyFilters();
+}
+
+function renderTable(data, todayS) {
+  document.getElementById('crCount').textContent = data.length;
+  if (!data.length) { document.getElementById('crBody').innerHTML = '<tr class="empty"><td colspan="9">No credit accounts found</td></tr>'; return; }
+  document.getElementById('crBody').innerHTML = data.map(c => {
+    const isOverdue = c.status !== 'settled' && c.due_date && c.due_date < todayS;
+    const pct  = c.amount > 0 ? Math.min(100, Math.round((c.amount_paid/c.amount)*100)) : 0;
+    const stCls = {outstanding:'badge-orange', partial:'badge-blue', settled:'badge-green'}[c.status] || 'badge-gray';
+    const dueCls = isOverdue ? 'style="color:#ef4444;font-weight:700"' : '';
+    return `<tr class="${isOverdue?'overdue':''}">
+      <td><span style="font-family:monospace;font-size:12px;color:#1b6ca8">${c.credit_id||'—'}</span></td>
+      <td><strong>${c.customer_name||'—'}</strong><br><small style="color:#94a3b8">${c.customer_phone||''}</small></td>
+      <td>${pkr(c.amount)}</td>
+      <td style="color:#27ae60;font-weight:600">${pkr(c.amount_paid)}</td>
+      <td><strong style="color:${c.balance>0?'#e74c3c':'#27ae60'}">${pkr(c.balance)}</strong></td>
+      <td style="min-width:90px"><div style="font-size:11px;color:#64748b;margin-bottom:2px">${pct}%</div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></td>
+      <td ${dueCls}>${fmtDate(c.due_date)}${isOverdue?' &#9888;':''}</td>
+      <td><span class="badge ${stCls}">&#9679; ${(c.status||'').replace(/\b\w/g,x=>x.toUpperCase())}</span></td>
+      <td style="white-space:nowrap">
+        ${c.status!=='settled'?`<button class="btn btn-success btn-sm" onclick="openPayModal('${c._id}',${c.balance})">&#128176; Pay</button>`:''}&nbsp;
+        <button class="btn btn-outline btn-sm" onclick="viewDetail('${c._id}')">View</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── NEW CREDIT MODAL ──
+function openNewModal() {
+  document.getElementById('crName').value = '';
+  document.getElementById('crPhone').value = '';
+  document.getElementById('crAmount').value = '';
+  document.getElementById('crSaleId').value = '';
+  document.getElementById('crNotes').value = '';
+  const due = new Date(); due.setDate(due.getDate()+30);
+  document.getElementById('crDueDate').value = due.toISOString().split('T')[0];
+  document.getElementById('newModal').classList.add('open');
+}
+function closeNewModal() { document.getElementById('newModal').classList.remove('open'); }
+
+async function saveCreditSale() {
+  const name   = document.getElementById('crName').value.trim();
+  const amount = parseFloat(document.getElementById('crAmount').value);
+  const due    = document.getElementById('crDueDate').value;
+  if (!name)   { alert('Customer name is required'); return; }
+  if (!amount || amount <= 0) { alert('Enter a valid credit amount'); return; }
+  if (!due)    { alert('Due date is required'); return; }
+  const payload = {
+    customer_name:   name,
+    customer_phone:  document.getElementById('crPhone').value.trim(),
+    amount, due_date: due,
+    original_sale_id: document.getElementById('crSaleId').value.trim(),
+    notes: document.getElementById('crNotes').value.trim()
+  };
+  try {
+    const r = await fetch('/api/credit-sales', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||'Failed');
+    closeNewModal();
+    await loadAll();
+    alert(`Credit account ${d.credit_sale.credit_id} created for ${name}`);
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+// ── PAYMENT MODAL ──
+function openPayModal(id, balance) {
+  document.getElementById('payCrId').value    = id;
+  document.getElementById('payAmt').value     = balance.toFixed(2);
+  document.getElementById('payRef').value     = '';
+  document.getElementById('payMethod').value  = 'cash';
+  document.getElementById('payBalance').textContent = `Outstanding Balance: ${pkr(balance)}`;
+  document.getElementById('payModal').classList.add('open');
+}
+function closePayModal() { document.getElementById('payModal').classList.remove('open'); }
+
+async function confirmPayment() {
+  const id  = document.getElementById('payCrId').value;
+  const amt = parseFloat(document.getElementById('payAmt').value);
+  if (!amt || amt <= 0) { alert('Enter a valid amount'); return; }
+  try {
+    const r = await fetch(`/api/credit-sales/${id}/pay`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ amount: amt, method: document.getElementById('payMethod').value, reference: document.getElementById('payRef').value })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||'Failed');
+    closePayModal();
+    const msg = d.status==='settled' ? `Account fully settled! &#10003;` : `Payment recorded. Remaining balance: ${pkr(d.balance)}`;
+    await loadAll();
+    alert(d.status==='settled' ? 'Account fully settled!' : `Payment recorded. Remaining: ${pkr(d.balance)}`);
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+// ── DETAIL VIEW ──
+async function viewDetail(id) {
+  document.getElementById('detailBody').innerHTML = 'Loading...';
+  document.getElementById('detailModal').classList.add('open');
+  try {
+    const cs = allCredits.find(c=>c._id===id);
+    if (!cs) throw new Error('Not found');
+    const pct = cs.amount > 0 ? Math.min(100, Math.round((cs.amount_paid/cs.amount)*100)) : 0;
+    const stCls = {outstanding:'badge-orange', partial:'badge-blue', settled:'badge-green'}[cs.status]||'badge-gray';
+    const payments = cs.payments || [];
+    document.getElementById('detailTitle').textContent = `${cs.credit_id} — ${cs.customer_name}`;
+    document.getElementById('detailBody').innerHTML = `
+      <div class="acct-summary">
+        <div class="acct-row"><span>Total Credit</span><span><strong>${pkr(cs.amount)}</strong></span></div>
+        <div class="acct-row"><span>Amount Paid</span><span style="color:#27ae60"><strong>${pkr(cs.amount_paid)}</strong></span></div>
+        <div class="acct-row balance"><span>Remaining Balance</span><span>${pkr(cs.balance)}</span></div>
+        <div style="margin-top:10px"><div style="font-size:11px;color:#64748b;margin-bottom:4px">${pct}% collected</div><div class="progress-bar" style="height:8px"><div class="progress-fill" style="width:${pct}%"></div></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:13px">
+        <div><span style="color:#64748b">Customer</span><br><strong>${cs.customer_name}</strong></div>
+        <div><span style="color:#64748b">Phone</span><br><strong>${cs.customer_phone||'—'}</strong></div>
+        <div><span style="color:#64748b">Due Date</span><br><strong>${fmtDate(cs.due_date)}</strong></div>
+        <div><span style="color:#64748b">Status</span><br><span class="badge ${stCls}">${cs.status}</span></div>
+        <div><span style="color:#64748b">Created</span><br>${fmtDate(cs.created_at)}</div>
+        <div><span style="color:#64748b">Reference</span><br>${cs.original_sale_id||'—'}</div>
+      </div>
+      ${cs.notes ? `<div style="background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:14px"><strong>Notes:</strong> ${cs.notes}</div>` : ''}
+      <div class="section-div">Payment History (${payments.length})</div>
+      ${payments.length ? `<div class="pay-history">${payments.map(p=>`
+        <div class="pay-history-row">
+          <span><strong>${pkr(p.amount)}</strong> &bull; ${(p.method||'').replace('_',' ')}</span>
+          <span style="color:#64748b">${p.reference||''}</span>
+          <span style="color:#94a3b8">${fmtDate(p.paid_at)} &bull; ${p.received_by||''}</span>
+        </div>`).join('')}</div>`
+      : '<p style="color:#94a3b8;font-size:13px;text-align:center;padding:16px">No payments recorded yet</p>'}
+    `;
+    document.getElementById('detailFoot').innerHTML = `
+      ${cs.status!=='settled'?`<button class="btn btn-success" onclick="closeDetailModal();openPayModal('${cs._id}',${cs.balance})">&#128176; Record Payment</button>`:''}
+      <button class="btn btn-outline" onclick="closeDetailModal()">Close</button>`;
+  } catch(e) { document.getElementById('detailBody').innerHTML = '<p style="color:#e74c3c">Failed to load</p>'; }
+}
+function closeDetailModal() { document.getElementById('detailModal').classList.remove('open'); }
+
+window.addEventListener('click', e => {
+  if (e.target.id==='newModal')    closeNewModal();
+  if (e.target.id==='detailModal') closeDetailModal();
+  if (e.target.id==='payModal')    closePayModal();
+});
+</script>
+</body>
+</html>

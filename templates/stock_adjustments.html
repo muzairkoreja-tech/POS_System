@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Stock Adjustments — POS Supermarket</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
+.nav{background:linear-gradient(135deg,#5c3317,#8b4513);color:#fff;padding:0 24px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.nav-brand{font-size:18px;font-weight:700;margin-right:8px}
+.nav-sub{font-size:13px;opacity:.85;flex:1}
+.nav-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.nav-btn:hover{background:rgba(255,255,255,.25)}
+.nav-btn.primary{background:#e67e22;border-color:#e67e22;font-weight:600}
+.nav-btn.primary:hover{background:#d35400}
+.page{max-width:1300px;margin:0 auto;padding:24px 20px}
+.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid #e2e8f0}
+.stat-card.orange{border-left-color:#e67e22}.stat-card.red{border-left-color:#e74c3c}
+.stat-card.blue{border-left-color:#3498db}.stat-card.green{border-left-color:#27ae60}.stat-card.purple{border-left-color:#8b5cf6}
+.stat-lbl{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.stat-val{font-size:20px;font-weight:700;color:#1a1a2e;margin-top:4px}
+.stat-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+
+/* EXPIRY ALERT STRIP */
+.expiry-strip{background:linear-gradient(135deg,#7f1d1d,#dc2626);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.expiry-strip h3{font-size:14px;font-weight:700}
+.expiry-strip p{font-size:12px;opacity:.9;margin-top:2px}
+.expiry-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.expiry-pill{background:rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.expiry-pill.expired{background:rgba(0,0,0,.3)}
+
+.filter-bar{background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.filter-bar label{font-size:12px;color:#64748b;font-weight:600}
+.filter-bar select,.filter-bar input{border:1px solid #e2e8f0;border-radius:8px;padding:7px 11px;font-size:13px;outline:none}
+.spacer{flex:1}
+.btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.btn-primary{background:#8b4513;color:#fff}.btn-primary:hover{background:#5c3317}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219150}
+.btn-outline{background:#fff;border:1px solid #e2e8f0;color:#374151}.btn-outline:hover{background:#f8fafc}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-danger{background:#e74c3c;color:#fff}
+
+.tabs{display:flex;gap:4px;background:#fff;border-radius:12px;padding:6px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px;width:fit-content}
+.tab{padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#64748b;border:none;background:none}
+.tab.active{background:#8b4513;color:#fff}
+
+.table-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden;margin-bottom:24px}
+.table-head{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9}
+.table-title{font-size:15px;font-weight:700}
+.cnt{font-size:12px;color:#94a3b8;background:#f1f5f9;padding:3px 10px;border-radius:20px}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 16px;text-align:left;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+td{padding:11px 16px;font-size:13px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:hover td{background:#fafafa}
+.empty td{text-align:center;padding:40px;color:#94a3b8;font-style:italic}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}.badge-red{background:#fee2e2;color:#991b1b}
+.badge-orange{background:#fef3c7;color:#92400e}.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-purple{background:#f3e8ff;color:#6d28d9}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;width:720px;max-width:95vw;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{padding:18px 22px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1}
+.modal-head h2{font-size:16px;font-weight:700;color:#8b4513}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8}
+.modal-body{padding:22px}
+.modal-foot{padding:14px 22px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#fff}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:600;color:#374151}
+.form-ctrl{border:1px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:13px;width:100%;outline:none;font-family:inherit}
+.form-ctrl:focus{border-color:#8b4513}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.section-div{font-size:11px;font-weight:700;color:#8b4513;text-transform:uppercase;letter-spacing:.8px;padding-bottom:6px;border-bottom:2px solid #fde8d8;margin:14px 0 10px}
+.items-wrap{border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:12px}
+.items-wrap table th{background:#fdf3e7;color:#8b4513}
+.delta-pos{color:#27ae60;font-weight:700}
+.delta-neg{color:#e74c3c;font-weight:700}
+
+/* Expiry tab */
+.expiry-table-row.critical td{background:#fef2f2}
+.expiry-table-row.warning td{background:#fffbeb}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-brand">&#9679; POS</span>
+  <span class="nav-sub">Stock Adjustments & Inventory Control</span>
+  <a href="/procurement/stock" class="nav-btn">&#8592; Stock List</a>
+  <a href="/admin" class="nav-btn">Admin</a>
+  <button class="nav-btn primary" onclick="openAdjModal()">&#43; New Adjustment</button>
+</nav>
+
+<div class="page">
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-card orange"><div class="stat-lbl">Total Adjustments</div><div class="stat-val" id="sTotal">—</div><div class="stat-sub">all time</div></div>
+    <div class="stat-card blue"><div class="stat-lbl">This Month</div><div class="stat-val" id="sMonth">—</div><div class="stat-sub">adjustments</div></div>
+    <div class="stat-card red"><div class="stat-lbl">Damage / Expiry</div><div class="stat-val" id="sDamage">—</div><div class="stat-sub">write-offs</div></div>
+    <div class="stat-card purple"><div class="stat-lbl">Expiring (30 days)</div><div class="stat-val" id="sExpiring">—</div><div class="stat-sub">products</div></div>
+    <div class="stat-card green"><div class="stat-lbl">Physical Counts</div><div class="stat-val" id="sPhysical">—</div><div class="stat-sub">count sessions</div></div>
+  </div>
+
+  <!-- Expiry alert -->
+  <div id="expiryAlert" style="display:none" class="expiry-strip">
+    <div>
+      <h3>&#9888; Products Expiring Within 7 Days</h3>
+      <p>Take action immediately — write off or return to supplier</p>
+      <div class="expiry-list" id="expiryPills"></div>
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="switchTab('expiry')">View All Expiring &rarr;</button>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" id="tabAdj" onclick="switchTab('adj')">Adjustments</button>
+    <button class="tab" id="tabExpiry" onclick="switchTab('expiry')">Expiry Tracker</button>
+  </div>
+
+  <!-- ADJUSTMENTS TAB -->
+  <div id="panelAdj">
+    <div class="filter-bar">
+      <label>Type</label>
+      <select id="fType" onchange="applyFilters()">
+        <option value="">All Types</option>
+        <option value="manual">Manual Adjustment</option>
+        <option value="damage">Damage / Loss</option>
+        <option value="expiry">Expired Write-off</option>
+        <option value="physical_count">Physical Count</option>
+        <option value="transfer">Transfer</option>
+        <option value="return_to_supplier">Return to Supplier</option>
+      </select>
+      <label>From</label><input type="date" id="fFrom" onchange="applyFilters()">
+      <label>To</label><input type="date" id="fTo" onchange="applyFilters()">
+      <div class="spacer"></div>
+      <button class="btn btn-outline btn-sm" onclick="clearFilters()">Clear</button>
+      <button class="btn btn-outline btn-sm" onclick="loadAdjustments()">&#8635; Refresh</button>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='/api/export/adjustments'">&#8595; Export</button>
+    </div>
+    <div class="table-card">
+      <div class="table-head">
+        <span class="table-title">Adjustment Records</span>
+        <span class="cnt" id="adjCount">0</span>
+      </div>
+      <table>
+        <thead><tr><th>Adj. ID</th><th>Type</th><th>Items</th><th>Reason</th><th>By</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody id="adjBody"><tr class="empty"><td colspan="7">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EXPIRY TAB -->
+  <div id="panelExpiry" style="display:none">
+    <div class="filter-bar">
+      <label>Show expiring within</label>
+      <select id="fDays" onchange="loadExpiry()">
+        <option value="7">7 days</option>
+        <option value="14">14 days</option>
+        <option value="30" selected>30 days</option>
+        <option value="60">60 days</option>
+        <option value="90">90 days</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn btn-outline btn-sm" onclick="loadExpiry()">&#8635; Refresh</button>
+    </div>
+    <div class="table-card">
+      <div class="table-head">
+        <span class="table-title">Products Expiring</span>
+        <span class="cnt" id="expCount">0</span>
+      </div>
+      <table>
+        <thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Stock Qty</th><th>Expiry Date</th><th>Days Left</th><th>Action</th></tr></thead>
+        <tbody id="expBody"><tr class="empty"><td colspan="7">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ADJUSTMENT MODAL -->
+<div class="overlay" id="adjModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>&#128221; New Stock Adjustment</h2>
+      <button class="modal-close" onclick="closeAdjModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Adjustment Type *</label>
+          <select class="form-ctrl" id="adjType" onchange="onTypeChange()">
+            <option value="manual">Manual Adjustment</option>
+            <option value="damage">Damage / Loss</option>
+            <option value="expiry">Expired Write-off</option>
+            <option value="physical_count">Physical Count</option>
+            <option value="transfer">Transfer</option>
+            <option value="return_to_supplier">Return to Supplier</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Reason</label>
+          <input type="text" class="form-ctrl" id="adjReason" placeholder="Brief reason for adjustment">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea class="form-ctrl" id="adjNotes" rows="2" placeholder="Additional notes..."></textarea>
+      </div>
+
+      <div id="typeHint" style="background:#fdf3e7;border-radius:8px;padding:10px 14px;font-size:12px;color:#8b4513;margin-bottom:14px;display:none"></div>
+
+      <div class="section-div">Select Products to Adjust</div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;align-items:center">
+        <select class="form-ctrl" id="adjProdSel" style="flex:1" onchange="onAdjProductChange()">
+          <option value="">— Select Product —</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="addAdjItem()">Add</button>
+      </div>
+
+      <div class="items-wrap">
+        <table>
+          <thead><tr><th>Product</th><th>Current Stock</th><th>Delta (+ / -)</th><th>New Stock</th><th></th></tr></thead>
+          <tbody id="adjItemsBody"><tr class="empty"><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8">No items added</td></tr></tbody>
+        </table>
+      </div>
+      <p style="font-size:11px;color:#64748b">&#8505; Enter positive delta to <strong>add</strong> stock, negative to <strong>remove</strong>.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeAdjModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAdjustment()">&#10003; Save Adjustment</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const pkr = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+let allAdj = [], products = [], adjItems = [], selProd = null;
+
+const TYPE_HINTS = {
+  damage: '&#9888; Damage/Loss: Enter a NEGATIVE delta to remove damaged stock from inventory.',
+  expiry: '&#128197; Expired Write-off: Enter a NEGATIVE delta for expired stock to be written off.',
+  return_to_supplier: '&#128230; Return to Supplier: Enter a NEGATIVE delta for returned units.',
+  physical_count: '&#128203; Physical Count: Enter the DIFFERENCE between counted qty and system qty (can be + or -).',
+  transfer: '&#128666; Transfer: Use negative delta for items moved out, positive for items received.',
+  manual: ''
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await Promise.all([loadStats(), loadAdjustments(), loadProducts(), loadExpiryAlerts()]);
+});
+
+async function loadStats() {
+  try {
+    const d = await fetch('/api/inventory/adjustments/stats').then(r=>r.json());
+    document.getElementById('sTotal').textContent = d.total || 0;
+    document.getElementById('sMonth').textContent = d.this_month || 0;
+    const bt = d.by_type || {};
+    document.getElementById('sDamage').textContent = (bt.damage||0) + (bt.expiry||0);
+    document.getElementById('sPhysical').textContent = bt.physical_count || 0;
+  } catch(e) {}
+}
+
+async function loadProducts() {
+  try {
+    const d = await fetch('/api/products').then(r=>r.json());
+    products = d || [];
+    const sel = document.getElementById('adjProdSel');
+    sel.innerHTML = '<option value="">— Select Product —</option>' +
+      products.map(p=>`<option value="${p._id}" data-qty="${p.quantity||0}" data-name="${p.name}">${p.name} (Stock: ${p.quantity||0})</option>`).join('');
+  } catch(e) {}
+}
+
+async function loadExpiryAlerts() {
+  try {
+    const d = await fetch('/api/inventory/expiring?days=7').then(r=>r.json());
+    const prods = d.products || [];
+    document.getElementById('sExpiring').textContent = (await fetch('/api/inventory/expiring?days=30').then(r=>r.json()).then(x=>x.count)) || 0;
+    if (prods.length) {
+      document.getElementById('expiryAlert').style.display = '';
+      document.getElementById('expiryPills').innerHTML = prods.slice(0,6).map(p => {
+        const cls = p.is_expired ? 'expired' : '';
+        const label = p.is_expired ? 'EXPIRED' : `${p.days_to_expiry}d left`;
+        return `<span class="expiry-pill ${cls}">${p.name} &bull; ${label}</span>`;
+      }).join('');
+    }
+  } catch(e) {}
+}
+
+async function loadAdjustments() {
+  try {
+    const d = await fetch('/api/inventory/adjustments').then(r=>r.json());
+    allAdj = d.adjustments || [];
+    applyFilters();
+  } catch(e) {}
+}
+
+function applyFilters() {
+  const type = document.getElementById('fType').value;
+  const from = document.getElementById('fFrom').value;
+  const to   = document.getElementById('fTo').value;
+  let data = allAdj.filter(a => {
+    if (type && a.adj_type !== type) return false;
+    if (from && a.created_at < from) return false;
+    if (to   && a.created_at > to+'T23:59:59') return false;
+    return true;
+  });
+  renderAdjTable(data);
+}
+
+function clearFilters() {
+  document.getElementById('fType').value = '';
+  document.getElementById('fFrom').value = '';
+  document.getElementById('fTo').value = '';
+  applyFilters();
+}
+
+const TYPE_LABELS = {manual:'Manual',damage:'Damage/Loss',expiry:'Expired',physical_count:'Physical Count',transfer:'Transfer',return_to_supplier:'Return to Supplier'};
+const TYPE_COLORS = {manual:'badge-blue',damage:'badge-red',expiry:'badge-orange',physical_count:'badge-purple',transfer:'badge-green',return_to_supplier:'badge-orange'};
+
+function renderAdjTable(data) {
+  document.getElementById('adjCount').textContent = data.length;
+  if (!data.length) { document.getElementById('adjBody').innerHTML = '<tr class="empty"><td colspan="7">No adjustments found</td></tr>'; return; }
+  document.getElementById('adjBody').innerHTML = data.map(a => `<tr>
+    <td><span style="font-family:monospace;font-size:12px;color:#8b4513">${a.adj_id||'—'}</span></td>
+    <td><span class="badge ${TYPE_COLORS[a.adj_type]||'badge-blue'}">${TYPE_LABELS[a.adj_type]||a.adj_type}</span></td>
+    <td>${(a.items||[]).length} product(s)</td>
+    <td style="color:#64748b;font-size:12px">${a.reason||'—'}</td>
+    <td style="color:#64748b;font-size:12px">${a.created_by||'—'}</td>
+    <td style="color:#64748b;font-size:12px">${fmtDate(a.created_at)}</td>
+    <td><span class="badge badge-green">&#9679; ${a.status||'completed'}</span></td>
+  </tr>`).join('');
+}
+
+// ── EXPIRY TAB ──
+async function loadExpiry() {
+  const days = document.getElementById('fDays').value;
+  try {
+    const d = await fetch(`/api/inventory/expiring?days=${days}`).then(r=>r.json());
+    const prods = d.products || [];
+    document.getElementById('expCount').textContent = prods.length;
+    if (!prods.length) { document.getElementById('expBody').innerHTML = '<tr class="empty"><td colspan="7">No products expiring within this window</td></tr>'; return; }
+    document.getElementById('expBody').innerHTML = prods.map(p => {
+      const cls = p.is_expired ? 'critical' : (p.days_to_expiry <= 7 ? 'warning' : '');
+      const daysLabel = p.is_expired
+        ? `<span class="badge badge-red">EXPIRED ${Math.abs(p.days_to_expiry)}d ago</span>`
+        : `<span class="badge ${p.days_to_expiry<=7?'badge-red':'badge-orange'}">${p.days_to_expiry} days</span>`;
+      return `<tr class="expiry-table-row ${cls}">
+        <td><strong>${p.name||'—'}</strong></td>
+        <td style="font-family:monospace;font-size:12px;color:#64748b">${p.sku||'—'}</td>
+        <td>${p.category||'—'}</td>
+        <td><strong>${p.quantity||0}</strong></td>
+        <td style="font-family:monospace">${p.expiry_date||'—'}</td>
+        <td>${daysLabel}</td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="quickWriteOff('${p._id}','${(p.name||'').replace(/'/g,"\\'")}',${p.quantity||0})">Write Off</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+function switchTab(tab) {
+  const isAdj = tab === 'adj';
+  document.getElementById('panelAdj').style.display    = isAdj ? '' : 'none';
+  document.getElementById('panelExpiry').style.display = isAdj ? 'none' : '';
+  document.getElementById('tabAdj').classList.toggle('active', isAdj);
+  document.getElementById('tabExpiry').classList.toggle('active', !isAdj);
+  if (!isAdj) loadExpiry();
+}
+
+// Quick write-off from expiry tab
+function quickWriteOff(pid, name, qty) {
+  if (!confirm(`Write off ALL ${qty} unit(s) of "${name}" as expired?`)) return;
+  adjItems = [{ product_id: pid, name, current_qty: qty, delta: -qty }];
+  document.getElementById('adjType').value  = 'expiry';
+  document.getElementById('adjReason').value = 'Expired stock write-off';
+  renderAdjItems();
+  onTypeChange();
+  document.getElementById('adjModal').classList.add('open');
+}
+
+// ── ADJUSTMENT MODAL ──
+function openAdjModal() {
+  adjItems = [];
+  document.getElementById('adjType').value  = 'manual';
+  document.getElementById('adjReason').value = '';
+  document.getElementById('adjNotes').value  = '';
+  document.getElementById('adjProdSel').value = '';
+  renderAdjItems();
+  onTypeChange();
+  document.getElementById('adjModal').classList.add('open');
+}
+function closeAdjModal() { document.getElementById('adjModal').classList.remove('open'); }
+
+function onTypeChange() {
+  const type = document.getElementById('adjType').value;
+  const hint = document.getElementById('typeHint');
+  if (TYPE_HINTS[type]) { hint.innerHTML = TYPE_HINTS[type]; hint.style.display=''; }
+  else hint.style.display = 'none';
+}
+
+function onAdjProductChange() {
+  const sel = document.getElementById('adjProdSel');
+  const opt = sel.selectedOptions[0];
+  if (!opt || !sel.value) { selProd = null; return; }
+  selProd = { id: sel.value, name: opt.dataset.name, qty: parseInt(opt.dataset.qty)||0 };
+}
+
+function addAdjItem() {
+  if (!selProd) { alert('Select a product first'); return; }
+  if (adjItems.find(i=>i.product_id===selProd.id)) { alert('Product already added'); return; }
+  adjItems.push({ product_id: selProd.id, name: selProd.name, current_qty: selProd.qty, delta: 0 });
+  renderAdjItems();
+  document.getElementById('adjProdSel').value = ''; selProd = null;
+}
+
+function renderAdjItems() {
+  const tb = document.getElementById('adjItemsBody');
+  if (!adjItems.length) { tb.innerHTML = '<tr class="empty"><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8">No items added</td></tr>'; return; }
+  tb.innerHTML = adjItems.map((item,idx) => {
+    const newQty = Math.max(0, item.current_qty + (item.delta||0));
+    const deltaClass = item.delta > 0 ? 'delta-pos' : item.delta < 0 ? 'delta-neg' : '';
+    return `<tr>
+      <td><strong>${item.name}</strong></td>
+      <td>${item.current_qty}</td>
+      <td><input type="number" value="${item.delta||0}" style="width:80px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;text-align:center" class="${deltaClass}" onchange="updateDelta(${idx},this.value)"></td>
+      <td><strong>${newQty}</strong></td>
+      <td><button onclick="removeAdjItem(${idx})" style="background:#fee2e2;border:none;color:#991b1b;border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px">&#10005;</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function updateDelta(idx, val) {
+  adjItems[idx].delta = parseInt(val)||0;
+  renderAdjItems();
+}
+function removeAdjItem(idx) { adjItems.splice(idx,1); renderAdjItems(); }
+
+async function saveAdjustment() {
+  if (!adjItems.length) { alert('Add at least one product'); return; }
+  const hasDelta = adjItems.some(i=>i.delta!==0);
+  if (!hasDelta) { alert('At least one item must have a non-zero delta'); return; }
+  const payload = {
+    adj_type: document.getElementById('adjType').value,
+    reason:   document.getElementById('adjReason').value.trim(),
+    notes:    document.getElementById('adjNotes').value.trim(),
+    items:    adjItems
+  };
+  try {
+    const r = await fetch('/api/inventory/adjustments', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||'Failed');
+    closeAdjModal();
+    await Promise.all([loadStats(), loadAdjustments(), loadExpiryAlerts(), loadProducts()]);
+    alert(`Adjustment ${d.adjustment.adj_id} saved successfully.`);
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+window.addEventListener('click', e => { if (e.target.id==='adjModal') closeAdjModal(); });
+</script>
+</body>
+</html>
