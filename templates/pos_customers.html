@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Management - POS System</title>
+<link rel="stylesheet" href="../static/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f5f6fa;min-height:100vh}
+.dashboard-nav{background:linear-gradient(135deg,#1a6b3a,#27ae60);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600}
+.nav-brand i{font-size:22px}
+.nav-right{display:flex;align-items:center;gap:20px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:14px}
+.role-badge{background:rgba(255,255,255,.2);padding:4px 10px;border-radius:12px;font-size:11px;text-transform:uppercase;font-weight:700;letter-spacing:.5px}
+.btn-nav{background:rgba(255,255,255,.15);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.btn-nav:hover{background:rgba(255,255,255,.25)}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.page-title{font-size:22px;font-weight:700;color:#2c3e50;margin-bottom:4px}
+.page-sub{color:#7f8c8d;font-size:13px;margin-bottom:24px}
+
+/* Stats bar */
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-box{background:#fff;border-radius:10px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;align-items:center;gap:14px}
+.stat-icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0}
+.stat-val{font-size:22px;font-weight:800;color:#2c3e50;line-height:1}
+.stat-lbl{font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+
+/* Main layout */
+.main-layout{display:grid;grid-template-columns:1fr 340px;gap:20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);overflow:hidden}
+.card-header{padding:16px 20px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.card-header h3{font-size:15px;font-weight:700;color:#2c3e50;display:flex;align-items:center;gap:8px}
+.card-body{padding:20px}
+
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{background:#f8f9fa;padding:10px 14px;text-align:left;font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #eee;white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:middle}
+tr:hover td{background:#fafafa}
+tr.selected td{background:#f0fdf4}
+
+/* Badge */
+.badge{padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-green{background:#d5f5e3;color:#1e8449}
+.badge-blue{background:#ebf5fb;color:#1a5276}
+.badge-gold{background:#fef5e7;color:#8a4d00}
+
+/* Buttons */
+.btn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn-primary{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff}
+.btn-secondary{background:#f0f0f0;color:#555}
+.btn-danger{background:#fde8e8;color:#c0392b}
+.btn-xs{padding:5px 10px;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:opacity .2s}
+.btn-xs:hover{opacity:.85}
+.btn-edit{background:#ebf5fb;color:#1a5276}
+.btn-del{background:#fde8e8;color:#c0392b}
+.btn-view{background:#f0fdf4;color:#1e8449}
+
+/* Search bar */
+.search-row{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.search-input{flex:1;padding:9px 14px 9px 38px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;background:#f9f9f9}
+.search-input:focus{border-color:#27ae60;background:#fff}
+.search-wrap{position:relative;flex:1}
+.search-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px}
+
+/* Right panel - Customer profile */
+.profile-header{background:linear-gradient(135deg,#1a6b3a,#27ae60);padding:24px;text-align:center;color:#fff}
+.profile-avatar{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px}
+.profile-name{font-size:17px;font-weight:700}
+.profile-phone{font-size:13px;opacity:.85;margin-top:3px}
+.loyalty-bar{background:rgba(255,255,255,.15);border-radius:20px;height:8px;margin-top:10px;overflow:hidden}
+.loyalty-fill{background:#fff;height:100%;border-radius:20px;transition:width .5s}
+.profile-meta{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meta-box{background:#f8f9fa;border-radius:8px;padding:12px;text-align:center}
+.meta-val{font-size:18px;font-weight:700;color:#2c3e50}
+.meta-lbl{font-size:10px;color:#7f8c8d;text-transform:uppercase;margin-top:2px}
+.history-list{max-height:340px;overflow-y:auto}
+.history-item{padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
+.history-item:last-child{border-bottom:none}
+.history-date{font-size:11px;color:#aaa}
+.history-amt{font-weight:700;color:#1e8449}
+
+/* Modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.modal.show{display:flex}
+.modal-box{background:#fff;border-radius:14px;width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{padding:20px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:16px;font-weight:700;color:#2c3e50}
+.modal-close{background:none;border:none;font-size:20px;color:#aaa;cursor:pointer;line-height:1}
+.modal-close:hover{color:#333}
+.modal-body{padding:24px}
+.modal-foot{padding:16px 24px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.form-control{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;outline:none}
+.form-control:focus{border-color:#27ae60}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#2c3e50;color:#fff;padding:12px 22px;border-radius:9px;box-shadow:0 4px 12px rgba(0,0,0,.2);display:none;z-index:2000;font-size:13px;font-weight:600}
+.toast.show{display:block;animation:slideUp .3s ease}
+.toast.success{background:#1e8449}.toast.error{background:#c0392b}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+.empty-state{text-align:center;padding:50px 20px;color:#aaa}
+.empty-state i{font-size:44px;margin-bottom:14px;display:block;color:#ddd}
+</style>
+</head>
+<body>
+
+<nav class="dashboard-nav">
+  <div class="nav-brand"><i class="fas fa-users"></i><span>Customer Management</span></div>
+  <div class="nav-right">
+    <a href="/" class="btn-nav"><i class="fas fa-cash-register"></i> POS Terminal</a>
+    <a href="/sales-dashboard" class="btn-nav"><i class="fas fa-chart-bar"></i> Sales</a>
+    <div class="nav-user">
+      <i class="fas fa-user-circle" style="font-size:20px"></i>
+      <span id="navUserName">User</span>
+      <span class="role-badge" id="navRoleBadge">Cashier</span>
+    </div>
+    <button class="btn-nav" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+
+<div class="container">
+  <h1 class="page-title"><i class="fas fa-users" style="color:#27ae60;margin-right:8px"></i>Customers</h1>
+  <p class="page-sub">Manage customer accounts, loyalty points, and purchase history.</p>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-box">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-users"></i></div>
+      <div><div class="stat-val" id="statTotal">—</div><div class="stat-lbl">Total Customers</div></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#f39c12,#e67e22)"><i class="fas fa-star"></i></div>
+      <div><div class="stat-val" id="statLoyalty">—</div><div class="stat-lbl">Loyalty Members</div></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-shopping-bag"></i></div>
+      <div><div class="stat-val" id="statSales">—</div><div class="stat-lbl">Total Purchases</div></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#8e44ad,#9b59b6)"><i class="fas fa-coins"></i></div>
+      <div><div class="stat-val" id="statPoints">—</div><div class="stat-lbl">Points Outstanding</div></div>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <!-- Left: Customer list -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fas fa-list" style="color:#27ae60"></i> Customer List</h3>
+          <button class="btn btn-primary" onclick="openAddModal()"><i class="fas fa-plus"></i> Add Customer</button>
+        </div>
+        <div class="card-body">
+          <div class="search-row">
+            <div class="search-wrap">
+              <i class="fas fa-search"></i>
+              <input type="text" class="search-input" id="searchInput" placeholder="Search by name, phone or email…" oninput="filterCustomers()">
+            </div>
+            <select id="sortSelect" class="form-control" style="width:160px" onchange="filterCustomers()">
+              <option value="name">Sort: Name</option>
+              <option value="points">Sort: Points</option>
+              <option value="spent">Sort: Total Spent</option>
+              <option value="visits">Sort: Visits</option>
+            </select>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Customer</th><th>Phone</th><th>Points</th><th>Total Spent</th><th>Visits</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="custBody">
+                <tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin" style="font-size:24px;color:#aaa;margin-bottom:0"></i></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Customer Profile -->
+    <div id="profilePanel">
+      <div class="card" style="position:sticky;top:76px">
+        <div id="profileEmpty" style="padding:60px 20px;text-align:center;color:#ccc">
+          <i class="fas fa-user-circle" style="font-size:56px;margin-bottom:14px;display:block"></i>
+          <div style="font-size:14px;font-weight:600">Select a customer</div>
+          <div style="font-size:12px;margin-top:4px">to view their profile</div>
+        </div>
+        <div id="profileContent" style="display:none">
+          <div class="profile-header">
+            <div class="profile-avatar"><i class="fas fa-user"></i></div>
+            <div class="profile-name" id="pName">—</div>
+            <div class="profile-phone" id="pPhone">—</div>
+            <div style="font-size:11px;margin-top:6px;opacity:.8"><i class="fas fa-star"></i> <span id="pPoints">0</span> loyalty points</div>
+            <div class="loyalty-bar" style="margin-top:8px"><div class="loyalty-fill" id="pLoyaltyBar" style="width:0%"></div></div>
+          </div>
+          <div class="profile-meta">
+            <div class="meta-box"><div class="meta-val" id="pSpent">—</div><div class="meta-lbl">Total Spent</div></div>
+            <div class="meta-box"><div class="meta-val" id="pVisits">—</div><div class="meta-lbl">Visits</div></div>
+            <div class="meta-box"><div class="meta-val" id="pEmail" style="font-size:11px;word-break:break-all">—</div><div class="meta-lbl">Email</div></div>
+            <div class="meta-box"><div class="meta-val" id="pSince" style="font-size:12px">—</div><div class="meta-lbl">Member Since</div></div>
+          </div>
+          <div style="padding:0 16px 8px;display:flex;gap:8px">
+            <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="attachToPos()"><i class="fas fa-link"></i> Attach to POS</button>
+            <button class="btn btn-secondary" onclick="editSelected()"><i class="fas fa-edit"></i></button>
+          </div>
+          <div style="padding:8px 16px 4px;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px">Purchase History</div>
+          <div class="history-list" id="historyList">
+            <div style="text-align:center;padding:30px;color:#ddd"><i class="fas fa-receipt" style="font-size:24px"></i><br><span style="font-size:12px">No purchases yet</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Customer Modal -->
+<div class="modal" id="custModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalTitle"><i class="fas fa-user-plus" style="color:#27ae60;margin-right:6px"></i>Add Customer</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="custId">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" class="form-control" id="fName" placeholder="e.g. Ahmed Ali">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone *</label>
+          <input type="tel" class="form-control" id="fPhone" placeholder="03XX-XXXXXXX">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-control" id="fEmail" placeholder="customer@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <textarea class="form-control" id="fAddress" rows="2" placeholder="Street, City"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date of Birth</label>
+          <input type="date" class="form-control" id="fDob">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select class="form-control" id="fGender">
+            <option value="">Not specified</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" id="fNotes" rows="2" placeholder="Any notes about this customer…"></textarea>
+      </div>
+      <div class="form-group" id="pointsGroup" style="display:none">
+        <label class="form-label">Loyalty Points Adjustment</label>
+        <input type="number" class="form-control" id="fPoints" value="0" step="1">
+        <small style="color:#7f8c8d;font-size:11px">Positive to add, negative to deduct from current points</small>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCustomer()"><i class="fas fa-save"></i> Save Customer</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastEl" class="toast"></div>
+
+<script>
+const fmt = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+let allCustomers = [];
+let selectedCustomer = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('navUserName').textContent = sessionStorage.getItem('full_name') || 'User';
+  const role = sessionStorage.getItem('role') || 'sales_person';
+  document.getElementById('navRoleBadge').textContent = role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  loadCustomers();
+});
+
+async function loadCustomers(){
+  try{
+    allCustomers = await fetch('/api/customers').then(r=>r.json());
+    updateStats();
+    renderTable(allCustomers);
+  }catch(e){ showToast('Failed to load customers','error'); }
+}
+
+function updateStats(){
+  document.getElementById('statTotal').textContent = allCustomers.length;
+  const members = allCustomers.filter(c=>c.loyalty_points>0).length;
+  document.getElementById('statLoyalty').textContent = members;
+  const totalSpent = allCustomers.reduce((s,c)=>s+(c.total_spent||0),0);
+  document.getElementById('statSales').textContent = fmt(totalSpent);
+  const totalPts = allCustomers.reduce((s,c)=>s+(c.loyalty_points||0),0);
+  document.getElementById('statPoints').textContent = Number(totalPts).toLocaleString();
+}
+
+function filterCustomers(){
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+  let list = allCustomers.filter(c =>
+    (c.name||'').toLowerCase().includes(q) ||
+    (c.phone||'').toLowerCase().includes(q) ||
+    (c.email||'').toLowerCase().includes(q)
+  );
+  list.sort((a,b)=>{
+    if(sort==='points') return (b.loyalty_points||0)-(a.loyalty_points||0);
+    if(sort==='spent') return (b.total_spent||0)-(a.total_spent||0);
+    if(sort==='visits') return (b.visit_count||0)-(a.visit_count||0);
+    return (a.name||'').localeCompare(b.name||'');
+  });
+  renderTable(list);
+}
+
+function renderTable(list){
+  const tb = document.getElementById('custBody');
+  if(!list.length){
+    tb.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-user-slash"></i>No customers found</div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = list.map(c=>{
+    const pts = c.loyalty_points||0;
+    const tier = pts>=5000?'Gold':pts>=1000?'Silver':'Bronze';
+    const tierColor = pts>=5000?'badge-gold':pts>=1000?'badge-blue':'badge-green';
+    const sel = selectedCustomer && selectedCustomer._id===c._id ? 'selected' : '';
+    return `<tr class="${sel}" onclick="selectCustomer('${c._id}')" style="cursor:pointer">
+      <td>
+        <div style="font-weight:600;color:#2c3e50">${c.name||'—'}</div>
+        <div style="font-size:11px;color:#aaa">${c.email||''}</div>
+      </td>
+      <td>${c.phone||'—'}</td>
+      <td><strong style="color:#e67e22">${Number(pts).toLocaleString()}</strong></td>
+      <td><strong style="color:#1e8449">${fmt(c.total_spent||0)}</strong></td>
+      <td style="text-align:center">${c.visit_count||0}</td>
+      <td><span class="badge ${tierColor}">${tier}</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn-xs btn-view" onclick="event.stopPropagation();selectCustomer('${c._id}')"><i class="fas fa-eye"></i></button>
+        <button class="btn-xs btn-edit" onclick="event.stopPropagation();openEditModal('${c._id}')"><i class="fas fa-edit"></i></button>
+        <button class="btn-xs btn-del" onclick="event.stopPropagation();deleteCustomer('${c._id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function selectCustomer(id){
+  selectedCustomer = allCustomers.find(c=>c._id===id);
+  if(!selectedCustomer) return;
+  document.getElementById('profileEmpty').style.display='none';
+  document.getElementById('profileContent').style.display='block';
+  document.getElementById('pName').textContent = selectedCustomer.name || '—';
+  document.getElementById('pPhone').textContent = selectedCustomer.phone || '—';
+  document.getElementById('pEmail').textContent = selectedCustomer.email || '—';
+  const pts = selectedCustomer.loyalty_points || 0;
+  document.getElementById('pPoints').textContent = Number(pts).toLocaleString();
+  document.getElementById('pSpent').textContent = fmt(selectedCustomer.total_spent||0);
+  document.getElementById('pVisits').textContent = selectedCustomer.visit_count || 0;
+  const since = selectedCustomer.created_at ? new Date(selectedCustomer.created_at).toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+  document.getElementById('pSince').textContent = since;
+  const fillPct = Math.min(100, (pts / 5000) * 100);
+  document.getElementById('pLoyaltyBar').style.width = fillPct + '%';
+  filterCustomers();
+  loadHistory(id);
+}
+
+async function loadHistory(id){
+  const hl = document.getElementById('historyList');
+  hl.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa"><i class="fas fa-spinner fa-spin"></i></div>';
+  try{
+    const hist = await fetch(`/api/customers/${id}/history`).then(r=>r.json());
+    if(!hist.length){
+      hl.innerHTML = '<div style="text-align:center;padding:30px;color:#ddd"><i class="fas fa-receipt" style="font-size:24px"></i><br><span style="font-size:12px">No purchases yet</span></div>';
+      return;
+    }
+    hl.innerHTML = hist.map(h=>{
+      const dt = h.date ? new Date(h.date).toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+      const items = h.items_count || (h.items ? h.items.length : 0);
+      return `<div class="history-item">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#2c3e50">${h.receipt_number||h._id?.substring(0,10)||'—'}</div>
+          <div class="history-date">${dt} &bull; ${items} item(s) &bull; ${h.payment_method||'cash'}</div>
+          ${h.points_earned ? `<div style="font-size:11px;color:#e67e22">+${h.points_earned} pts</div>` : ''}
+        </div>
+        <div class="history-amt">${fmt(h.total||0)}</div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    hl.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">Failed to load history</div>';
+  }
+}
+
+function attachToPos(){
+  if(!selectedCustomer) return;
+  localStorage.setItem('pos_customer', JSON.stringify({
+    _id: selectedCustomer._id,
+    name: selectedCustomer.name,
+    phone: selectedCustomer.phone,
+    loyalty_points: selectedCustomer.loyalty_points||0
+  }));
+  showToast(`${selectedCustomer.name} attached to POS`, 'success');
+  setTimeout(()=>window.location.href='/', 900);
+}
+
+function openAddModal(){
+  document.getElementById('custId').value = '';
+  document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-plus" style="color:#27ae60;margin-right:6px"></i>Add Customer';
+  document.getElementById('fName').value='';
+  document.getElementById('fPhone').value='';
+  document.getElementById('fEmail').value='';
+  document.getElementById('fAddress').value='';
+  document.getElementById('fDob').value='';
+  document.getElementById('fGender').value='';
+  document.getElementById('fNotes').value='';
+  document.getElementById('fPoints').value='0';
+  document.getElementById('pointsGroup').style.display='none';
+  document.getElementById('custModal').classList.add('show');
+}
+
+function openEditModal(id){
+  const c = allCustomers.find(x=>x._id===id);
+  if(!c) return;
+  document.getElementById('custId').value = id;
+  document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-edit" style="color:#27ae60;margin-right:6px"></i>Edit Customer';
+  document.getElementById('fName').value = c.name||'';
+  document.getElementById('fPhone').value = c.phone||'';
+  document.getElementById('fEmail').value = c.email||'';
+  document.getElementById('fAddress').value = c.address||'';
+  document.getElementById('fDob').value = c.date_of_birth||'';
+  document.getElementById('fGender').value = c.gender||'';
+  document.getElementById('fNotes').value = c.notes||'';
+  document.getElementById('fPoints').value = '0';
+  document.getElementById('pointsGroup').style.display='block';
+  document.getElementById('custModal').classList.add('show');
+}
+
+function editSelected(){
+  if(selectedCustomer) openEditModal(selectedCustomer._id);
+}
+
+function closeModal(){
+  document.getElementById('custModal').classList.remove('show');
+}
+
+async function saveCustomer(){
+  const id = document.getElementById('custId').value;
+  const name = document.getElementById('fName').value.trim();
+  const phone = document.getElementById('fPhone').value.trim();
+  if(!name||!phone){ showToast('Name and phone are required','error'); return; }
+
+  const payload = {
+    name, phone,
+    email: document.getElementById('fEmail').value.trim(),
+    address: document.getElementById('fAddress').value.trim(),
+    date_of_birth: document.getElementById('fDob').value||null,
+    gender: document.getElementById('fGender').value||null,
+    notes: document.getElementById('fNotes').value.trim()
+  };
+  if(id){
+    const adj = parseInt(document.getElementById('fPoints').value)||0;
+    if(adj!==0) payload.points_adjustment = adj;
+  }
+
+  try{
+    const url = id ? `/api/customers/${id}` : '/api/customers';
+    const method = id ? 'PUT' : 'POST';
+    const r = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const d = await r.json();
+    if(r.ok){
+      showToast(id ? 'Customer updated' : 'Customer added', 'success');
+      closeModal();
+      await loadCustomers();
+      if(id) selectCustomer(id);
+    } else {
+      showToast(d.message||'Failed to save','error');
+    }
+  }catch(e){ showToast('Error saving customer','error'); }
+}
+
+async function deleteCustomer(id, name){
+  if(!confirm(`Delete customer "${name}"? This action cannot be undone.`)) return;
+  try{
+    const r = await fetch(`/api/customers/${id}`, {method:'DELETE'});
+    if(r.ok){
+      showToast('Customer deleted','success');
+      if(selectedCustomer && selectedCustomer._id===id){
+        selectedCustomer=null;
+        document.getElementById('profileEmpty').style.display='block';
+        document.getElementById('profileContent').style.display='none';
+      }
+      loadCustomers();
+    } else {
+      showToast('Failed to delete','error');
+    }
+  }catch(e){ showToast('Error','error'); }
+}
+
+function showToast(msg, type='success'){
+  const el = document.getElementById('toastEl');
+  el.textContent = msg;
+  el.className = 'toast ' + type;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+function handleLogout(){
+  fetch('/api/auth/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'}})
+    .then(()=>{sessionStorage.clear();window.location.href='/login';})
+    .catch(()=>{sessionStorage.clear();window.location.href='/login';});
+}
+</script>
+</body>
+</html>

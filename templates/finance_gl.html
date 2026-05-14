@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>General Ledger - Finance</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0faf8;min-height:100vh}
+.dashboard-nav{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600}
+.nav-brand a{color:#fff;text-decoration:none;display:flex;align-items:center;gap:8px;font-size:13px;opacity:.85}
+.nav-brand a:hover{opacity:1}
+.nav-right{display:flex;align-items:center;gap:20px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:14px}
+.role-badge{background:rgba(255,255,255,.25);padding:4px 10px;border-radius:12px;font-size:11px;text-transform:uppercase}
+.btn-logout{background:rgba(231,76,60,.8);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+.btn-logout:hover{background:#e74c3c}
+.page-container{max-width:1400px;margin:0 auto;padding:24px}
+.page-title{font-size:22px;font-weight:700;color:#16a085;margin-bottom:20px}
+.filter-bar{background:#fff;border-radius:10px;padding:16px 20px;box-shadow:0 1px 6px rgba(0,0,0,.07);display:flex;gap:12px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.filter-bar label{font-size:12px;font-weight:600;color:#555;white-space:nowrap}
+.filter-bar select,.filter-bar input[type="date"]{padding:8px 12px;border:2px solid #e0e0e0;border-radius:6px;font-size:13px;outline:none}
+.filter-bar select:focus,.filter-bar input:focus{border-color:#16a085}
+.filter-bar select{min-width:220px}
+.btn-search{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;border:none;padding:9px 20px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.btn-search:hover{opacity:.9}
+.btn-clear{background:#ecf0f1;color:#2c3e50;border:none;padding:9px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+.summary-strip{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.summary-box{background:#fff;border-radius:8px;padding:12px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);font-size:13px;min-width:160px}
+.summary-box .label{color:#7f8c8d;font-size:11px;font-weight:600;text-transform:uppercase;margin-bottom:4px}
+.summary-box .val{font-size:17px;font-weight:700;color:#2c3e50}
+.table-wrap{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fffe;color:#16a085;font-weight:700;padding:12px 14px;text-align:left;border-bottom:2px solid #e8f8f5;white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fffe}
+.td-right{text-align:right;font-family:monospace;font-size:13px}
+.balance-pos{color:#27ae60;font-weight:600}
+.balance-neg{color:#e74c3c;font-weight:600}
+.totals-row td{background:#e8f8f5;font-weight:700;border-top:2px solid #16a085}
+.badge-ref{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.ref-sale{background:#eafaf1;color:#27ae60}
+.ref-gr{background:#ebf5fb;color:#2980b9}
+.ref-payment{background:#fdedec;color:#e74c3c}
+.ref-manual{background:#f5eef8;color:#8e44ad}
+.ref-other{background:#f5f5f5;color:#7f8c8d}
+.empty-state{text-align:center;padding:56px;color:#95a5a6}
+.empty-state i{font-size:52px;margin-bottom:12px;display:block;opacity:.4}
+.acct-info{background:linear-gradient(135deg,#e8f8f5,#f0faf8);border:1px solid #a8e6d8;border-radius:8px;padding:12px 18px;margin-bottom:16px;font-size:13px;display:none}
+.acct-info.show{display:flex;gap:24px;flex-wrap:wrap;align-items:center}
+.acct-info .ai-item{display:flex;flex-direction:column}
+.acct-info .ai-label{font-size:10px;font-weight:600;text-transform:uppercase;color:#7f8c8d;margin-bottom:2px}
+.acct-info .ai-val{font-size:14px;font-weight:700;color:#16a085}
+.toast{position:fixed;bottom:20px;right:20px;background:#2c3e50;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;z-index:3000}
+.toast.show{display:block}
+.toast.success{background:#27ae60}
+.toast.error{background:#e74c3c}
+</style>
+</head>
+<body>
+<nav class="dashboard-nav">
+  <div class="nav-brand">
+    <a href="/finance-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    <span style="opacity:.4">|</span>
+    <i class="fas fa-book-open"></i><span>General Ledger</span>
+  </div>
+  <div class="nav-right">
+    <div class="nav-user">
+      <i class="fas fa-user-circle"></i>
+      <span id="navUserName">Finance</span>
+      <span class="role-badge" id="navRoleBadge">Finance</span>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+
+<div class="page-container">
+  <h1 class="page-title"><i class="fas fa-book-open"></i> General Ledger</h1>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div>
+      <label>Account</label><br>
+      <select id="accountSelect">
+        <option value="">— All Accounts —</option>
+      </select>
+    </div>
+    <div>
+      <label>Date From</label><br>
+      <input type="date" id="dateFrom">
+    </div>
+    <div>
+      <label>Date To</label><br>
+      <input type="date" id="dateTo">
+    </div>
+    <div style="align-self:flex-end">
+      <button class="btn-search" onclick="loadLedger()"><i class="fas fa-search"></i> Search</button>
+    </div>
+    <div style="align-self:flex-end">
+      <button class="btn-clear" onclick="clearFilters()"><i class="fas fa-times"></i> Clear</button>
+    </div>
+  </div>
+
+  <!-- Account Info Strip -->
+  <div class="acct-info" id="acctInfo">
+    <div class="ai-item"><span class="ai-label">Account Code</span><span class="ai-val" id="aiCode">—</span></div>
+    <div class="ai-item"><span class="ai-label">Account Name</span><span class="ai-val" id="aiName">—</span></div>
+    <div class="ai-item"><span class="ai-label">Type</span><span class="ai-val" id="aiType">—</span></div>
+    <div class="ai-item"><span class="ai-label">Normal Balance</span><span class="ai-val" id="aiNormal">—</span></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-strip">
+    <div class="summary-box"><div class="label">Total Lines</div><div class="val" id="sumLines">—</div></div>
+    <div class="summary-box"><div class="label">Total Debit</div><div class="val" id="sumDr" style="color:#2980b9">—</div></div>
+    <div class="summary-box"><div class="label">Total Credit</div><div class="val" id="sumCr" style="color:#27ae60">—</div></div>
+    <div class="summary-box"><div class="label">Closing Balance</div><div class="val" id="sumBal">—</div></div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Entry No.</th>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Reference</th>
+          <th>Account</th>
+          <th class="td-right">Debit (PKR)</th>
+          <th class="td-right">Credit (PKR)</th>
+          <th class="td-right">Balance (PKR)</th>
+        </tr>
+      </thead>
+      <tbody id="glTableBody">
+        <tr><td colspan="8"><div class="empty-state"><i class="fas fa-book-open"></i>Select an account and click Search</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+var allAccounts=[];
+
+function fmt(n){return 'PKR '+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function fmtNum(n){return Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'');setTimeout(()=>t.className='toast',3000);}
+function handleLogout(){fetch('/api/auth/logout',{method:'POST'}).then(()=>{sessionStorage.clear();window.location.href='/login';});}
+
+document.addEventListener('DOMContentLoaded',function(){
+  var name=sessionStorage.getItem('full_name')||'Finance Manager';
+  var role=sessionStorage.getItem('role')||'finance_manager';
+  document.getElementById('navUserName').textContent=name;
+  document.getElementById('navRoleBadge').textContent=role.replace(/_/g,' ');
+  loadAccounts();
+});
+
+function loadAccounts(){
+  fetch('/api/gl/accounts')
+    .then(r=>r.json())
+    .then(data=>{
+      allAccounts=data;
+      var sel=document.getElementById('accountSelect');
+      sel.innerHTML='<option value="">— All Accounts —</option>';
+      data.forEach(a=>{
+        var opt=document.createElement('option');
+        opt.value=a.code;
+        opt.textContent=a.code+' — '+a.name;
+        sel.appendChild(opt);
+      });
+    })
+    .catch(()=>showToast('Failed to load accounts','error'));
+}
+
+function refBadge(type){
+  var map={sale:'ref-sale',gr:'ref-gr',payment:'ref-payment',manual:'ref-manual'};
+  var cls=map[type]||'ref-other';
+  return '<span class="badge-ref '+cls+'">'+(type||'—')+'</span>';
+}
+
+function clearFilters(){
+  document.getElementById('accountSelect').value='';
+  document.getElementById('dateFrom').value='';
+  document.getElementById('dateTo').value='';
+  document.getElementById('acctInfo').classList.remove('show');
+  document.getElementById('glTableBody').innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="fas fa-book-open"></i>Select an account and click Search</div></td></tr>';
+  ['sumLines','sumDr','sumCr','sumBal'].forEach(id=>document.getElementById(id).textContent='—');
+}
+
+function loadLedger(){
+  var code=document.getElementById('accountSelect').value;
+  var from=document.getElementById('dateFrom').value;
+  var to=document.getElementById('dateTo').value;
+  var params=new URLSearchParams();
+  if(code) params.append('account',code);
+  if(from) params.append('from',from);
+  if(to)   params.append('to',to);
+
+  // Show account info
+  if(code){
+    var acct=allAccounts.find(a=>a.code===code);
+    if(acct){
+      document.getElementById('aiCode').textContent=acct.code;
+      document.getElementById('aiName').textContent=acct.name;
+      document.getElementById('aiType').textContent=acct.type;
+      document.getElementById('aiNormal').textContent=(acct.normal_balance||'debit');
+      document.getElementById('acctInfo').classList.add('show');
+    }
+  } else {
+    document.getElementById('acctInfo').classList.remove('show');
+  }
+
+  document.getElementById('glTableBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:#7f8c8d"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+
+  fetch('/api/gl/ledger?'+params.toString())
+    .then(r=>r.json())
+    .then(data=>{
+      renderLedger(data);
+    })
+    .catch(()=>showToast('Failed to load ledger','error'));
+}
+
+function renderLedger(data){
+  var tbody=document.getElementById('glTableBody');
+  if(!data.length){
+    tbody.innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="fas fa-book-open"></i><div>No transactions found for the selected filters</div></div></td></tr>';
+    ['sumLines','sumDr','sumCr','sumBal'].forEach(id=>document.getElementById(id).textContent='0');
+    return;
+  }
+  var totalDr=0,totalCr=0,finalBal=0;
+  var html='';
+  data.forEach(function(r){
+    totalDr+=r.dr;
+    totalCr+=r.cr;
+    finalBal=r.balance;
+    var balClass=r.balance>=0?'balance-pos':'balance-neg';
+    html+='<tr>';
+    html+='<td><strong style="font-family:monospace;font-size:12px">'+(r.entry_number||'—')+'</strong></td>';
+    html+='<td style="white-space:nowrap">'+(r.date||'—')+'</td>';
+    html+='<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+r.description+'">'+(r.description||'—')+'</td>';
+    html+='<td>'+refBadge(r.reference_type)+' <span style="font-size:11px;color:#95a5a6">'+(r.reference_number||'')+'</span></td>';
+    html+='<td style="font-size:12px;color:#636e72">'+(r.account_code?' <strong>'+r.account_code+'</strong> '+r.account_name:'—')+'</td>';
+    html+='<td class="td-right">'+(r.dr>0?'<span style="color:#2980b9;font-weight:600">'+fmtNum(r.dr)+'</span>':'<span style="color:#ccc">—</span>')+'</td>';
+    html+='<td class="td-right">'+(r.cr>0?'<span style="color:#27ae60;font-weight:600">'+fmtNum(r.cr)+'</span>':'<span style="color:#ccc">—</span>')+'</td>';
+    html+='<td class="td-right"><span class="'+balClass+'">'+fmtNum(r.balance)+'</span></td>';
+    html+='</tr>';
+  });
+  // Totals row
+  var balClass2=finalBal>=0?'balance-pos':'balance-neg';
+  html+='<tr class="totals-row">';
+  html+='<td colspan="5">TOTALS ('+data.length+' lines)</td>';
+  html+='<td class="td-right" style="color:#2980b9">'+fmtNum(totalDr)+'</td>';
+  html+='<td class="td-right" style="color:#27ae60">'+fmtNum(totalCr)+'</td>';
+  html+='<td class="td-right"><span class="'+balClass2+'">'+fmtNum(finalBal)+'</span></td>';
+  html+='</tr>';
+  tbody.innerHTML=html;
+
+  document.getElementById('sumLines').textContent=data.length;
+  document.getElementById('sumDr').textContent=fmt(totalDr);
+  document.getElementById('sumCr').textContent=fmt(totalCr);
+  var balEl=document.getElementById('sumBal');
+  balEl.textContent=fmt(finalBal);
+  balEl.style.color=finalBal>=0?'#27ae60':'#e74c3c';
+}
+</script>
+</body>
+</html>

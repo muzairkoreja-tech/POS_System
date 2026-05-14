@@ -6,292 +6,1323 @@
 <title>Admin Dashboard - POS System</title>
 <link rel="stylesheet" href="../static/css/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f5f6fa;min-height:100vh;overflow-y:auto}
 .dashboard-nav{background:linear-gradient(135deg,#2c3e50,#34495e);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}
 .nav-brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600}
-.nav-brand i{font-size:24px;color:#27ae60}
+.nav-brand i{font-size:22px;color:#e74c3c}
 .nav-right{display:flex;align-items:center;gap:20px}
 .nav-user{display:flex;align-items:center;gap:8px;font-size:14px}
-.nav-user i{font-size:20px}
-.nav-user .role-badge{background:rgba(255,255,255,.2);padding:4px 10px;border-radius:12px;font-size:11px;text-transform:uppercase}
+.nav-user .role-badge{background:rgba(231,76,60,.35);padding:4px 10px;border-radius:12px;font-size:11px;text-transform:uppercase;font-weight:700;letter-spacing:.5px}
 .btn-logout{background:rgba(231,76,60,.8);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;transition:background .3s}
 .btn-logout:hover{background:#e74c3c}
-.dashboard-container{max-width:1200px;margin:0 auto;padding:24px}
-.page-title{font-size:24px;font-weight:700;color:#2c3e50;margin-bottom:24px}
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:32px}
-.kpi-card{background:#fff;border-radius:10px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.08);text-align:center;cursor:pointer;transition:all .3s;border-left:4px solid #3498db}
-.kpi-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
-.kpi-card:nth-child(1){border-left-color:#3498db}
-.kpi-card:nth-child(2){border-left-color:#9b59b6}
-.kpi-card:nth-child(3){border-left-color:#27ae60}
-.kpi-card:nth-child(4){border-left-color:#e67e22}
-.kpi-card:nth-child(5){border-left-color:#e74c3c}
-.kpi-card:nth-child(6){border-left-color:#1abc9c}
-.kpi-icon{font-size:36px;margin-bottom:12px;color:#fff}
-.kpi-card h3{font-size:28px;color:#2c3e50;margin-bottom:4px}
-.kpi-card p{color:#7f8c8d;font-size:13px;text-transform:uppercase;letter-spacing:1px}
-.section-panel{background:#fff;border-radius:10px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:24px;display:none}
-.section-panel.active{display:block}
-.section-panel h3{font-size:18px;color:#2c3e50;margin-bottom:16px}
-.section-panel h3 i{color:#3498db;margin-right:8px}
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th{background:#f8f9fa;padding:12px 16px;text-align:left;font-size:12px;color:#7f8c8d;text-transform:uppercase;border-bottom:2px solid #eee}
-td{padding:12px 16px;border-bottom:1px solid #eee;font-size:14px}
-tr:hover{background:#f8f9fa}
-.form-group{margin-bottom:16px}
-.form-group label{display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px}
-.form-group input,.form-group select{width:100%;padding:10px 12px;border:2px solid #eee;border-radius:6px;font-size:14px;transition:border-color .3s}
-.form-group input:focus,.form-group select:focus{outline:none;border-color:#3498db}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.btn-action{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .3s;margin-right:8px;margin-bottom:8px}
-.btn-primary{background:#3498db;color:#fff}
-.btn-success{background:#27ae60;color:#fff}
-.btn-danger{background:#e74c3c;color:#fff}
-.btn-warning{background:#e67e22;color:#fff}
-.btn-secondary{background:#ecf0f1;color:#2c3e50}
-.btn-action:hover{opacity:.9}
-.role-tag{padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase}
-.role-admin{background:#d5f5e3;color:#1e8449}
-.role-procurement{background:#d6eaf8;color:#1a5276}
-.role-sales{background:#fdebd0;color:#b9770e}
+.container{max-width:1280px;margin:0 auto;padding:24px}
+.page-title{font-size:22px;font-weight:700;color:#2c3e50;margin-bottom:6px}
+.page-sub{color:#7f8c8d;font-size:13px;margin-bottom:24px}
+
+/* Section headings */
+.sec-heading{font-size:14px;font-weight:700;color:#2c3e50;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.sec-heading i{color:#667eea}
+
+/* New KPI card style */
+.kpi-new{text-decoration:none;background:#fff;border-radius:10px;padding:18px 16px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:block;transition:transform .2s,box-shadow .2s}
+.kpi-new:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.kpi-icon-box{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0}
+.kpi-footer{margin-top:12px;text-align:center;border-radius:6px;padding:5px 0;font-size:12px;font-weight:600}
+
+/* Approval queue */
+.approval-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);overflow:hidden;margin-bottom:28px}
+.approval-header{background:linear-gradient(135deg,#667eea,#764ba2);padding:16px 22px;display:flex;align-items:center;justify-content:space-between}
+.approval-header h3{color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.badge-count{background:rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px;min-width:28px;text-align:center}
+.approval-body{padding:0}
+
+table{width:100%;border-collapse:collapse}
+th{background:#f8f9fa;padding:11px 16px;text-align:left;font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #eee}
+td{padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:middle}
+tr:hover td{background:#fafafa}
+.badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase;white-space:nowrap}
+.badge-pending{background:#fef5e7;color:#e67e22}
+.badge-approved{background:#d5f5e3;color:#1e8449}
+.badge-rejected{background:#fde8e8;color:#e74c3c}
+.btn-xs{padding:5px 11px;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:opacity .2s;white-space:nowrap}
+.btn-xs:hover{opacity:.85}
+.btn-approve{background:#d5f5e3;color:#1a5c34}
+.btn-sendback{background:#fef5e7;color:#8a4d00}
+.btn-reject{background:#fde8e8;color:#a93226}
+
+/* Procurement workflow */
+.proc-card{text-decoration:none;background:#fff;border-radius:10px;padding:18px 16px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:block;transition:transform .2s,box-shadow .2s;border-top:4px solid #ddd}
+.proc-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+
+/* Stats cards (Today) */
+.stat-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;align-items:center;gap:16px}
+.stat-icon{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;flex-shrink:0}
+.stat-num{font-size:24px;font-weight:800;color:#2c3e50;line-height:1}
+.stat-lbl{font-size:12px;color:#7f8c8d;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+
 .toast{position:fixed;bottom:20px;right:20px;background:#2c3e50;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;animation:slideUp .3s ease;z-index:2000}
-.toast.success{background:#27ae60}.toast.error{background:#e74c3c}
-.toast.show{display:block}
+.toast.success{background:#27ae60}.toast.error{background:#e74c3c}.toast.show{display:block}
 @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* Analytics */
+.chart-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.chart-title{font-size:13px;font-weight:700;color:#2c3e50;margin-bottom:16px;display:flex;align-items:center;gap:7px}
+.chart-title i{font-size:14px}
+.alert-strip{border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;margin-bottom:20px}
+.alert-strip.danger{background:#fde8e8;color:#c0392b;border-left:4px solid #e74c3c}
+.alert-strip.warning{background:#fef5e7;color:#8a4d00;border-left:4px solid #f39c12}
+.alert-strip.info{background:#ebf5fb;color:#1a5276;border-left:4px solid #3498db}
+.kpi-today{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;align-items:center;gap:14px}
+.kpi-today-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0}
+.kpi-today-val{font-size:22px;font-weight:800;color:#2c3e50;line-height:1.1}
+.kpi-today-lbl{font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.kpi-today-sub{font-size:11px;color:#95a5a6;margin-top:4px}
+
+/* Shared form controls used in new sections */
+.form-ctrl{width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:7px;font-size:13px;outline:none;font-family:inherit}
+.form-ctrl:focus{border-color:#3498db}
+.form-lbl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#7f8c8d;letter-spacing:.5px;margin-bottom:5px}
+
+/* Cashier KPI cards */
+.cashier-kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:20px}
+.cashier-kpi-card{background:#fff;border-radius:11px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:4px solid #e67e22;position:relative}
+.cashier-kpi-card.active{border-left-color:#27ae60}
+.cashier-kpi-card.inactive{border-left-color:#bdc3c7;opacity:.7}
+.ckpi-name{font-size:14px;font-weight:700;color:#2c3e50;margin-bottom:2px}
+.ckpi-status{font-size:11px;margin-bottom:10px}
+.ckpi-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ckpi-box{background:#f8f9fa;border-radius:7px;padding:8px;text-align:center}
+.ckpi-val{font-size:13px;font-weight:700;color:#2c3e50}
+.ckpi-lbl{font-size:10px;color:#95a5a6;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.ckpi-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-top:8px}
+.ckpi-live{position:absolute;top:14px;right:14px;background:#d5f5e3;color:#1e8449;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px}
+.ckpi-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.ckpi-dot.on{background:#27ae60;animation:pulse 1.5s infinite}
+.ckpi-dot.off{background:#bdc3c7}
+
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 </style>
 </head>
 <body>
 <nav class="dashboard-nav">
-<div class="nav-brand"><i class="fas fa-cog"></i><span>POS System - Admin Panel</span></div>
-<div class="nav-right">
-<div class="nav-user"><i class="fas fa-user-circle"></i><span id="navUserName">Admin</span><span class="role-badge" id="navRoleBadge">Admin</span></div>
-<button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
-</div>
+  <div class="nav-brand"><i class="fas fa-shield-alt"></i><span>POS System &mdash; Admin</span></div>
+  <div class="nav-right">
+    <div class="nav-user">
+      <i class="fas fa-user-circle" style="font-size:20px"></i>
+      <span id="navUserName">Admin</span>
+      <span class="role-badge" id="navRoleBadge">Admin</span>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
 </nav>
-<div class="dashboard-container">
-<h1 class="page-title"><i class="fas fa-cog"></i> Admin Dashboard</h1>
-<div class="kpi-grid">
-<div class="kpi-card" onclick="showSection('users')"><div class="kpi-icon"><i class="fas fa-users"></i></div><h3 id="kpiUsers">-</h3><p>Users</p></div>
-<div class="kpi-card" onclick="showSection('vendors')"><div class="kpi-icon"><i class="fas fa-building"></i></div><h3 id="kVendors">-</h3><p>Vendors</p></div>
-<div class="kpi-card" onclick="showSection('products')"><div class="kpi-icon"><i class="fas fa-boxes"></i></div><h3 id="kProducts">-</h3><p>Products</p></div>
-<div class="kpi-card" onclick="showSection('stock')"><div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div><h3 id="kLowStock">-</h3><p>Low Stock</p></div>
-<div class="kpi-card" onclick="showSection('sales')"><div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div><h3 id="kSales">-</h3><p>Today Sales</p></div>
-<div class="kpi-card" onclick="showSection('reports')"><div class="kpi-icon"><i class="fas fa-chart-bar"></i></div><h3>Reports</h3><p>Analytics</p></div>
+
+<div class="container">
+  <h1 class="page-title"><i class="fas fa-shield-alt" style="color:#e74c3c;margin-right:8px"></i>Admin Dashboard</h1>
+  <p class="page-sub">System overview, approvals, user management and business analytics.</p>
+
+  <!-- Alert Strip -->
+  <div id="alertStrip" style="display:none"></div>
+
+  <!-- Today Extended KPIs -->
+  <div class="sec-heading" style="margin-bottom:12px"><i class="fas fa-calendar-day" style="color:#27ae60"></i> Today at a Glance</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:28px">
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-cash-register"></i></div>
+      <div><div class="kpi-today-val" id="tSales">—</div><div class="kpi-today-lbl">Today's Revenue</div><div class="kpi-today-sub" id="tSalesSub">— transactions</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-shopping-basket"></i></div>
+      <div><div class="kpi-today-val" id="tAvg">—</div><div class="kpi-today-lbl">Avg. Basket Value</div><div class="kpi-today-sub">per transaction</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-exclamation-triangle"></i></div>
+      <div><div class="kpi-today-val" id="tLow">—</div><div class="kpi-today-lbl">Low Stock Items</div><div class="kpi-today-sub">below reorder level</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#667eea,#764ba2)"><i class="fas fa-file-alt"></i></div>
+      <div><div class="kpi-today-val" id="tPR">—</div><div class="kpi-today-lbl">Pending Approvals</div><div class="kpi-today-sub">purchase requisitions</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#e67e22,#d35400)"><i class="fas fa-file-invoice-dollar"></i></div>
+      <div><div class="kpi-today-val" id="tOverdue">—</div><div class="kpi-today-lbl">Overdue Invoices</div><div class="kpi-today-sub" id="tOverdueSub">—</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#16a085,#1abc9c)"><i class="fas fa-coins"></i></div>
+      <div><div class="kpi-today-val" id="tAP">—</div><div class="kpi-today-lbl">Total AP Outstanding</div><div class="kpi-today-sub">owed to vendors</div></div>
+    </div>
+  </div>
+
+  <!-- Today's Stats (kept for quick-access links) -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:28px">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-cash-register"></i></div>
+      <div><div class="stat-num" id="kSales">—</div><div class="stat-lbl">Today's Sales</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-receipt"></i></div>
+      <div><div class="stat-num" id="kTxn">—</div><div class="stat-lbl">Transactions</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-exclamation-triangle"></i></div>
+      <div><div class="stat-num" id="kLowStock">—</div><div class="stat-lbl">Low Stock Items</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#667eea,#764ba2)"><i class="fas fa-clock"></i></div>
+      <div><div class="stat-num" id="kPendingPR">—</div><div class="stat-lbl">Pending Approvals</div></div>
+    </div>
+  </div>
+
+  <!-- Quick Access -->
+  <div style="margin-bottom:28px">
+    <div class="sec-heading"><i class="fas fa-th-large"></i> Quick Access</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+
+      <a href="/admin/users" class="kpi-new" style="border-top:4px solid #e74c3c">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-users"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Users</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>System Users</span><strong id="kpiUsers" style="color:#2d3436">—</strong></div>
+        <div class="kpi-footer" style="background:#fde8e8;color:#e74c3c">Manage Users &rarr;</div>
+      </a>
+
+      <a href="/procurement/vendors" class="kpi-new" style="border-top:4px solid #3498db">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-building"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Vendors</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Total Vendors</span><strong id="kVendors" style="color:#2d3436">—</strong></div>
+        <div class="kpi-footer" style="background:#ebf5fb;color:#3498db">Manage Vendors &rarr;</div>
+      </a>
+
+      <a href="/products" class="kpi-new" style="border-top:4px solid #9b59b6">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#9b59b6,#8e44ad)"><i class="fas fa-boxes"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Products</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Total Products</span><strong id="kProducts" style="color:#2d3436">—</strong></div>
+        <div class="kpi-footer" style="background:#f5eef8;color:#9b59b6">Manage Products &rarr;</div>
+      </a>
+
+      <a href="/procurement/stock" class="kpi-new" style="border-top:4px solid #e67e22">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#e67e22,#d35400)"><i class="fas fa-exclamation-circle"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Low Stock</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Below Reorder Level</span><strong id="kLowStock2" style="color:#e74c3c">—</strong></div>
+        <div class="kpi-footer" style="background:#fef5e7;color:#e67e22">View Alerts &rarr;</div>
+      </a>
+
+      <a href="/sales-dashboard" class="kpi-new" style="border-top:4px solid #27ae60">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-cash-register"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Sales</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Today's Revenue</span><strong id="kSales2" style="color:#27ae60">—</strong></div>
+        <div class="kpi-footer" style="background:#eafaf1;color:#27ae60">Sales Dashboard &rarr;</div>
+      </a>
+
+      <a href="/procurement/reports" class="kpi-new" style="border-top:4px solid #5c6bc0">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#5c6bc0,#3949ab)"><i class="fas fa-chart-bar"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Reports</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Report Types</span><strong style="color:#5c6bc0">6</strong></div>
+        <div class="kpi-footer" style="background:#f3f4fd;color:#5c6bc0">View Reports &rarr;</div>
+      </a>
+
+      <a href="/procurement/catalog" class="kpi-new" style="border-top:4px solid #1abc9c">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#1abc9c,#16a085)"><i class="fas fa-layer-group"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Catalog</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Units / Categories / Groups</span></div>
+        <div class="kpi-footer" style="background:#e8f8f5;color:#1abc9c">Manage Catalog &rarr;</div>
+      </a>
+
+      <a href="/procurement/qr" class="kpi-new" style="border-top:4px solid #2c3e50">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#2c3e50,#34495e)"><i class="fas fa-qrcode"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">QR Codes</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Generate & Print</span><i class="fas fa-print" style="color:#636e72"></i></div>
+        <div class="kpi-footer" style="background:#f0f2f5;color:#2c3e50">Generate QR &rarr;</div>
+      </a>
+
+      <a href="/hr" class="kpi-new" style="border-top:4px solid #0288d1">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#0288d1,#01579b)"><i class="fas fa-users-cog"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Human Resources</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Active Employees</span><strong id="kHrEmp" style="color:#0288d1">—</strong></div>
+        <div class="kpi-footer" style="background:#e1f5fe;color:#0288d1">HR Module &rarr;</div>
+      </a>
+
+      <a href="/payments" class="kpi-new" style="border-top:4px solid #6366f1">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#6366f1,#4f46e5)"><i class="fas fa-money-check-alt"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Payments</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>This Month</span><strong id="kPmtMonth" style="color:#6366f1">—</strong></div>
+        <div class="kpi-footer" style="background:#eef2ff;color:#6366f1">Payment Module &rarr;</div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- PR Approval Queue -->
+  <div class="approval-card" style="margin-bottom:28px">
+    <div class="approval-header">
+      <h3><i class="fas fa-clipboard-check"></i> Purchase Requisition — Approval Queue</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="badge-count" id="approvalCount">—</span>
+        <button onclick="loadApprovalQueue()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer"><i class="fas fa-sync"></i> Refresh</button>
+        <a href="/procurement/pr" style="background:rgba(255,255,255,.15);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600">View All PRs &rarr;</a>
+      </div>
+    </div>
+    <div class="approval-body">
+      <table>
+        <thead>
+          <tr>
+            <th>PR No.</th><th>Title</th><th>Requested By</th><th>Items</th><th>Est. Amount</th><th>Date</th><th>Priority</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="approvalBody">
+          <tr><td colspan="8" style="text-align:center;padding:30px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Procurement Workflow Overview -->
+  <div style="margin-bottom:28px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <h2 style="font-size:15px;font-weight:700;color:#2c3e50;margin:0"><i class="fas fa-stream" style="color:#667eea;margin-right:8px"></i>Procurement Workflow Overview</h2>
+        <p style="font-size:12px;color:#7f8c8d;margin:3px 0 0">PR &rarr; PO &rarr; GR &rarr; Invoice &rarr; Payment</p>
+      </div>
+      <button onclick="loadProcSummary()" style="background:none;border:1px solid #ddd;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;color:#636e72"><i class="fas fa-sync"></i> Refresh</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px">
+
+      <a href="/procurement/pr" class="proc-card" style="border-top-color:#667eea" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="width:34px;height:34px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px"><i class="fas fa-file-alt"></i></div>
+          <div><div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase">Step 1</div><div style="font-size:12px;font-weight:700;color:#2d3436">Purchase Requisition</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72;margin-bottom:3px"><span>Total</span><strong id="procPRTotal" style="color:#2d3436">—</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72;margin-bottom:3px"><span>Pending</span><strong id="procPRPending" style="color:#f39c12">—</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Approved</span><strong id="procPRApproved" style="color:#27ae60">—</strong></div>
+        <div style="margin-top:10px;text-align:center;background:#f0f0ff;color:#667eea;border-radius:6px;padding:4px 0;font-size:11px;font-weight:600">Open PRs &rarr;</div>
+      </a>
+
+      <a href="/procurement/po" class="proc-card" style="border-top-color:#27ae60" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="width:34px;height:34px;background:linear-gradient(135deg,#27ae60,#2ecc71);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px"><i class="fas fa-shopping-cart"></i></div>
+          <div><div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase">Step 2</div><div style="font-size:12px;font-weight:700;color:#2d3436">Purchase Order</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72;margin-bottom:3px"><span>Total</span><strong id="procPOTotal" style="color:#2d3436">—</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72;margin-bottom:3px"><span>Draft</span><strong id="procPODraft" style="color:#7f8c8d">—</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Value</span><strong id="procPOValue" style="color:#27ae60">—</strong></div>
+        <div style="margin-top:10px;text-align:center;background:#eafaf1;color:#27ae60;border-radius:6px;padding:4px 0;font-size:11px;font-weight:600">Open POs &rarr;</div>
+      </a>
+
+      <a href="/procurement/gr" class="proc-card" style="border-top-color:#f39c12" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="width:34px;height:34px;background:linear-gradient(135deg,#f39c12,#e67e22);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px"><i class="fas fa-truck"></i></div>
+          <div><div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase">Step 3</div><div style="font-size:12px;font-weight:700;color:#2d3436">Goods Receipt</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72;margin-bottom:3px"><span>Total</span><strong id="procGRTotal" style="color:#2d3436">—</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72;margin-bottom:3px"><span>Confirmed</span><strong id="procGRConfirmed" style="color:#27ae60">—</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Pending</span><strong id="procGRPending" style="color:#f39c12">—</strong></div>
+        <div style="margin-top:10px;text-align:center;background:#fff8e1;color:#f39c12;border-radius:6px;padding:4px 0;font-size:11px;font-weight:600">Open GRs &rarr;</div>
+      </a>
+
+      <a href="/procurement/invoices" class="proc-card" style="border-top-color:#8e44ad" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="width:34px;height:34px;background:linear-gradient(135deg,#8e44ad,#9b59b6);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px"><i class="fas fa-file-invoice-dollar"></i></div>
+          <div><div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase">Step 4</div><div style="font-size:12px;font-weight:700;color:#2d3436">Vendor Invoice</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72;margin-bottom:3px"><span>Total</span><strong id="procInvTotal" style="color:#2d3436">—</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72;margin-bottom:3px"><span>Pending</span><strong id="procInvPending" style="color:#f39c12">—</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Due</span><strong id="procInvDue" style="color:#e74c3c">—</strong></div>
+        <div style="margin-top:10px;text-align:center;background:#f5eef8;color:#8e44ad;border-radius:6px;padding:4px 0;font-size:11px;font-weight:600">Open Invoices &rarr;</div>
+      </a>
+
+      <a href="/procurement/payments" class="proc-card" style="border-top-color:#16a085" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="width:34px;height:34px;background:linear-gradient(135deg,#16a085,#1abc9c);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px"><i class="fas fa-money-bill-wave"></i></div>
+          <div><div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase">Step 5</div><div style="font-size:12px;font-weight:700;color:#2d3436">Payment</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72;margin-bottom:3px"><span>Total</span><strong id="procPayTotal" style="color:#2d3436">—</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72;margin-bottom:3px"><span>Total Paid</span><strong id="procPayPaid" style="color:#16a085">—</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>&nbsp;</span></div>
+        <div style="margin-top:10px;text-align:center;background:#e8f8f5;color:#16a085;border-radius:6px;padding:4px 0;font-size:11px;font-weight:600">All Payments &rarr;</div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ── Analytics Section ── -->
+  <div class="sec-heading" style="margin-top:8px"><i class="fas fa-chart-line" style="color:#667eea"></i> Sales Analytics</div>
+
+  <!-- 7-Day Sales Trend (full width) -->
+  <div class="chart-card" style="margin-bottom:20px">
+    <div class="chart-title"><i class="fas fa-chart-area" style="color:#27ae60"></i> 7-Day Sales Trend</div>
+    <canvas id="chartTrend" height="80"></canvas>
+  </div>
+
+  <!-- Top Products + Category Breakdown side by side -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title"><i class="fas fa-trophy" style="color:#f39c12"></i> Top 10 Products by Revenue</div>
+      <canvas id="chartTopProducts" height="220"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><i class="fas fa-chart-pie" style="color:#8e44ad"></i> Sales by Category</div>
+      <canvas id="chartCategory" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Procurement Spend by Vendor (full width) -->
+  <div class="sec-heading"><i class="fas fa-truck" style="color:#e67e22"></i> Procurement Analytics</div>
+  <div class="chart-card" style="margin-bottom:28px">
+    <div class="chart-title"><i class="fas fa-building" style="color:#e67e22"></i> Procurement Spend by Vendor (PKR)</div>
+    <canvas id="chartProcSpend" height="90"></canvas>
+  </div>
+
+  <!-- ── Shift Management ── -->
+  <div class="sec-heading" style="margin-top:4px"><i class="fas fa-clock" style="color:#e67e22"></i> Shift Management</div>
+
+  <!-- Active shift banner -->
+  <div id="adminActiveBanner" style="display:none;background:linear-gradient(135deg,#1e8449,#27ae60);border-radius:12px;padding:18px 22px;color:#fff;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 14px rgba(39,174,96,.25)">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:10px;height:10px;border-radius:50%;background:#fff;animation:pulse 1.5s infinite;flex-shrink:0"></div>
+      <div>
+        <div style="font-size:15px;font-weight:700" id="adminBannerTitle">Checking shifts…</div>
+        <div style="font-size:12px;opacity:.85" id="adminBannerSub"></div>
+      </div>
+    </div>
+    <a href="/pos/shifts" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;border:1px solid rgba(255,255,255,.3)"><i class="fas fa-external-link-alt"></i> Full Shift Page</a>
+  </div>
+
+  <!-- Shift summary stats -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px" id="shiftStatsRow">
+    <div class="kpi-today" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <div class="kpi-today-lbl">Today's Shifts</div><div class="kpi-today-val" id="adm_sTotal">—</div>
+    </div>
+    <div class="kpi-today" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <div class="kpi-today-lbl" style="color:#27ae60">Open Now</div><div class="kpi-today-val" id="adm_sOpen" style="color:#27ae60">—</div>
+    </div>
+    <div class="kpi-today" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <div class="kpi-today-lbl">Transactions</div><div class="kpi-today-val" id="adm_sTxn">—</div>
+    </div>
+    <div class="kpi-today" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <div class="kpi-today-lbl">Cash Collected</div><div class="kpi-today-val" id="adm_sCash">—</div>
+    </div>
+    <div class="kpi-today" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <div class="kpi-today-lbl">Total Revenue</div><div class="kpi-today-val" id="adm_sRev">—</div>
+    </div>
+  </div>
+
+  <!-- Cashier KPI cards -->
+  <div class="sec-heading" style="margin-bottom:12px;font-size:13px"><i class="fas fa-id-badge" style="color:#27ae60"></i> Cashier Performance — Today</div>
+  <div class="cashier-kpi-grid" id="adminCashierGrid">
+    <div style="grid-column:1/-1;text-align:center;padding:24px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+  </div>
+
+  <!-- Recent shifts table -->
+  <div class="approval-card" style="margin-bottom:28px">
+    <div class="approval-header" style="background:linear-gradient(135deg,#e67e22,#d35400)">
+      <h3><i class="fas fa-history"></i> Recent Shifts</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="loadShiftsAdmin()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer"><i class="fas fa-sync"></i> Refresh</button>
+        <a href="/pos/shifts" style="background:rgba(255,255,255,.15);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600">All Shifts &rarr;</a>
+      </div>
+    </div>
+    <div class="approval-body">
+      <table>
+        <thead><tr><th>Cashier</th><th>Opened</th><th>Closed</th><th>Txns</th><th>Cash Sales</th><th>Opening Float</th><th>Over/Short</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="adminShiftBody">
+          <tr><td colspan="9" style="text-align:center;padding:28px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Promo Codes ── -->
+  <div class="sec-heading"><i class="fas fa-tag" style="color:#e91e63"></i> Promo Codes &amp; Discounts</div>
+  <div class="approval-card" style="margin-bottom:28px">
+    <div class="approval-header" style="background:linear-gradient(135deg,#c0392b,#e91e63)">
+      <h3><i class="fas fa-percent"></i> Promo Codes</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="badge-count" id="promoCount">—</span>
+        <button onclick="openAddPromoModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600"><i class="fas fa-plus"></i> Add Code</button>
+        <button onclick="loadPromoCodes()" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer"><i class="fas fa-sync"></i> Refresh</button>
+      </div>
+    </div>
+    <div class="approval-body">
+      <table>
+        <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Min Purchase</th><th>Uses</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="promoBody">
+          <tr><td colspan="8" style="text-align:center;padding:28px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Store Configuration ── -->
+  <div class="sec-heading"><i class="fas fa-store" style="color:#3498db"></i> Store Configuration</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px">
+
+    <!-- Store Details -->
+    <div class="chart-card">
+      <div class="chart-title"><i class="fas fa-building" style="color:#3498db"></i> Store Details</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#7f8c8d;letter-spacing:.5px;display:block;margin-bottom:5px">Store Name</label>
+          <input type="text" id="cfg_store_name" class="form-ctrl" placeholder="e.g. Super Mart">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#7f8c8d;letter-spacing:.5px;display:block;margin-bottom:5px">Address</label>
+          <textarea id="cfg_address" class="form-ctrl" rows="2" placeholder="Street, City, Province"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#7f8c8d;letter-spacing:.5px;display:block;margin-bottom:5px">Phone</label>
+            <input type="text" id="cfg_phone" class="form-ctrl" placeholder="+92 XXX XXXXXXX">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#7f8c8d;letter-spacing:.5px;display:block;margin-bottom:5px">NTN / Tax ID</label>
+            <input type="text" id="cfg_ntn" class="form-ctrl" placeholder="0000000-0">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#7f8c8d;letter-spacing:.5px;display:block;margin-bottom:5px">Receipt Footer Message</label>
+          <textarea id="cfg_footer" class="form-ctrl" rows="2" placeholder="Thank you for shopping with us!"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tax & Loyalty -->
+    <div class="chart-card">
+      <div class="chart-title"><i class="fas fa-percent" style="color:#27ae60"></i> Tax &amp; Loyalty Settings</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#7f8c8d;letter-spacing:.5px;display:block;margin-bottom:5px">Tax Rate (%)</label>
+          <input type="number" id="cfg_tax_rate" class="form-ctrl" min="0" max="100" step="0.01" placeholder="0.00">
+          <small style="color:#aaa;font-size:11px">Applied on each sale. Set 0 to disable tax.</small>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#7f8c8d;letter-spacing:.5px;display:block;margin-bottom:5px">Loyalty Earn Rate (pts per PKR 10)</label>
+          <input type="number" id="cfg_loyalty_rate" class="form-ctrl" min="0" step="0.01" placeholder="1">
+          <small style="color:#aaa;font-size:11px">e.g. 1 pt per PKR 10 spent</small>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#7f8c8d;letter-spacing:.5px;display:block;margin-bottom:5px">Loyalty Redeem Rate (PKR per point)</label>
+          <input type="number" id="cfg_loyalty_redeem" class="form-ctrl" min="0" step="0.01" placeholder="0.50">
+          <small style="color:#aaa;font-size:11px">e.g. 1 point = PKR 0.50 discount</small>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#f8f9fa;border-radius:8px;padding:12px">
+          <input type="checkbox" id="cfg_loyalty_enabled" style="width:16px;height:16px;cursor:pointer">
+          <label for="cfg_loyalty_enabled" style="font-size:13px;font-weight:600;cursor:pointer;color:#2c3e50">Enable Loyalty Points Program</label>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#f8f9fa;border-radius:8px;padding:12px">
+          <input type="checkbox" id="cfg_tax_inclusive" style="width:16px;height:16px;cursor:pointer">
+          <label for="cfg_tax_inclusive" style="font-size:13px;font-weight:600;cursor:pointer;color:#2c3e50">Tax Inclusive Pricing (tax already in price)</label>
+        </div>
+      </div>
+      <button onclick="saveStoreConfig()" style="width:100%;margin-top:16px;padding:11px;background:linear-gradient(135deg,#3498db,#2980b9);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <i class="fas fa-save"></i> Save Configuration
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ── HR KPI Section ── -->
+  <div class="sec-heading" style="margin-top:8px"><i class="fas fa-users-cog" style="color:#0288d1"></i> Human Resources Overview</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:16px">
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#0288d1,#01579b)"><i class="fas fa-id-card"></i></div>
+      <div><div class="kpi-today-val" id="hrTotalEmp">—</div><div class="kpi-today-lbl">Total Employees</div><div class="kpi-today-sub" id="hrActiveEmp">— active</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#00897b,#00695c)"><i class="fas fa-money-bill-wave"></i></div>
+      <div><div class="kpi-today-val" id="hrPayrollCost">—</div><div class="kpi-today-lbl">Monthly Payroll Cost</div><div class="kpi-today-sub">gross salaries</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#f57c00,#e65100)"><i class="fas fa-hourglass-half"></i></div>
+      <div><div class="kpi-today-val" id="hrPendingPayroll">—</div><div class="kpi-today-lbl">Pending Payroll</div><div class="kpi-today-sub" id="hrPendingAmt">— due</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#7b1fa2,#6a1b9a)"><i class="fas fa-sitemap"></i></div>
+      <div><div class="kpi-today-val" id="hrDepts">—</div><div class="kpi-today-lbl">Departments</div><div class="kpi-today-sub">active departments</div></div>
+    </div>
+    <div class="kpi-today" style="cursor:pointer" onclick="location.href='/hr'">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#1976d2,#0d47a1)"><i class="fas fa-external-link-alt"></i></div>
+      <div><div class="kpi-today-val" style="font-size:14px;color:#0288d1">HR Module</div><div class="kpi-today-lbl">Employees, Payroll</div><div class="kpi-today-sub">Click to open &rarr;</div></div>
+    </div>
+  </div>
+
+  <!-- HR Department breakdown -->
+  <div class="approval-card" style="margin-bottom:28px">
+    <div class="approval-header" style="background:linear-gradient(135deg,#0288d1,#01579b)">
+      <h3><i class="fas fa-chart-bar"></i> Headcount by Department</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="loadHrKpis()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer"><i class="fas fa-sync"></i> Refresh</button>
+        <a href="/hr" style="background:rgba(255,255,255,.15);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600">Full HR Module &rarr;</a>
+      </div>
+    </div>
+    <div class="approval-body">
+      <table>
+        <thead><tr><th>Department</th><th>Total Employees</th><th>Active</th><th>Monthly Payroll (Gross)</th><th>Avg. Net Salary</th></tr></thead>
+        <tbody id="hrDeptBody">
+          <tr><td colspan="5" style="text-align:center;padding:28px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Payment KPI Section ── -->
+  <div class="sec-heading"><i class="fas fa-money-check-alt" style="color:#6366f1"></i> Payments Overview</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:16px">
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#6366f1,#4f46e5)"><i class="fas fa-calendar-alt"></i></div>
+      <div><div class="kpi-today-val" id="pmtMonthTotal">—</div><div class="kpi-today-lbl">This Month Total</div><div class="kpi-today-sub" id="pmtMonthCount">— payments</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#10b981,#059669)"><i class="fas fa-user-tie"></i></div>
+      <div><div class="kpi-today-val" id="pmtSalaryTotal">—</div><div class="kpi-today-lbl">Salary Paid</div><div class="kpi-today-sub" id="pmtSalaryCount">— employees</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><i class="fas fa-building"></i></div>
+      <div><div class="kpi-today-val" id="pmtVendorTotal">—</div><div class="kpi-today-lbl">Vendor Paid</div><div class="kpi-today-sub" id="pmtVendorCount">— invoices</div></div>
+    </div>
+    <div class="kpi-today">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed)"><i class="fas fa-receipt"></i></div>
+      <div><div class="kpi-today-val" id="pmtOtherTotal">—</div><div class="kpi-today-lbl">Other Payments</div><div class="kpi-today-sub" id="pmtOtherCount">— payments</div></div>
+    </div>
+    <div class="kpi-today" style="cursor:pointer" onclick="location.href='/payments'">
+      <div class="kpi-today-icon" style="background:linear-gradient(135deg,#6366f1,#4f46e5)"><i class="fas fa-external-link-alt"></i></div>
+      <div><div class="kpi-today-val" style="font-size:14px;color:#6366f1">Pay Module</div><div class="kpi-today-lbl">All payments</div><div class="kpi-today-sub">Click to open &rarr;</div></div>
+    </div>
+  </div>
+
+  <!-- Recent payments table -->
+  <div class="approval-card" style="margin-bottom:28px">
+    <div class="approval-header" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">
+      <h3><i class="fas fa-list-alt"></i> Recent Payments</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="loadPaymentKpis()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer"><i class="fas fa-sync"></i> Refresh</button>
+        <a href="/payments" style="background:rgba(255,255,255,.15);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600">All Payments &rarr;</a>
+      </div>
+    </div>
+    <div class="approval-body">
+      <table>
+        <thead><tr><th>Payment ID</th><th>Type</th><th>Payee</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody id="recentPmtBody">
+          <tr><td colspan="7" style="text-align:center;padding:28px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
-<div id="sectionContent"></div>
+
+<!-- Promo Code Modal -->
+<div id="promoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="padding:20px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">
+      <h3 style="font-size:16px;font-weight:700;color:#2c3e50" id="promoModalTitle"><i class="fas fa-tag" style="color:#e91e63;margin-right:6px"></i>Add Promo Code</h3>
+      <button onclick="closePromoModal()" style="background:none;border:none;font-size:22px;color:#aaa;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="padding:24px">
+      <input type="hidden" id="promoId">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div>
+          <label class="form-lbl">Promo Code *</label>
+          <input type="text" id="p_code" class="form-ctrl" placeholder="e.g. SAVE20" style="text-transform:uppercase">
+        </div>
+        <div>
+          <label class="form-lbl">Discount Type *</label>
+          <select id="p_type" class="form-ctrl" onchange="togglePromoType()">
+            <option value="percent">Percentage (%)</option>
+            <option value="fixed">Fixed Amount (PKR)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div>
+          <label class="form-lbl" id="p_val_label">Discount Value (%)</label>
+          <input type="number" id="p_value" class="form-ctrl" min="0" step="0.01" placeholder="0">
+        </div>
+        <div>
+          <label class="form-lbl">Min Purchase (PKR)</label>
+          <input type="number" id="p_min" class="form-ctrl" min="0" step="0.01" placeholder="0">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div>
+          <label class="form-lbl">Max Uses (0 = unlimited)</label>
+          <input type="number" id="p_max_uses" class="form-ctrl" min="0" step="1" value="0">
+        </div>
+        <div>
+          <label class="form-lbl">Expiry Date</label>
+          <input type="date" id="p_expiry" class="form-ctrl">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:14px">
+        <input type="checkbox" id="p_active" checked style="width:16px;height:16px;cursor:pointer">
+        <label for="p_active" style="font-size:13px;font-weight:600;cursor:pointer;color:#2c3e50">Active (can be used at checkout)</label>
+      </div>
+      <div>
+        <label class="form-lbl">Description</label>
+        <input type="text" id="p_desc" class="form-ctrl" placeholder="e.g. 20% off for Eid special">
+      </div>
+    </div>
+    <div style="padding:16px 24px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px">
+      <button onclick="closePromoModal()" style="padding:8px 18px;background:#ecf0f1;border:none;border-radius:7px;cursor:pointer;font-weight:600;font-size:13px">Cancel</button>
+      <button onclick="savePromoCode()" style="padding:8px 18px;background:linear-gradient(135deg,#c0392b,#e91e63);color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:600;font-size:13px"><i class="fas fa-save"></i> Save</button>
+    </div>
+  </div>
 </div>
+
 <div id="toastContainer"></div>
 
 <script>
-document.addEventListener("DOMContentLoaded",function(){
-document.getElementById("navUserName").textContent=sessionStorage.getItem("full_name")||"Admin";
-document.getElementById("navRoleBadge").textContent=(sessionStorage.getItem("role")||"admin").replace(/_/g," ").replace(/\b\w/g,function(c){return c.toUpperCase()});
-loadStats();
+const fmt = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('navUserName').textContent = sessionStorage.getItem('full_name') || 'Admin';
+  document.getElementById('navRoleBadge').textContent = (sessionStorage.getItem('role') || 'admin').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  loadStats();
+  loadApprovalQueue();
+  loadProcSummary();
+  loadAnalytics();
+  loadShiftsAdmin();
+  loadPromoCodes();
+  loadStoreConfig();
+  loadHrKpis();
+  loadPaymentKpis();
 });
 
 async function loadStats(){
-try{
-const [users,vendors,products,stats]=await Promise.all([
-fetch("/api/users").then(r=>r.json()),
-fetch("/api/vendors").then(r=>r.json()),
-fetch("/api/products").then(r=>r.json()),
-fetch("/api/stats/today").then(r=>r.json())
-]);
-document.getElementById("kpiUsers").textContent=users.length;
-document.getElementById("kVendors").textContent=vendors.length;
-document.getElementById("kProducts").textContent=products.length;
-document.getElementById("kLowStock").textContent=stats.low_stock_products||0;
-document.getElementById("kSales").textContent="PKR "+(stats.today_sales||0).toFixed(2);
-}catch(e){console.error(e)}
+  try{
+    const [users, vendors, products, stats] = await Promise.all([
+      fetch('/api/users').then(r=>r.json()),
+      fetch('/api/vendors').then(r=>r.json()),
+      fetch('/api/products').then(r=>r.json()),
+      fetch('/api/stats/today').then(r=>r.json())
+    ]);
+    document.getElementById('kpiUsers').textContent = users.length;
+    document.getElementById('kVendors').textContent = vendors.length;
+    document.getElementById('kProducts').textContent = products.length;
+    const low = stats.low_stock_products || 0;
+    document.getElementById('kLowStock').textContent = low;
+    document.getElementById('kLowStock2').textContent = low;
+    const salesVal = fmt(stats.today_sales || 0);
+    document.getElementById('kSales').textContent = salesVal;
+    document.getElementById('kSales2').textContent = salesVal;
+    document.getElementById('kTxn').textContent = stats.today_transactions || 0;
+  }catch(e){ console.error('Stats load error', e); }
 }
 
-function showSection(n){
-const el=document.getElementById("sectionContent");
-const m={users:rUsers,vendors:rVendors,products:rProducts,stock:rStock,sales:rSales,reports:rReports};
-if(m[n])m[n](el);
+async function loadApprovalQueue(){
+  const tbody = document.getElementById('approvalBody');
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try{
+    const prs = await fetch('/api/procurement/pr?status=pending_approval').then(r=>r.json());
+    document.getElementById('approvalCount').textContent = prs.length || '0';
+    document.getElementById('kPendingPR').textContent = prs.length || '0';
+
+    if(!prs.length){
+      tbody.innerHTML = '<tr><td colspan="8"><div style="text-align:center;padding:40px;color:#7f8c8d"><i class="fas fa-check-circle" style="font-size:36px;color:#27ae60;margin-bottom:10px;display:block"></i><strong>No pending approvals</strong><p style="font-size:13px;margin-top:4px">All purchase requisitions are up to date.</p></div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = prs.map(pr => {
+      const items = pr.items ? pr.items.length : 0;
+      const est = pr.items ? pr.items.reduce((s,i) => s + ((i.qty_requested||0)*(i.estimated_unit_price||0)), 0) : 0;
+      const date = pr.created_at ? new Date(pr.created_at).toLocaleDateString('en-PK', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+      const priColor = pr.priority === 'urgent' ? '#e74c3c' : pr.priority === 'high' ? '#e67e22' : '#3498db';
+      return `<tr>
+        <td><strong style="color:#667eea">${pr.doc_number||pr._id?.substring(0,8)||'—'}</strong></td>
+        <td>${pr.title||'—'}<br><small style="color:#aaa">${pr.department||''}</small></td>
+        <td>${pr.created_by_name||'—'}</td>
+        <td style="text-align:center"><strong>${items}</strong></td>
+        <td><strong>${est > 0 ? fmt(est) : '—'}</strong></td>
+        <td style="white-space:nowrap">${date}</td>
+        <td><span class="badge" style="background:${priColor}22;color:${priColor}">${(pr.priority||'normal').toUpperCase()}</span></td>
+        <td style="white-space:nowrap">
+          <button class="btn-xs btn-approve" onclick="approvePR('${pr._id}')"><i class="fas fa-check"></i> Approve</button>
+          <button class="btn-xs btn-sendback" onclick="sendBackPR('${pr._id}')"><i class="fas fa-undo"></i> Send Back</button>
+          <button class="btn-xs btn-reject" onclick="rejectPR('${pr._id}')"><i class="fas fa-times"></i> Reject</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#e74c3c">Failed to load approval queue</td></tr>';
+  }
 }
 
-function rUsers(el){
-el.innerHTML='<div class="section-panel active"><h3><i class="fas fa-users"></i> User Management</h3><div class="action-bar"><button class="btn-action btn-primary" onclick="showUF()">+ Add User</button><button class="btn-action btn-secondary" onclick="loadUs()"><i class="fas fa-sync"></i> Refresh</button></div><div id="uF" style="display:none;margin:16px 0;padding:16px;background:#f8f9fa;border-radius:8px"><div class="form-row"><div class="form-group"><label>Username *</label><input id="nu"></div><div class="form-group"><label>Full Name *</label><input id="nf"></div></div><div class="form-row"><div class="form-group"><label>Email</label><input type="email" id="ne"></div><div class="form-group"><label>Role *</label><select id="nr"><option value="sales_person">Sales Person</option><option value="procurement_manager">Procurement Manager</option><option value="admin">Admin</option></select></div></div><div class="form-group"><label>Password *</label><input type="password" id="np" placeholder="Min 6 characters"></div><div style="display:flex;gap:8px"><button class="btn-action btn-success" onclick="saveU()">Save User</button><button class="btn-action btn-secondary" onclick="document.getElementById(\'uF\').style.display=\'none\'">Cancel</button></div></div><table><thead><tr><th>#</th><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="uT"><tr><td colspan="7" style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody></table></div>';
-loadUs();
+async function approvePR(id){
+  const note = prompt('Approval note (optional):') ?? '';
+  if(note === null) return;
+  try{
+    const r = await fetch('/api/procurement/pr/'+id+'/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notes:note})});
+    if(r.ok){ showT('PR approved successfully!','success'); loadApprovalQueue(); loadProcSummary(); }
+    else { const d=await r.json(); showT(d.message||'Failed to approve','error'); }
+  }catch(e){ showT('Error approving PR','error'); }
 }
 
-async function loadUs(){
-try{
-const u=await fetch("/api/users").then(r=>r.json());
-const tb=document.getElementById("uT");
-if(!u.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:#999">No users found</td></tr>';return}
-var h="";
-u.forEach(function(x,i){
-var d=x.username!=="admin"?"<button class='btn-action btn-danger' style='padding:4px 8px;font-size:11px' onclick=\"delU('"+x._id+"')\"><i class='fas fa-trash'></i> Delete</button>":"<span style='color:#aaa'>—</span>";
-h+="<tr><td>"+(i+1)+"</td><td><strong>"+x.username+"</strong></td><td>"+(x.full_name||"-")+"</td><td>"+(x.email||"-")+"</td><td><span class='role-tag role-"+x.role.replace("_","-")+"'>"+x.role.replace(/_/g," ").replace(/\b\w/g,function(c){return c.toUpperCase()})+"</span></td><td>"+(x.created_at?new Date(x.created_at).toLocaleDateString():"-")+"</td><td>"+d+"</td></tr>"
-});
-tb.innerHTML=h;
-}catch(e){console.error(e);tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:#e74c3c">Failed to load users</td></tr>';}
+async function sendBackPR(id){
+  const note = prompt('Reason for sending back (required):');
+  if(!note || !note.trim()){ showT('Reason is required','error'); return; }
+  try{
+    const r = await fetch('/api/procurement/pr/'+id+'/send_back',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notes:note})});
+    if(r.ok){ showT('PR sent back for revision','success'); loadApprovalQueue(); loadProcSummary(); }
+    else { const d=await r.json(); showT(d.message||'Failed','error'); }
+  }catch(e){ showT('Error','error'); }
 }
 
-function showUF(){document.getElementById("uF").style.display="block"}
-
-async function saveU(){
-var u={username:document.getElementById("nu").value.trim(),full_name:document.getElementById("nf").value.trim(),email:document.getElementById("ne").value.trim(),role:document.getElementById("nr").value,password:document.getElementById("np").value};
-if(!u.username||!u.full_name||!u.role||!u.password){showT("Fill all required fields","error");return}
-if(u.password.length<6){showT("Password must be at least 6 characters","error");return}
-try{
-var r=await fetch("/api/auth/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(u)});
-var d=await r.json();
-if(r.ok){showT("User created successfully!","success");document.getElementById("uF").style.display="none";loadUs()}
-else showT(d.message||"Failed to create user","error")
-}catch(e){showT("Failed to create user","error")}
+async function rejectPR(id){
+  const note = prompt('Rejection reason (required):');
+  if(!note || !note.trim()){ showT('Rejection reason is required','error'); return; }
+  if(!confirm('Are you sure you want to REJECT this PR?')) return;
+  try{
+    const r = await fetch('/api/procurement/pr/'+id+'/reject',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notes:note})});
+    if(r.ok){ showT('PR rejected','success'); loadApprovalQueue(); loadProcSummary(); }
+    else { const d=await r.json(); showT(d.message||'Failed','error'); }
+  }catch(e){ showT('Error','error'); }
 }
 
-async function delU(id){
-if(!confirm("Are you sure you want to delete this user?"))return;
-try{
-var r=await fetch("/api/users/"+id,{method:"DELETE"});
-var d=await r.json();
-if(d.success){showT("User deleted successfully","success");loadUs()}
-else showT(d.message||"Failed to delete user","error")
-}catch(e){showT("Failed to delete user","error")}
-}
-
-function rVendors(el){
-el.innerHTML='<div class="section-panel active"><h3><i class="fas fa-building"></i> Vendor Management</h3><div class="action-bar"><button class="btn-action btn-primary" onclick="showVF()">+ Add Vendor</button><button class="btn-action btn-secondary" onclick="loadVs()"><i class="fas fa-sync"></i> Refresh</button></div><div id="vF" style="display:none;margin:16px 0;padding:16px;background:#f8f9fa;border-radius:8px"><div class="form-row"><div class="form-group"><label>Vendor Name *</label><input id="vn" placeholder="Enter vendor name"></div><div class="form-group"><label>Contact Person</label><input id="vc" placeholder="Contact person name"></div></div><div class="form-row"><div class="form-group"><label>Phone</label><input id="vp" placeholder="Phone number"></div><div class="form-group"><label>Email</label><input type="email" id="ve" placeholder="Email address"></div></div><div class="form-group"><label>Address</label><input id="va" placeholder="Full address"></div><div class="form-row-3"><div class="form-group"><label>Payment Terms</label><select id="vt"><option value="Net 15">Net 15</option><option value="Net 30">Net 30</option><option value="Net 45">Net 45</option><option value="COD">COD</option></select></div><div class="form-group"><label>Status</label><select id="vs"><option value="active">Active</option><option value="inactive">Inactive</option></select></div><div class="form-group"><label>Credit Limit (PKR)</label><input type="number" id="vcl" placeholder="0"></div></div><button class="btn-action btn-success" onclick="saveV()"><i class="fas fa-save"></i> Save Vendor</button><button class="btn-action btn-secondary" onclick="document.getElementById(\'vF\').style.display=\'none\'">Cancel</button></div><table><thead><tr><th>#</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Status</th><th>Terms</th><th>Actions</th></tr></thead><tbody id="vT"><tr><td colspan="8" style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody></table></div>';
-loadVs();
-}
-
-async function loadVs(){
-try{
-var v=await fetch("/api/vendors").then(r=>r.json());
-var tb=document.getElementById("vT");
-if(!v.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#999">No vendors found</td></tr>';return}
-var h="";
-v.forEach(function(x,i){
-var c=x.status==="active"?"#1e8449":"#b9770e";var bg=x.status==="active"?"#d5f5e3":"#fdebd0";
-h+="<tr><td>"+(i+1)+"</td><td><strong>"+x.name+"</strong></td><td>"+(x.contact_person||"-")+"</td><td>"+(x.phone||"-")+"</td><td>"+(x.email||"-")+"</td><td><span class='role-tag' style='background:"+bg+";color:"+c+"'>"+x.status+"</span></td><td>"+(x.payment_terms||"-")+"</td><td><button class='btn-action btn-danger' style='padding:4px 8px;font-size:11px' onclick=\"delV('"+x._id+"')\">Delete</button></td></tr>"
-});
-tb.innerHTML=h;
-}catch(e){console.error(e);tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#e74c3c">Failed to load vendors</td></tr>';}
-}
-
-function showVF(){document.getElementById("vF").style.display="block"}
-
-async function saveV(){
-var v={name:document.getElementById("vn").value.trim(),contact_person:document.getElementById("vc").value.trim(),phone:document.getElementById("vp").value.trim(),email:document.getElementById("ve").value.trim(),address:document.getElementById("va").value.trim(),payment_terms:document.getElementById("vt").value,status:document.getElementById("vs").value,credit_limit:parseFloat(document.getElementById("vcl").value)||0};
-if(!v.name){showT("Vendor name is required","error");return}
-try{
-var r=await fetch("/api/vendors",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)});
-if(r.ok){showT("Vendor saved successfully!","success");document.getElementById("vF").style.display="none";loadVs()}
-else{var d=await r.json();showT(d.message||"Error saving vendor","error")}
-}catch(e){showT("Failed to save vendor","error")}
-}
-
-async function delV(id){
-if(!confirm("Are you sure you want to delete this vendor?"))return;
-try{
-var r=await fetch("/api/vendors/"+id,{method:"DELETE"});var d=await r.json();
-if(d.success){showT("Vendor deleted successfully","success");loadVs()}else showT(d.message||"Failed to delete vendor","error")
-}catch(e){showT("Failed to delete vendor","error")}
-}
-
-function rProducts(el){
-el.innerHTML='<div class="section-panel active"><h3><i class="fas fa-boxes"></i> Product Management</h3><table><thead><tr><th>#</th><th>Name</th><th>Category</th><th>Supplier</th><th>Price(PKR)</th><th>Stock</th><th>Status</th><th>Expiry</th><th>Batch</th></tr></thead><tbody id="pT"><tr><td colspan="9" style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody></table></div>';
-loadPs();
-}
-
-async function loadPs(){
-try{
-var p=await fetch("/api/products").then(r=>r.json());
-var tb=document.getElementById("pT");
-if(!p.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:#999">No products found</td></tr>';return}
-var h="";
- p.forEach(function(x){
- var isLowStock = (x.stock||0) < (x.reorder_level||10);
- var sc = x.status === 'active' ? (isLowStock ? '#fff3cd' : '#d5f5e3') : '#e0e0e0';
- var sc2 = x.status === 'active' ? (isLowStock ? '#856404' : '#1e8449') : '#666';
- h+="<tr><td>"+x._id+"</td><td><strong>"+x.name+"</strong></td><td>"+(x.category||"-")+"</td><td>"+(x.supplier||"-")+"</td><td>PKR "+parseFloat(x.price).toFixed(2)+"</td><td>"+(x.stock||0)+" "+(x.unit||"")+"</td><td><span class='role-tag' style='background:"+sc+";color:"+sc2+"'>"+(x.status||"active")+"</span></td><td>"+(x.expiry_date||"-")+"</td><td>"+(x.batch_no||"-")+"</td></tr>"
- });
-tb.innerHTML=h;
-}catch(e){console.error(e);tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:#e74c3c">Failed to load products</td></tr>';}
-}
-
-function rStock(el){
-el.innerHTML='<div class="section-panel active"><h3><i class="fas fa-cubes"></i> Low Stock Alert</h3><table><thead><tr><th>#</th><th>Product</th><th>Category</th><th>Supplier</th><th>Stock</th><th>Reorder Lvl</th><th>Unit</th><th>Price(PKR)</th></tr></thead><tbody id="sT"><tr><td colspan="8" style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody></table></div>';
-loadStk();
-}
-
-async function loadStk(){
-try{
-var p=await fetch("/api/products").then(r=>r.json());
-var low=p.filter(function(x){return(x.stock||0)<(x.reorder_level||10)});
-var tb=document.getElementById("sT");
-if(!low.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#27ae60"><i class="fas fa-check-circle"></i> All products well stocked!</td></tr>';return}
-var h="";
-low.forEach(function(x){
-var bg=x.stock<5?"#fef3e2":"transparent";var c=x.stock<5?"#e74c3c":"#e67e22";
-h+="<tr style='background:"+bg+"'><td>"+x._id+"</td><td><strong>"+x.name+"</strong></td><td>"+(x.category||"-")+"</td><td>"+(x.supplier||"-")+"</td><td style='color:"+c+";font-weight:700'>"+(x.stock||0)+"</td><td>"+(x.reorder_level||"-")+"</td><td>"+(x.unit||"-")+"</td><td>PKR "+parseFloat(x.price).toFixed(2)+"</td></tr>"
-});
-tb.innerHTML=h;
-}catch(e){console.error(e)}
-}
-
-function rSales(el){
-el.innerHTML='<div class="section-panel active"><h3><i class="fas fa-dollar-sign"></i> Sales Today</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px"><div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);text-align:center"><h3 style="font-size:24px;color:#27ae60" id="sTotal">-</h3><p style="color:#7f8c8d">Total PKR</p></div><div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);text-align:center"><h3 style="font-size:24px;color:#3498db" id="sCount">-</h3><p style="color:#7f8c8d">Transactions</p></div></div><table><thead><tr><th>Receipt #</th><th>Items</th><th>Payment</th><th>Cashier</th><th>Total(PKR)</th><th>Date</th></tr></thead><tbody id="salesT"><tr><td colspan="6" style="text-align:center;padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody></table></div>';
-loadSl();
-}
-
-async function loadSl(){
-try{
-var s=await fetch("/api/sales?limit=50").then(r=>r.json());
-var tb=document.getElementById("salesT");
-if(!s.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">No sales today</td></tr>';return}
-var h="";
-s.forEach(function(x){h+="<tr><td>#"+x._id.substring(0,8).toUpperCase()+"</td><td>"+x.items.reduce(function(a,i){return a+i.quantity},0)+" items</td><td>"+(x.payment_method||"cash").toUpperCase()+"</td><td>"+(x.cashier||"-")+"</td><td>PKR "+parseFloat(x.total).toFixed(2)+"</td><td>"+new Date(x.timestamp).toLocaleDateString()+"</td></tr>"});
-tb.innerHTML=h;
-document.getElementById("sTotal").textContent="PKR "+s.reduce(function(a,x){return a+x.total},0).toFixed(2);
-document.getElementById("sCount").textContent=s.length;
-}catch(e){console.error(e)}
-}
-
-function rReports(el){
-    const reports = [
-        { key: 'stock-report', title: 'Stock Report', icon: 'fa-cubes', color: '#3498db', desc: 'View remaining stock by vendor, product, or date' },
-        { key: 'expiry-report', title: 'Expiry Report', icon: 'fa-calendar-times', color: '#e67e22', desc: 'Track products by expiry date' },
-        { key: 'price-list', title: 'Price List (PKR)', icon: 'fa-tag', color: '#27ae60', desc: 'Current product prices with cost & selling price' },
-        { key: 'slow-moving', title: 'Slow Moving Items', icon: 'fa-tachometer-alt', color: '#e74c3c', desc: 'Products not selling in the last 30 days' },
-        { key: 'vendor-payment', title: 'Vendor Payments', icon: 'fa-file-invoice-dollar', color: '#9b59b6', desc: 'Paid & pending amounts by vendor' },
-        { key: 'daily-products', title: 'Daily Products Added', icon: 'fa-calendar-day', color: '#1abc9c', desc: 'Products registered on a specific date' }
-    ];
-
-    let html = '<div class="section-panel active"><h3><i class="fas fa-chart-bar"></i> Reports Center</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">';
-    reports.forEach(r => {
-        html += '<div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08)"><h4 style="margin-bottom:12px;color:'+r.color+';display:flex;align-items:center;gap:8px"><i class="fas '+r.icon+'"></i>'+r.title+'</h4><p style="font-size:13px;color:#7f8c8d;margin-bottom:16px">'+r.desc+'</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a href="/reports/'+r.key+'" target="_self" class="btn-action" style="background:'+r.color+';color:white;display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600"><i class="fas fa-eye"></i> Display</a><a href="/api/reports/'+r.key+'/excel" class="btn-action btn-success" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600"><i class="fas fa-download"></i> Download</a></div></div>';
-    });
-    html += '</div></div>';
-    el.innerHTML = html;
+async function loadProcSummary(){
+  try{
+    const s = await fetch('/api/procurement/summary').then(r=>r.json());
+    document.getElementById('procPRTotal').textContent = s.pr?.total ?? '—';
+    document.getElementById('procPRPending').textContent = s.pr?.pending ?? '—';
+    document.getElementById('procPRApproved').textContent = s.pr?.approved ?? '—';
+    document.getElementById('procPOTotal').textContent = s.po?.total ?? '—';
+    document.getElementById('procPODraft').textContent = s.po?.draft ?? '—';
+    document.getElementById('procPOValue').textContent = fmt(s.po?.total_value||0);
+    document.getElementById('procGRTotal').textContent = s.gr?.total ?? '—';
+    document.getElementById('procGRConfirmed').textContent = s.gr?.confirmed ?? '—';
+    document.getElementById('procGRPending').textContent = (s.gr?.total||0)-(s.gr?.confirmed||0);
+    document.getElementById('procInvTotal').textContent = s.invoices?.total ?? '—';
+    document.getElementById('procInvPending').textContent = s.invoices?.pending ?? '—';
+    document.getElementById('procInvDue').textContent = fmt(s.invoices?.total_due||0);
+    document.getElementById('procPayTotal').textContent = s.payments?.total ?? '—';
+    document.getElementById('procPayPaid').textContent = fmt(s.payments?.total_paid||0);
+  }catch(e){ console.error('Proc summary error', e); }
 }
 
 function showT(m,t){
-var ex=document.querySelector(".toast");if(ex)ex.remove();
-var e=document.createElement("div");e.className="toast "+t;e.textContent=m;
-document.getElementById("toastContainer").appendChild(e);
-setTimeout(function(){e.classList.add("show");setTimeout(function(){e.classList.remove("show");setTimeout(function(){e.remove()},300)},3000)},100);
+  var ex=document.querySelector('.toast');if(ex)ex.remove();
+  var e=document.createElement('div');e.className='toast '+t;e.textContent=m;
+  document.getElementById('toastContainer').appendChild(e);
+  setTimeout(()=>{e.classList.add('show');setTimeout(()=>{e.classList.remove('show');setTimeout(()=>e.remove(),300)},3000)},100);
+}
+
+// ── Chart instances (kept to destroy & redraw on refresh) ──────────────────
+const charts = {};
+
+async function loadAnalytics(){
+  try {
+    const [trend, topProds, cats, procSpend, procKpis] = await Promise.all([
+      fetch('/api/analytics/sales-trend').then(r=>r.json()),
+      fetch('/api/analytics/top-products?limit=10').then(r=>r.json()),
+      fetch('/api/analytics/category-breakdown').then(r=>r.json()),
+      fetch('/api/analytics/procurement-spend').then(r=>r.json()),
+      fetch('/api/analytics/procurement-kpis').then(r=>r.json()),
+    ]);
+
+    // ── Extended KPI cards ──────────────────────────────────────────────────
+    const todayStats = await fetch('/api/stats/today').then(r=>r.json());
+    const rev = todayStats.today_sales || 0;
+    const txn = todayStats.today_transactions || 0;
+    document.getElementById('tSales').textContent    = fmt(rev);
+    document.getElementById('tSalesSub').textContent = txn + ' transaction' + (txn!==1?'s':'');
+    document.getElementById('tAvg').textContent      = txn > 0 ? fmt(rev/txn) : 'PKR 0.00';
+    document.getElementById('tLow').textContent      = todayStats.low_stock_products || 0;
+    document.getElementById('tPR').textContent       = procKpis.pr_pending || 0;
+    document.getElementById('tOverdue').textContent  = procKpis.overdue_invoices || 0;
+    document.getElementById('tOverdueSub').textContent = procKpis.overdue_amount > 0 ? fmt(procKpis.overdue_amount) : 'none outstanding';
+    document.getElementById('tAP').textContent       = fmt(procKpis.total_ap || 0);
+
+    // ── Alert strip ─────────────────────────────────────────────────────────
+    const alerts = [];
+    if((todayStats.low_stock_products||0) > 0)
+      alerts.push({cls:'danger', icon:'fa-exclamation-circle', msg: (todayStats.low_stock_products)+' product(s) are below reorder level — <a href="/procurement/stock" style="color:inherit;font-weight:700">View Stock Alerts</a>'});
+    if((procKpis.overdue_invoices||0) > 0)
+      alerts.push({cls:'warning', icon:'fa-clock', msg: (procKpis.overdue_invoices)+' vendor invoice(s) are overdue totalling '+fmt(procKpis.overdue_amount)+' — <a href="/procurement/invoices" style="color:inherit;font-weight:700">View Invoices</a>'});
+    if((procKpis.pr_pending||0) > 0)
+      alerts.push({cls:'info', icon:'fa-clipboard-list', msg: (procKpis.pr_pending)+' purchase requisition(s) are waiting for your approval'});
+    const strip = document.getElementById('alertStrip');
+    if(alerts.length){
+      strip.innerHTML = alerts.map(a=>`<div class="alert-strip ${a.cls}"><i class="fas ${a.icon}"></i><span>${a.msg}</span></div>`).join('');
+      strip.style.display='block';
+    }
+
+    // ── Chart helpers ────────────────────────────────────────────────────────
+    const palette = ['#667eea','#27ae60','#e74c3c','#f39c12','#1abc9c','#8e44ad','#3498db','#e67e22','#16a085','#c0392b'];
+    function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id).getContext('2d'), cfg); }
+
+    // ── 1. 7-Day Sales Trend ─────────────────────────────────────────────────
+    mkChart('chartTrend', {
+      type: 'line',
+      data: {
+        labels: trend.map(d=>d.date),
+        datasets: [{
+          label: 'Revenue (PKR)',
+          data: trend.map(d=>d.revenue),
+          borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,.1)',
+          tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#27ae60'
+        },{
+          label: 'Transactions',
+          data: trend.map(d=>d.transactions),
+          borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,.08)',
+          tension: 0.4, fill: false, pointRadius: 4, pointBackgroundColor: '#3498db',
+          yAxisID: 'y2'
+        }]
+      },
+      options: {
+        responsive: true, interaction: {mode:'index', intersect:false},
+        plugins: {legend:{position:'top'}, tooltip:{callbacks:{label: ctx => ctx.dataset.yAxisID==='y2' ? ctx.parsed.y+' txns' : fmt(ctx.parsed.y)}}},
+        scales: {
+          y:  {position:'left',  ticks:{callback:v=>'PKR '+Number(v).toLocaleString()}, grid:{color:'#f0f0f0'}},
+          y2: {position:'right', ticks:{callback:v=>v+' txns'}, grid:{display:false}}
+        }
+      }
+    });
+
+    // ── 2. Top 10 Products ───────────────────────────────────────────────────
+    mkChart('chartTopProducts', {
+      type: 'bar',
+      data: {
+        labels: topProds.map(p=>p.name.length>18?p.name.substring(0,17)+'…':p.name),
+        datasets:[{
+          label:'Revenue (PKR)', data: topProds.map(p=>p.revenue),
+          backgroundColor: palette, borderRadius: 5
+        }]
+      },
+      options: {
+        indexAxis:'y', responsive:true,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>fmt(ctx.parsed.x)}}},
+        scales:{x:{ticks:{callback:v=>'PKR '+Number(v).toLocaleString()}, grid:{color:'#f0f0f0'}}, y:{grid:{display:false}}}
+      }
+    });
+
+    // ── 3. Category Breakdown ────────────────────────────────────────────────
+    if(cats.length){
+      mkChart('chartCategory', {
+        type:'doughnut',
+        data:{
+          labels: cats.map(c=>c.category),
+          datasets:[{data: cats.map(c=>c.revenue), backgroundColor: palette, borderWidth:2, borderColor:'#fff', hoverOffset:8}]
+        },
+        options:{
+          responsive:true, cutout:'60%',
+          plugins:{legend:{position:'bottom', labels:{boxWidth:12, padding:10, font:{size:11}}},
+            tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fmt(ctx.parsed)}}}
+        }
+      });
+    } else {
+      document.getElementById('chartCategory').parentElement.innerHTML += '<p style="text-align:center;color:#aaa;font-size:13px;margin-top:30px">No sales data yet</p>';
+    }
+
+    // ── 4. Procurement Spend by Vendor ───────────────────────────────────────
+    if(procSpend.length){
+      mkChart('chartProcSpend', {
+        type:'bar',
+        data:{
+          labels: procSpend.map(v=>v.vendor.length>20?v.vendor.substring(0,19)+'…':v.vendor),
+          datasets:[{
+            label:'PO Value (PKR)', data: procSpend.map(v=>v.value),
+            backgroundColor: palette, borderRadius:5
+          }]
+        },
+        options:{
+          responsive:true,
+          plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>fmt(ctx.parsed.y)+' ('+procSpend[ctx.dataIndex].count+' POs)'}}},
+          scales:{y:{ticks:{callback:v=>'PKR '+Number(v).toLocaleString()}, grid:{color:'#f0f0f0'}}, x:{grid:{display:false}}}
+        }
+      });
+    } else {
+      document.getElementById('chartProcSpend').parentElement.innerHTML += '<p style="text-align:center;color:#aaa;font-size:13px;margin-top:20px">No purchase orders yet</p>';
+    }
+
+  } catch(e){ console.error('Analytics load error', e); }
+}
+
+// ── Shift Management ────────────────────────────────────────────────────────
+async function loadShiftsAdmin(){
+  try{
+    const [shifts, active, cashierKpis] = await Promise.all([
+      fetch('/api/shifts').then(r=>r.json()),
+      fetch('/api/shifts/active').then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch('/api/shifts/cashier-kpis').then(r=>r.json()).catch(()=>[])
+    ]);
+
+    // Banner
+    const banner = document.getElementById('adminActiveBanner');
+    if(active){
+      banner.style.background='linear-gradient(135deg,#1e8449,#27ae60)';
+      const opened = new Date(active.opened_at).toLocaleString('en-PK',{hour12:true,hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'});
+      document.getElementById('adminBannerTitle').textContent = `Shift Open — ${active.cashier_name||'Cashier'}`;
+      document.getElementById('adminBannerSub').textContent = `Opened at ${opened} · Float: ${fmt(active.opening_float||0)} · ${active.transaction_count||0} transactions`;
+    } else {
+      banner.style.background='linear-gradient(135deg,#7f8c8d,#95a5a6)';
+      document.getElementById('adminBannerTitle').textContent = 'No Active Shift';
+      document.getElementById('adminBannerSub').textContent = 'No cashier shift is currently open';
+    }
+    banner.style.display='flex';
+
+    // Stats
+    const todayShifts = shifts.filter(s=>{ const d=new Date(s.opened_at); const n=new Date(); return d.toDateString()===n.toDateString(); });
+    document.getElementById('adm_sTotal').textContent = todayShifts.length;
+    document.getElementById('adm_sOpen').textContent = shifts.filter(s=>s.status==='open').length;
+    document.getElementById('adm_sTxn').textContent = todayShifts.reduce((s,x)=>s+(x.transaction_count||0),0);
+    const cashTotal = todayShifts.reduce((s,x)=>s+((x.payment_breakdown&&x.payment_breakdown.cash)||0),0);
+    document.getElementById('adm_sCash').textContent = fmt(cashTotal);
+    document.getElementById('adm_sRev').textContent = fmt(todayShifts.reduce((s,x)=>s+(x.total_sales||0),0));
+
+    // ── Cashier KPI cards ──────────────────────────────────────────────────
+    const cGrid = document.getElementById('adminCashierGrid');
+    if(!cashierKpis.length){
+      cGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#bdc3c7">
+        <i class="fas fa-user-clock" style="font-size:32px;display:block;margin-bottom:10px"></i>
+        <div style="font-weight:600">No cashier shifts recorded today</div>
+        <div style="font-size:12px;margin-top:3px">Shifts appear here once a cashier opens one at the POS</div>
+      </div>`;
+    } else {
+      cGrid.innerHTML = cashierKpis.map(c => {
+        const onShift = c.open_shifts > 0;
+        const dotCls  = onShift ? 'on' : 'off';
+        const cardCls = onShift ? 'active' : 'inactive';
+        const statusTxt = onShift ? 'Currently on shift' : 'Shift closed';
+
+        let durTxt = '';
+        if(onShift && c.current_shift_opened){
+          const ms = Date.now() - new Date(c.current_shift_opened);
+          const h  = Math.floor(ms/3600000);
+          const m  = Math.floor((ms%3600000)/60000);
+          durTxt = ` &bull; ${h}h ${m}m`;
+        }
+
+        const os = c.over_short || 0;
+        let osPill = '';
+        if(c.shifts > 0){
+          if(os > 0.01)       osPill = `<span class="ckpi-pill" style="background:#d5f5e3;color:#1e8449"><i class="fas fa-arrow-up"></i> Over ${fmt(os)}</span>`;
+          else if(os < -0.01) osPill = `<span class="ckpi-pill" style="background:#fde8e8;color:#c0392b"><i class="fas fa-arrow-down"></i> Short ${fmt(Math.abs(os))}</span>`;
+          else                osPill = `<span class="ckpi-pill" style="background:#eaf4fb;color:#1a5276"><i class="fas fa-check"></i> Balanced</span>`;
+        }
+
+        return `<div class="cashier-kpi-card ${cardCls}">
+          ${onShift ? '<span class="ckpi-live">LIVE</span>' : ''}
+          <div class="ckpi-name"><span class="ckpi-dot ${dotCls}"></span>${c.cashier_name}</div>
+          <div class="ckpi-status" style="color:${onShift?'#27ae60':'#95a5a6'}">${statusTxt}${durTxt}</div>
+          <div class="ckpi-stats">
+            <div class="ckpi-box"><div class="ckpi-val">${c.transactions}</div><div class="ckpi-lbl">Txns</div></div>
+            <div class="ckpi-box"><div class="ckpi-val" style="font-size:11px">${fmt(c.total_sales)}</div><div class="ckpi-lbl">Revenue</div></div>
+            <div class="ckpi-box"><div class="ckpi-val" style="font-size:11px">${fmt(c.cash_sales)}</div><div class="ckpi-lbl">Cash</div></div>
+            <div class="ckpi-box"><div class="ckpi-val" style="font-size:11px">${c.transactions>0?fmt(c.total_sales/c.transactions):'—'}</div><div class="ckpi-lbl">Avg</div></div>
+          </div>
+          ${osPill}
+        </div>`;
+      }).join('');
+    }
+
+    // Table — show last 10
+    const tb = document.getElementById('adminShiftBody');
+    const recent = shifts.slice(0,10);
+    if(!recent.length){
+      tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:#aaa">No shifts recorded yet</td></tr>';
+      return;
+    }
+    tb.innerHTML = recent.map(s=>{
+      const opened = s.opened_at ? new Date(s.opened_at).toLocaleString('en-PK',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+      const closed = s.closed_at ? new Date(s.closed_at).toLocaleString('en-PK',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+      const cashSales = (s.payment_breakdown&&s.payment_breakdown.cash)||0;
+      const os = s.over_short;
+      let osHtml='—';
+      if(s.status==='closed'&&os!==undefined){
+        const c=os>0?'#1e8449':os<0?'#c0392b':'#555';
+        osHtml=`<span style="color:${c};font-weight:700">${os>=0?'+':''}${fmt(os)}</span>`;
+      }
+      const stBadge = s.status==='open'
+        ? '<span class="badge badge-approved"><i class="fas fa-circle" style="font-size:7px"></i> Open</span>'
+        : '<span class="badge" style="background:#eee;color:#555">Closed</span>';
+      return `<tr>
+        <td>${s.cashier_name||'—'}</td>
+        <td style="white-space:nowrap;font-size:12px">${opened}</td>
+        <td style="white-space:nowrap;font-size:12px">${closed}</td>
+        <td style="text-align:center">${s.transaction_count||0}</td>
+        <td><strong style="color:#1e8449">${fmt(cashSales)}</strong></td>
+        <td>${fmt(s.opening_float||0)}</td>
+        <td>${osHtml}</td>
+        <td>${stBadge}</td>
+        <td><a href="/pos/shifts" style="font-size:11px;color:#667eea;text-decoration:none;font-weight:700">View &rarr;</a></td>
+      </tr>`;
+    }).join('');
+  }catch(e){ console.error('Shift admin load error',e); }
+}
+
+// ── Promo Codes ──────────────────────────────────────────────────────────────
+let allPromoCodes = [];
+
+async function loadPromoCodes(){
+  try{
+    allPromoCodes = await fetch('/api/promo-codes').then(r=>r.json());
+    document.getElementById('promoCount').textContent = allPromoCodes.length;
+    renderPromoCodes();
+  }catch(e){ console.error('Promo load error',e); }
+}
+
+function renderPromoCodes(){
+  const tb = document.getElementById('promoBody');
+  if(!allPromoCodes.length){
+    tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:36px;color:#aaa"><i class="fas fa-tag" style="font-size:28px;display:block;margin-bottom:10px;color:#ddd"></i>No promo codes yet — add one above</td></tr>';
+    return;
+  }
+  tb.innerHTML = allPromoCodes.map(p=>{
+    const typeLabel = p.type==='percent' ? `${p.value}% OFF` : `PKR ${Number(p.value||0).toFixed(2)} OFF`;
+    const minPur = p.min_purchase>0 ? fmt(p.min_purchase) : '—';
+    const uses = `${p.used_count||0} / ${p.max_uses>0?p.max_uses:'∞'}`;
+    const expiry = p.expiry_date ? new Date(p.expiry_date).toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}) : 'No expiry';
+    const expired = p.expiry_date && new Date(p.expiry_date)<new Date();
+    const activeBadge = !p.active
+      ? '<span class="badge badge-rejected">Inactive</span>'
+      : expired
+        ? '<span class="badge badge-rejected">Expired</span>'
+        : '<span class="badge badge-approved">Active</span>';
+    return `<tr>
+      <td><strong style="font-family:monospace;font-size:14px;color:#c0392b;letter-spacing:1px">${p.code||'—'}</strong><br><small style="color:#aaa">${p.description||''}</small></td>
+      <td>${p.type==='percent'?'<span class="badge badge-pending">Percent</span>':'<span class="badge badge-approved">Fixed</span>'}</td>
+      <td><strong>${typeLabel}</strong></td>
+      <td>${minPur}</td>
+      <td>${uses}</td>
+      <td style="white-space:nowrap;font-size:12px">${expiry}</td>
+      <td>${activeBadge}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-xs btn-sendback" onclick="editPromoCode('${p._id}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn-xs ${p.active?'btn-reject':'btn-approve'}" onclick="togglePromo('${p._id}',${!p.active})">${p.active?'<i class="fas fa-ban"></i> Disable':'<i class="fas fa-check"></i> Enable'}</button>
+        <button class="btn-xs btn-reject" onclick="deletePromo('${p._id}','${(p.code||'').replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openAddPromoModal(){
+  document.getElementById('promoId').value='';
+  document.getElementById('promoModalTitle').innerHTML='<i class="fas fa-tag" style="color:#e91e63;margin-right:6px"></i>Add Promo Code';
+  document.getElementById('p_code').value='';
+  document.getElementById('p_type').value='percent';
+  document.getElementById('p_value').value='';
+  document.getElementById('p_min').value='0';
+  document.getElementById('p_max_uses').value='0';
+  document.getElementById('p_expiry').value='';
+  document.getElementById('p_active').checked=true;
+  document.getElementById('p_desc').value='';
+  togglePromoType();
+  document.getElementById('promoModal').style.display='flex';
+}
+
+function editPromoCode(id){
+  const p = allPromoCodes.find(x=>x._id===id);
+  if(!p) return;
+  document.getElementById('promoId').value=id;
+  document.getElementById('promoModalTitle').innerHTML='<i class="fas fa-edit" style="color:#e91e63;margin-right:6px"></i>Edit Promo Code';
+  document.getElementById('p_code').value=p.code||'';
+  document.getElementById('p_type').value=p.type||'percent';
+  document.getElementById('p_value').value=p.value||0;
+  document.getElementById('p_min').value=p.min_purchase||0;
+  document.getElementById('p_max_uses').value=p.max_uses||0;
+  document.getElementById('p_expiry').value=p.expiry_date?p.expiry_date.substring(0,10):'';
+  document.getElementById('p_active').checked=!!p.active;
+  document.getElementById('p_desc').value=p.description||'';
+  togglePromoType();
+  document.getElementById('promoModal').style.display='flex';
+}
+
+function togglePromoType(){
+  const t = document.getElementById('p_type').value;
+  document.getElementById('p_val_label').textContent = t==='percent' ? 'Discount Value (%)' : 'Discount Amount (PKR)';
+}
+
+function closePromoModal(){
+  document.getElementById('promoModal').style.display='none';
+}
+
+async function savePromoCode(){
+  const id = document.getElementById('promoId').value;
+  const code = document.getElementById('p_code').value.trim().toUpperCase();
+  const value = parseFloat(document.getElementById('p_value').value)||0;
+  if(!code||!value){ showT('Code and value are required','error'); return; }
+  const payload = {
+    code, type: document.getElementById('p_type').value,
+    value, min_purchase: parseFloat(document.getElementById('p_min').value)||0,
+    max_uses: parseInt(document.getElementById('p_max_uses').value)||0,
+    expiry_date: document.getElementById('p_expiry').value||null,
+    active: document.getElementById('p_active').checked,
+    description: document.getElementById('p_desc').value.trim()
+  };
+  try{
+    const url = id ? `/api/promo-codes/${id}` : '/api/promo-codes';
+    const method = id ? 'PUT' : 'POST';
+    const r = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const d = await r.json();
+    if(r.ok){ showT(id?'Promo code updated':'Promo code created','success'); closePromoModal(); loadPromoCodes(); }
+    else { showT(d.message||'Failed to save','error'); }
+  }catch(e){ showT('Error saving promo code','error'); }
+}
+
+async function togglePromo(id, newActive){
+  try{
+    const r = await fetch(`/api/promo-codes/${id}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({active:newActive})});
+    if(r.ok){ showT(newActive?'Promo code enabled':'Promo code disabled','success'); loadPromoCodes(); }
+    else { showT('Failed','error'); }
+  }catch(e){ showT('Error','error'); }
+}
+
+async function deletePromo(id, code){
+  if(!confirm(`Delete promo code "${code}"? This cannot be undone.`)) return;
+  try{
+    const r = await fetch(`/api/promo-codes/${id}`, {method:'DELETE'});
+    if(r.ok){ showT('Promo code deleted','success'); loadPromoCodes(); }
+    else { showT('Failed to delete','error'); }
+  }catch(e){ showT('Error','error'); }
+}
+
+// ── Store Configuration ──────────────────────────────────────────────────────
+async function loadStoreConfig(){
+  try{
+    const cfg = await fetch('/api/store-config').then(r=>r.json());
+    document.getElementById('cfg_store_name').value = cfg.store_name||'';
+    document.getElementById('cfg_address').value = cfg.address||'';
+    document.getElementById('cfg_phone').value = cfg.phone||'';
+    document.getElementById('cfg_ntn').value = cfg.ntn||'';
+    document.getElementById('cfg_footer').value = cfg.receipt_footer||'';
+    document.getElementById('cfg_tax_rate').value = cfg.tax_rate||0;
+    document.getElementById('cfg_loyalty_rate').value = cfg.loyalty_rate||1;
+    document.getElementById('cfg_loyalty_redeem').value = cfg.loyalty_redeem_rate||0.5;
+    document.getElementById('cfg_loyalty_enabled').checked = cfg.loyalty_enabled!==false;
+    document.getElementById('cfg_tax_inclusive').checked = !!cfg.tax_inclusive;
+  }catch(e){ console.error('Store config load error',e); }
+}
+
+async function saveStoreConfig(){
+  const payload = {
+    store_name: document.getElementById('cfg_store_name').value.trim(),
+    address: document.getElementById('cfg_address').value.trim(),
+    phone: document.getElementById('cfg_phone').value.trim(),
+    ntn: document.getElementById('cfg_ntn').value.trim(),
+    receipt_footer: document.getElementById('cfg_footer').value.trim(),
+    tax_rate: parseFloat(document.getElementById('cfg_tax_rate').value)||0,
+    loyalty_rate: parseFloat(document.getElementById('cfg_loyalty_rate').value)||1,
+    loyalty_redeem_rate: parseFloat(document.getElementById('cfg_loyalty_redeem').value)||0.5,
+    loyalty_enabled: document.getElementById('cfg_loyalty_enabled').checked,
+    tax_inclusive: document.getElementById('cfg_tax_inclusive').checked
+  };
+  try{
+    const r = await fetch('/api/store-config', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    if(r.ok){ showT('Store configuration saved!','success'); }
+    else { const d=await r.json(); showT(d.message||'Failed to save','error'); }
+  }catch(e){ showT('Error saving configuration','error'); }
 }
 
 function handleLogout(){
-    fetch("/api/auth/logout",{
-        method:"POST",
-        credentials:"same-origin",
-        headers:{"Content-Type":"application/json"}
-    }).then(function(res){
-        sessionStorage.clear();
-        window.location.href="/login";
-    }).catch(function(){
-        sessionStorage.clear();
-        window.location.href="/login";
+  fetch('/api/auth/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'}})
+    .then(()=>{sessionStorage.clear();window.location.href='/login';})
+    .catch(()=>{sessionStorage.clear();window.location.href='/login';});
+}
+
+// ── HR KPIs ─────────────────────────────────────────────────────────────────
+async function loadHrKpis(){
+  try{
+    const [stats, emps] = await Promise.all([
+      fetch('/api/hr/stats').then(r=>r.json()),
+      fetch('/api/hr/employees').then(r=>r.json())
+    ]);
+    document.getElementById('hrTotalEmp').textContent   = stats.total_employees || 0;
+    document.getElementById('hrActiveEmp').textContent  = (stats.active_employees||0) + ' active';
+    document.getElementById('hrPayrollCost').textContent = fmt(stats.monthly_payroll_cost||0);
+    document.getElementById('hrPendingPayroll').textContent = stats.pending_payroll_count||0;
+    document.getElementById('hrPendingAmt').textContent = fmt(stats.pending_payroll_amount||0) + ' due';
+    document.getElementById('hrDepts').textContent      = stats.departments_count||0;
+    document.getElementById('kHrEmp').textContent       = stats.active_employees||0;
+
+    // dept breakdown table
+    const employees = emps.employees || [];
+    const deptMap = {};
+    employees.forEach(e=>{
+      const dept = e.department || 'Unassigned';
+      if(!deptMap[dept]) deptMap[dept]={total:0,active:0,grossSum:0,netSum:0};
+      deptMap[dept].total++;
+      if(e.status==='active') deptMap[dept].active++;
+      deptMap[dept].grossSum += e.gross_salary||0;
+      deptMap[dept].netSum   += e.net_salary||0;
     });
+    const depts = Object.entries(deptMap).sort((a,b)=>b[1].grossSum-a[1].grossSum);
+    const tb = document.getElementById('hrDeptBody');
+    if(!depts.length){
+      tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:28px;color:#aaa">No employee data yet</td></tr>';
+      return;
+    }
+    tb.innerHTML = depts.map(([dept,d])=>`<tr>
+      <td><strong>${dept}</strong></td>
+      <td>${d.total}</td>
+      <td><span class="badge badge-approved">${d.active}</span></td>
+      <td>${fmt(d.grossSum)}</td>
+      <td>${d.active>0?fmt(d.netSum/d.active):'—'}</td>
+    </tr>`).join('');
+  }catch(e){ console.error('HR KPI error',e); }
+}
+
+// ── Payment KPIs ─────────────────────────────────────────────────────────────
+async function loadPaymentKpis(){
+  try{
+    const [statsR, pmtsR] = await Promise.all([
+      fetch('/api/payments/stats').then(r=>r.json()),
+      fetch('/api/payments').then(r=>r.json())
+    ]);
+    const s = statsR.this_month || {};
+    document.getElementById('pmtMonthTotal').textContent  = fmt(s.total||0);
+    document.getElementById('pmtMonthCount').textContent  = (s.count||0)+' payments';
+    document.getElementById('pmtSalaryTotal').textContent = fmt(s.employee||0);
+    document.getElementById('pmtSalaryCount').textContent = (s.employee_count||0)+' employees';
+    document.getElementById('pmtVendorTotal').textContent = fmt(s.vendor||0);
+    document.getElementById('pmtVendorCount').textContent = (s.vendor_count||0)+' invoices';
+    document.getElementById('pmtOtherTotal').textContent  = fmt(s.other||0);
+    document.getElementById('pmtOtherCount').textContent  = (s.other_count||0)+' payments';
+    document.getElementById('kPmtMonth').textContent      = fmt(s.total||0);
+
+    // Recent payments table (last 8)
+    const payments = (pmtsR.payments||[]).slice(0,8);
+    const tb = document.getElementById('recentPmtBody');
+    if(!payments.length){
+      tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:28px;color:#aaa">No payments recorded yet</td></tr>';
+      return;
+    }
+    const typeCls = {employee:'badge-approved', vendor:'badge-pending', other:'badge-pending'};
+    const typeIcon = {employee:'&#128100;', vendor:'&#127981;', other:'&#127760;'};
+    tb.innerHTML = payments.map(p=>{
+      const dt = p.date ? new Date(p.date).toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+      const method = (p.method||'').replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+      const stCls = p.status==='completed'?'badge-approved':p.status==='cancelled'?'badge-rejected':'badge-pending';
+      return `<tr>
+        <td style="font-family:monospace;font-size:12px;color:#6366f1">${p.payment_id||p._id||'—'}</td>
+        <td><span class="badge ${typeCls[p.type]||'badge-pending'}">${typeIcon[p.type]||''} ${p.type||'—'}</span></td>
+        <td><strong>${p.payee||'—'}</strong></td>
+        <td><strong>${fmt(p.amount)}</strong></td>
+        <td><span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">${method}</span></td>
+        <td style="color:#636e72;font-size:12px">${dt}</td>
+        <td><span class="badge ${stCls}">&#9679; ${(p.status||'pending').charAt(0).toUpperCase()+(p.status||'pending').slice(1)}</span></td>
+      </tr>`;
+    }).join('');
+  }catch(e){ console.error('Payment KPI error',e); }
 }
 </script>
 </body>

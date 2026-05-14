@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Low Stock Alert - Procurement</title>
+<link rel="stylesheet" href="../static/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f5f6fa;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-left a{color:rgba(255,255,255,.75);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px}
+.topbar-left a:hover{color:#fff}
+.topbar-title{font-size:17px;font-weight:700}
+.topbar-right a{background:#fff;color:#c0392b;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.sum-card{background:#fff;border-radius:10px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center}
+.sum-card .num{font-size:28px;font-weight:800;margin:4px 0}
+.sum-card .lbl{font-size:12px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.5px}
+.search-bar{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.search-bar input{border:none;outline:none;flex:1;font-size:14px;background:transparent}
+.search-bar i{color:#aaa}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+th{background:#f8f9fa;padding:12px 14px;text-align:left;font-size:12px;color:#7f8c8d;text-transform:uppercase;border-bottom:2px solid #eee}
+td{padding:12px 14px;border-bottom:1px solid #eee;font-size:13px}
+tr:hover td{background:#f8f9fa}
+.stock-bar{height:8px;background:#eee;border-radius:4px;overflow:hidden;margin-top:4px}
+.stock-fill{height:100%;border-radius:4px;transition:width .3s}
+.badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.badge-critical{background:#fde8e8;color:#e74c3c}
+.badge-low{background:#fef5e7;color:#e67e22}
+.empty-state{text-align:center;padding:60px 20px;color:#7f8c8d}
+.empty-state i{font-size:48px;color:#27ae60;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/procurement-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    <span style="color:rgba(255,255,255,.4)">|</span>
+    <span class="topbar-title"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>Low Stock Alert</span>
+  </div>
+  <div class="topbar-right">
+    <a href="/products"><i class="fas fa-boxes"></i> Manage Products</a>
+  </div>
+</div>
+
+<div class="container">
+  <div class="summary-cards">
+    <div class="sum-card">
+      <div class="lbl">Critical (&lt;5)</div>
+      <div class="num" id="cntCritical" style="color:#e74c3c">—</div>
+    </div>
+    <div class="sum-card">
+      <div class="lbl">Low Stock</div>
+      <div class="num" id="cntLow" style="color:#e67e22">—</div>
+    </div>
+    <div class="sum-card">
+      <div class="lbl">Total SKUs Checked</div>
+      <div class="num" id="cntTotal" style="color:#2c3e50">—</div>
+    </div>
+    <div class="sum-card">
+      <div class="lbl">All Well Stocked</div>
+      <div class="num" id="cntOk" style="color:#27ae60">—</div>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <i class="fas fa-search"></i>
+    <input id="searchInput" placeholder="Search by product name, category or supplier..." oninput="filterTable()">
+    <button onclick="loadData()" style="border:none;background:#fdf2f0;color:#e74c3c;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer"><i class="fas fa-sync"></i> Refresh</button>
+  </div>
+
+  <table id="stockTable">
+    <thead>
+      <tr><th>#</th><th>Product</th><th>Category</th><th>Supplier</th><th>Stock Level</th><th>Reorder Level</th><th>Unit</th><th>Price (PKR)</th><th>Status</th></tr>
+    </thead>
+    <tbody id="stockBody">
+      <tr><td colspan="9" style="text-align:center;padding:30px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const fmt = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+let allData = [];
+
+document.addEventListener('DOMContentLoaded', loadData);
+
+async function loadData(){
+  document.getElementById('stockBody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try{
+    const prods = await fetch('/api/products').then(r=>r.json());
+    allData = prods;
+    const low = prods.filter(p => (p.stock||0) < (p.reorder_level||10));
+    const critical = low.filter(p => (p.stock||0) < 5);
+
+    document.getElementById('cntTotal').textContent = prods.length;
+    document.getElementById('cntLow').textContent = low.length;
+    document.getElementById('cntCritical').textContent = critical.length;
+    document.getElementById('cntOk').textContent = prods.length - low.length;
+
+    renderTable(low);
+  }catch(e){
+    document.getElementById('stockBody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#e74c3c">Failed to load products</td></tr>';
+  }
+}
+
+function renderTable(list){
+  const tb = document.getElementById('stockBody');
+  if(!list.length){
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-check-circle"></i><p style="font-size:16px;font-weight:600;margin-bottom:4px">All products are well stocked!</p><p style="font-size:13px">No items below reorder level.</p></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = list.map((x,i)=>{
+    const stock = x.stock||0;
+    const reorder = x.reorder_level||10;
+    const pct = Math.min(100, Math.round((stock/reorder)*100));
+    const isCritical = stock < 5;
+    const barColor = isCritical ? '#e74c3c' : '#e67e22';
+    return `<tr style="${isCritical?'background:#fff8f8':''}">
+      <td>${i+1}</td>
+      <td><strong>${x.name}</strong>${x.batch_no?'<br><small style="color:#aaa">Batch: '+x.batch_no+'</small>':''}</td>
+      <td>${x.category||'-'}</td>
+      <td>${x.supplier||'-'}</td>
+      <td>
+        <strong style="color:${barColor}">${stock}</strong>
+        <div class="stock-bar"><div class="stock-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      </td>
+      <td>${reorder}</td>
+      <td>${x.unit||'-'}</td>
+      <td>${fmt(x.price)}</td>
+      <td><span class="badge ${isCritical?'badge-critical':'badge-low'}">${isCritical?'Critical':'Low'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(){
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const low = allData.filter(p => (p.stock||0) < (p.reorder_level||10));
+  const filtered = low.filter(p =>
+    (p.name||'').toLowerCase().includes(q) ||
+    (p.category||'').toLowerCase().includes(q) ||
+    (p.supplier||'').toLowerCase().includes(q)
+  );
+  renderTable(filtered);
+}
+</script>
+</body>
+</html>

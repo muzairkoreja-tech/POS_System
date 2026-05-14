@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catalog Management - Procurement</title>
+<link rel="stylesheet" href="../static/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f5f6fa;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#1abc9c,#16a085);color:#fff;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-left a{color:rgba(255,255,255,.75);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px}
+.topbar-left a:hover{color:#fff}
+.topbar-title{font-size:17px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.btn-add{background:#fff;color:#16a085;border:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-add:hover{opacity:.9}
+.container{max-width:1000px;margin:0 auto;padding:24px}
+
+/* Tabs */
+.tabs{display:flex;gap:0;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:24px}
+.tab{flex:1;padding:14px 10px;text-align:center;font-size:13px;font-weight:600;color:#7f8c8d;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.tab:hover{background:#f8f9fa;color:#2c3e50}
+.tab.active{color:#16a085;border-bottom-color:#16a085;background:#f0faf8}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* Form card */
+.form-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px}
+.form-card h4{font-size:14px;font-weight:700;color:#2c3e50;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 11px;border:2px solid #eee;border-radius:6px;font-size:13px;transition:border-color .2s}
+.form-group input:focus,.form-group textarea:focus{outline:none;border-color:#1abc9c}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-action{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;margin-right:6px}
+.btn-action:hover{opacity:.85}
+.btn-primary{background:#1abc9c;color:#fff}
+.btn-success{background:#27ae60;color:#fff}
+.btn-warning{background:#e67e22;color:#fff}
+.btn-secondary{background:#ecf0f1;color:#2c3e50}
+.btn-danger{background:#e74c3c;color:#fff}
+.btn-sm{padding:4px 10px;border:none;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.btn-edit{background:#ebf5fb;color:#2980b9}
+.btn-del{background:#fdf2f0;color:#e74c3c}
+
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+th{background:#f8f9fa;padding:11px 14px;text-align:left;font-size:12px;color:#7f8c8d;text-transform:uppercase;border-bottom:2px solid #eee}
+td{padding:11px 14px;border-bottom:1px solid #eee;font-size:13px}
+tr:hover td{background:#f8f9fa}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#2c3e50;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;z-index:9999}
+.toast.success{background:#27ae60}.toast.error{background:#e74c3c}.toast.show{display:block}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/procurement-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    <span style="color:rgba(255,255,255,.4)">|</span>
+    <span class="topbar-title"><i class="fas fa-layer-group" style="margin-right:6px"></i>Catalog Management</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('units')"><i class="fas fa-ruler-combined"></i> Units</div>
+    <div class="tab" onclick="switchTab('categories')"><i class="fas fa-tags"></i> Categories</div>
+    <div class="tab" onclick="switchTab('groups')"><i class="fas fa-layer-group"></i> Groups</div>
+    <div class="tab" onclick="switchTab('colors')"><i class="fas fa-palette"></i> Colors</div>
+    <div class="tab" onclick="switchTab('departments')"><i class="fas fa-building"></i> Departments</div>
+    <div class="tab" onclick="switchTab('payment-terms')"><i class="fas fa-file-invoice-dollar"></i> Payment Terms</div>
+  </div>
+
+  <!-- UNITS -->
+  <div class="tab-panel active" id="panel-units">
+    <div class="form-card">
+      <h4 id="unitFormTitle"><i class="fas fa-plus-circle" style="color:#1abc9c"></i> Add Unit</h4>
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin:0"><label>Unit Name *</label><input id="unitName" placeholder="e.g., kg, liter, piece"></div>
+        <button id="saveUnitBtn" class="btn-action btn-primary" onclick="saveUnit()"><i class="fas fa-save"></i> Save</button>
+        <button id="updateUnitBtn" class="btn-action btn-success" style="display:none" onclick="updateUnit()"><i class="fas fa-edit"></i> Update</button>
+        <button class="btn-action btn-secondary" onclick="cancelUnitForm()">Cancel</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Name</th><th>Actions</th></tr></thead>
+      <tbody id="unitsTable"><tr><td colspan="3" style="text-align:center;padding:24px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- CATEGORIES -->
+  <div class="tab-panel" id="panel-categories">
+    <div class="form-card">
+      <h4><i class="fas fa-plus-circle" style="color:#e67e22"></i> Add Category</h4>
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin:0"><label>Category Name *</label><input id="catName" placeholder="e.g., Fruits, Dairy"></div>
+        <button class="btn-action" style="background:#e67e22;color:#fff" onclick="saveCategory()"><i class="fas fa-save"></i> Save</button>
+        <button class="btn-action btn-secondary" onclick="document.getElementById('catName').value=''">Clear</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Name</th><th>Actions</th></tr></thead>
+      <tbody id="categoriesTable"><tr><td colspan="3" style="text-align:center;padding:24px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- GROUPS -->
+  <div class="tab-panel" id="panel-groups">
+    <div class="form-card">
+      <h4><i class="fas fa-plus-circle" style="color:#27ae60"></i> Add Group</h4>
+      <div class="form-row" style="margin-bottom:12px">
+        <div class="form-group" style="margin:0"><label>Group Name *</label><input id="groupName" placeholder="e.g., Beverages, Snacks"></div>
+        <div class="form-group" style="margin:0"><label>Description</label><input id="groupDesc" placeholder="Optional description"></div>
+      </div>
+      <button class="btn-action" style="background:#27ae60;color:#fff" onclick="saveGroup()"><i class="fas fa-save"></i> Save Group</button>
+      <button class="btn-action btn-secondary" onclick="document.getElementById('groupName').value='';document.getElementById('groupDesc').value=''">Clear</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Name</th><th>Description</th><th>Actions</th></tr></thead>
+      <tbody id="groupsTable"><tr><td colspan="4" style="text-align:center;padding:24px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- COLORS -->
+  <div class="tab-panel" id="panel-colors">
+    <div class="form-card">
+      <h4 id="colorFormTitle"><i class="fas fa-plus-circle" style="color:#e91e63"></i> Add Color</h4>
+      <div class="form-row" style="margin-bottom:12px">
+        <div class="form-group" style="margin:0"><label>Color Value *</label><input id="colorValue" placeholder="e.g., red, #FF0000"></div>
+        <div class="form-group" style="margin:0"><label>Color Label *</label><input id="colorLabel" placeholder="e.g., Red, Crimson"></div>
+      </div>
+      <button id="saveColorBtn" class="btn-action" style="background:#e91e63;color:#fff" onclick="saveColor()"><i class="fas fa-save"></i> Save</button>
+      <button id="updateColorBtn" class="btn-action btn-success" style="display:none" onclick="updateColor()"><i class="fas fa-edit"></i> Update</button>
+      <button class="btn-action btn-secondary" onclick="cancelColorForm()">Cancel</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Value</th><th>Label</th><th>Actions</th></tr></thead>
+      <tbody id="colorsTable"><tr><td colspan="4" style="text-align:center;padding:24px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- DEPARTMENTS -->
+  <div class="tab-panel" id="panel-departments">
+    <div class="form-card">
+      <h4 id="deptFormTitle"><i class="fas fa-plus-circle" style="color:#667eea"></i> Add Department</h4>
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin:0"><label>Department Name *</label><input id="deptName" placeholder="e.g., Fruits &amp; Vegetables"></div>
+        <button id="saveDeptBtn" class="btn-action btn-primary" style="background:#667eea" onclick="saveDept()"><i class="fas fa-save"></i> Save</button>
+        <button id="updateDeptBtn" class="btn-action btn-success" style="display:none" onclick="updateDept()"><i class="fas fa-edit"></i> Update</button>
+        <button class="btn-action btn-secondary" onclick="cancelDeptForm()">Cancel</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Department Name</th><th>Actions</th></tr></thead>
+      <tbody id="deptsTable"><tr><td colspan="3" style="text-align:center;padding:24px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- PAYMENT TERMS -->
+  <div class="tab-panel" id="panel-payment-terms">
+    <div class="form-card">
+      <h4 id="ptFormTitle"><i class="fas fa-plus-circle" style="color:#2980b9"></i> Add Payment Term</h4>
+      <div class="form-row" style="margin-bottom:12px">
+        <div class="form-group" style="margin:0"><label>Term Name *</label><input id="ptName" placeholder="e.g., Net 30, Cash on Delivery"></div>
+        <div class="form-group" style="margin:0"><label>Description</label><input id="ptDesc" placeholder="e.g., Payment due within 30 days"></div>
+      </div>
+      <button id="savePtBtn" class="btn-action btn-primary" style="background:#2980b9" onclick="savePt()"><i class="fas fa-save"></i> Save</button>
+      <button id="updatePtBtn" class="btn-action btn-success" style="display:none" onclick="updatePt()"><i class="fas fa-edit"></i> Update</button>
+      <button class="btn-action btn-secondary" onclick="cancelPtForm()">Cancel</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Term Name</th><th>Description</th><th>Actions</th></tr></thead>
+      <tbody id="ptTable"><tr><td colspan="4" style="text-align:center;padding:24px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toastEl" class="toast"></div>
+
+<script>
+let unitsData=[], colorsData=[], deptData=[], ptData=[];
+let editingUnitId=null, editingColorId=null, editingDeptId=null, editingPtId=null;
+const tabs = ['units','categories','groups','colors','departments','payment-terms'];
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const urlTab = new URLSearchParams(window.location.search).get('tab');
+  if(urlTab && tabs.includes(urlTab)) switchTab(urlTab);
+  loadAll();
+});
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', tabs[i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+async function loadAll(){
+  loadUnits(); loadCategories(); loadGroups(); loadColors(); loadDepts(); loadPt();
+}
+
+// ── UNITS ──────────────────────────────────────────────────────────────────
+async function loadUnits(){
+  try{
+    unitsData = await fetch('/api/units').then(r=>r.json());
+    const tb = document.getElementById('unitsTable');
+    if(!unitsData.length){ tb.innerHTML='<tr><td colspan="3" style="text-align:center;padding:20px;color:#aaa">No units found</td></tr>'; return; }
+    tb.innerHTML = unitsData.map((x,i)=>`
+      <tr><td>${i+1}</td><td><strong>${x.name}</strong></td><td>
+        <button class="btn-sm btn-edit" onclick="editUnit('${x._id}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn-sm btn-del" onclick="deleteUnit('${x._id}')"><i class="fas fa-trash"></i></button>
+      </td></tr>`).join('');
+  }catch(e){ showT('Failed to load units','error'); }
+}
+async function saveUnit(){
+  const name=document.getElementById('unitName').value.trim();
+  if(!name){showT('Unit name required','error');return;}
+  try{
+    const r=await fetch('/api/units',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    if(r.ok){showT('Unit added!','success');cancelUnitForm();loadUnits();}
+    else{const d=await r.json();showT(d.message||'Error','error');}
+  }catch(e){showT('Failed','error');}
+}
+async function updateUnit(){
+  const name=document.getElementById('unitName').value.trim();
+  if(!name){showT('Unit name required','error');return;}
+  try{
+    const r=await fetch('/api/units/'+editingUnitId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    if(r.ok){showT('Unit updated!','success');cancelUnitForm();loadUnits();}
+    else{const d=await r.json();showT(d.message||'Error','error');}
+  }catch(e){showT('Failed','error');}
+}
+async function deleteUnit(id){
+  if(!confirm('Delete this unit?'))return;
+  try{
+    const r=await fetch('/api/units/'+id,{method:'DELETE'});
+    const d=await r.json();
+    if(d.success){showT('Deleted','success');loadUnits();}else showT(d.message||'Error','error');
+  }catch(e){showT('Failed','error');}
+}
+function editUnit(id){
+  const u=unitsData.find(x=>x._id===id); if(!u) return;
+  editingUnitId=id;
+  document.getElementById('unitName').value=u.name;
+  document.getElementById('saveUnitBtn').style.display='none';
+  document.getElementById('updateUnitBtn').style.display='inline-flex';
+  document.getElementById('unitFormTitle').innerHTML='<i class="fas fa-edit" style="color:#1abc9c"></i> Edit Unit';
+}
+function cancelUnitForm(){
+  editingUnitId=null;
+  document.getElementById('unitName').value='';
+  document.getElementById('saveUnitBtn').style.display='inline-flex';
+  document.getElementById('updateUnitBtn').style.display='none';
+  document.getElementById('unitFormTitle').innerHTML='<i class="fas fa-plus-circle" style="color:#1abc9c"></i> Add Unit';
+}
+
+// ── CATEGORIES ─────────────────────────────────────────────────────────────
+async function loadCategories(){
+  try{
+    const cats=await fetch('/api/categories').then(r=>r.json());
+    const tb=document.getElementById('categoriesTable');
+    if(!cats.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;padding:20px;color:#aaa">No categories found</td></tr>';return;}
+    tb.innerHTML=cats.map((x,i)=>`
+      <tr><td>${i+1}</td><td><strong>${x.name}</strong></td><td>
+        <button class="btn-sm btn-del" onclick="deleteCategory('${x._id}')"><i class="fas fa-trash"></i></button>
+      </td></tr>`).join('');
+  }catch(e){showT('Failed to load categories','error');}
+}
+async function saveCategory(){
+  const name=document.getElementById('catName').value.trim();
+  if(!name){showT('Category name required','error');return;}
+  try{
+    const r=await fetch('/api/categories',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    if(r.ok){showT('Category added!','success');document.getElementById('catName').value='';loadCategories();}
+    else{const d=await r.json();showT(d.message||'Error','error');}
+  }catch(e){showT('Failed','error');}
+}
+async function deleteCategory(id){
+  if(!confirm('Delete this category?'))return;
+  try{
+    const r=await fetch('/api/categories/'+id,{method:'DELETE'});
+    const d=await r.json();
+    if(d.success){showT('Deleted','success');loadCategories();}else showT(d.message||'Error','error');
+  }catch(e){showT('Failed','error');}
+}
+
+// ── GROUPS ─────────────────────────────────────────────────────────────────
+async function loadGroups(){
+  try{
+    const groups=await fetch('/api/product-groups').then(r=>r.json());
+    const tb=document.getElementById('groupsTable');
+    if(!groups.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:#aaa">No groups found</td></tr>';return;}
+    tb.innerHTML=groups.map((x,i)=>`
+      <tr><td>${i+1}</td><td><strong>${x.name}</strong></td><td>${x.description||'-'}</td><td>
+        <button class="btn-sm btn-del" onclick="deleteGroup('${x._id}')"><i class="fas fa-trash"></i></button>
+      </td></tr>`).join('');
+  }catch(e){showT('Failed to load groups','error');}
+}
+async function saveGroup(){
+  const name=document.getElementById('groupName').value.trim();
+  const desc=document.getElementById('groupDesc').value.trim();
+  if(!name){showT('Group name required','error');return;}
+  try{
+    const r=await fetch('/api/product-groups',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,description:desc})});
+    if(r.ok){showT('Group added!','success');document.getElementById('groupName').value='';document.getElementById('groupDesc').value='';loadGroups();}
+    else{const d=await r.json();showT(d.message||'Error','error');}
+  }catch(e){showT('Failed','error');}
+}
+async function deleteGroup(id){
+  if(!confirm('Delete this group?'))return;
+  try{
+    const r=await fetch('/api/product-groups/'+id,{method:'DELETE'});
+    const d=await r.json();
+    if(d.success){showT('Deleted','success');loadGroups();}else showT(d.message||'Error','error');
+  }catch(e){showT('Failed','error');}
+}
+
+// ── COLORS ─────────────────────────────────────────────────────────────────
+async function loadColors(){
+  try{
+    colorsData=await fetch('/api/colors').then(r=>r.json());
+    const tb=document.getElementById('colorsTable');
+    if(!colorsData.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:#aaa">No colors found</td></tr>';return;}
+    tb.innerHTML=colorsData.map((x,i)=>`
+      <tr><td>${i+1}</td>
+        <td><span style="display:inline-block;width:16px;height:16px;background:${x.value};border-radius:3px;border:1px solid #ddd;vertical-align:middle;margin-right:6px"></span><code>${x.value}</code></td>
+        <td>${x.label}</td><td>
+          <button class="btn-sm btn-edit" onclick="editColor('${x._id}')"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn-sm btn-del" onclick="deleteColor('${x._id}')"><i class="fas fa-trash"></i></button>
+        </td></tr>`).join('');
+  }catch(e){showT('Failed to load colors','error');}
+}
+async function saveColor(){
+  const value=document.getElementById('colorValue').value.trim();
+  const label=document.getElementById('colorLabel').value.trim();
+  if(!value||!label){showT('Both value and label required','error');return;}
+  try{
+    const r=await fetch('/api/colors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value,label})});
+    if(r.ok){showT('Color added!','success');cancelColorForm();loadColors();}
+    else{const d=await r.json();showT(d.message||'Error','error');}
+  }catch(e){showT('Failed','error');}
+}
+async function updateColor(){
+  const value=document.getElementById('colorValue').value.trim();
+  const label=document.getElementById('colorLabel').value.trim();
+  if(!value||!label){showT('Both value and label required','error');return;}
+  try{
+    const r=await fetch('/api/colors/'+editingColorId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({value,label})});
+    if(r.ok){showT('Color updated!','success');cancelColorForm();loadColors();}
+    else{const d=await r.json();showT(d.message||'Error','error');}
+  }catch(e){showT('Failed','error');}
+}
+async function deleteColor(id){
+  if(!confirm('Delete this color?'))return;
+  try{
+    const r=await fetch('/api/colors/'+id,{method:'DELETE'});
+    const d=await r.json();
+    if(d.success){showT('Deleted','success');loadColors();}else showT(d.message||'Error','error');
+  }catch(e){showT('Failed','error');}
+}
+function editColor(id){
+  const c=colorsData.find(x=>x._id===id);if(!c)return;
+  editingColorId=id;
+  document.getElementById('colorValue').value=c.value;
+  document.getElementById('colorLabel').value=c.label;
+  document.getElementById('saveColorBtn').style.display='none';
+  document.getElementById('updateColorBtn').style.display='inline-flex';
+  document.getElementById('colorFormTitle').innerHTML='<i class="fas fa-edit" style="color:#e91e63"></i> Edit Color';
+}
+function cancelColorForm(){
+  editingColorId=null;
+  document.getElementById('colorValue').value='';
+  document.getElementById('colorLabel').value='';
+  document.getElementById('saveColorBtn').style.display='inline-flex';
+  document.getElementById('updateColorBtn').style.display='none';
+  document.getElementById('colorFormTitle').innerHTML='<i class="fas fa-plus-circle" style="color:#e91e63"></i> Add Color';
+}
+
+// ── DEPARTMENTS ────────────────────────────────────────────────────────────
+async function loadDepts(){
+  try{
+    deptData=await fetch('/api/departments').then(r=>r.json());
+    const tb=document.getElementById('deptsTable');
+    if(!deptData.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;padding:20px;color:#aaa">No departments yet. Add one above.</td></tr>';return;}
+    tb.innerHTML=deptData.map((x,i)=>`
+      <tr><td>${i+1}</td><td><strong>${x.name}</strong></td><td>
+        <button class="btn-sm btn-edit" onclick="editDept('${x._id}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn-sm btn-del" onclick="deleteDept('${x._id}')"><i class="fas fa-trash"></i></button>
+      </td></tr>`).join('');
+  }catch(e){showT('Failed to load departments','error');}
+}
+async function saveDept(){
+  const name=document.getElementById('deptName').value.trim();
+  if(!name){showT('Department name required','error');return;}
+  const r=await fetch('/api/departments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+  if(r.ok){showT('Department added!','success');cancelDeptForm();loadDepts();}
+  else{const d=await r.json();showT(d.error||'Error','error');}
+}
+async function updateDept(){
+  const name=document.getElementById('deptName').value.trim();
+  if(!name){showT('Department name required','error');return;}
+  const r=await fetch('/api/departments/'+editingDeptId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+  if(r.ok){showT('Updated!','success');cancelDeptForm();loadDepts();}
+  else{const d=await r.json();showT(d.error||'Error','error');}
+}
+async function deleteDept(id){
+  if(!confirm('Delete this department?'))return;
+  const r=await fetch('/api/departments/'+id,{method:'DELETE'});
+  const d=await r.json();
+  if(d.success){showT('Deleted','success');loadDepts();}else showT(d.error||'Error','error');
+}
+function editDept(id){
+  const x=deptData.find(d=>d._id===id);if(!x)return;
+  editingDeptId=id;
+  document.getElementById('deptName').value=x.name;
+  document.getElementById('saveDeptBtn').style.display='none';
+  document.getElementById('updateDeptBtn').style.display='inline-flex';
+  document.getElementById('deptFormTitle').innerHTML='<i class="fas fa-edit" style="color:#667eea"></i> Edit Department';
+}
+function cancelDeptForm(){
+  editingDeptId=null;
+  document.getElementById('deptName').value='';
+  document.getElementById('saveDeptBtn').style.display='inline-flex';
+  document.getElementById('updateDeptBtn').style.display='none';
+  document.getElementById('deptFormTitle').innerHTML='<i class="fas fa-plus-circle" style="color:#667eea"></i> Add Department';
+}
+
+// ── PAYMENT TERMS ──────────────────────────────────────────────────────────
+async function loadPt(){
+  try{
+    ptData=await fetch('/api/payment-terms').then(r=>r.json());
+    const tb=document.getElementById('ptTable');
+    if(!ptData.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:#aaa">No payment terms yet. Add one above.</td></tr>';return;}
+    tb.innerHTML=ptData.map((x,i)=>`
+      <tr><td>${i+1}</td><td><strong>${x.name}</strong></td><td style="color:#636e72;">${x.description||'—'}</td><td>
+        <button class="btn-sm btn-edit" onclick="editPt('${x._id}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn-sm btn-del" onclick="deletePt('${x._id}')"><i class="fas fa-trash"></i></button>
+      </td></tr>`).join('');
+  }catch(e){showT('Failed to load payment terms','error');}
+}
+async function savePt(){
+  const name=document.getElementById('ptName').value.trim();
+  const description=document.getElementById('ptDesc').value.trim();
+  if(!name){showT('Term name required','error');return;}
+  const r=await fetch('/api/payment-terms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,description})});
+  if(r.ok){showT('Payment term added!','success');cancelPtForm();loadPt();}
+  else{const d=await r.json();showT(d.error||'Error','error');}
+}
+async function updatePt(){
+  const name=document.getElementById('ptName').value.trim();
+  const description=document.getElementById('ptDesc').value.trim();
+  if(!name){showT('Term name required','error');return;}
+  const r=await fetch('/api/payment-terms/'+editingPtId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,description})});
+  if(r.ok){showT('Updated!','success');cancelPtForm();loadPt();}
+  else{const d=await r.json();showT(d.error||'Error','error');}
+}
+async function deletePt(id){
+  if(!confirm('Delete this payment term?'))return;
+  const r=await fetch('/api/payment-terms/'+id,{method:'DELETE'});
+  const d=await r.json();
+  if(d.success){showT('Deleted','success');loadPt();}else showT(d.error||'Error','error');
+}
+function editPt(id){
+  const x=ptData.find(d=>d._id===id);if(!x)return;
+  editingPtId=id;
+  document.getElementById('ptName').value=x.name;
+  document.getElementById('ptDesc').value=x.description||'';
+  document.getElementById('savePtBtn').style.display='none';
+  document.getElementById('updatePtBtn').style.display='inline-flex';
+  document.getElementById('ptFormTitle').innerHTML='<i class="fas fa-edit" style="color:#2980b9"></i> Edit Payment Term';
+}
+function cancelPtForm(){
+  editingPtId=null;
+  document.getElementById('ptName').value='';
+  document.getElementById('ptDesc').value='';
+  document.getElementById('savePtBtn').style.display='inline-flex';
+  document.getElementById('updatePtBtn').style.display='none';
+  document.getElementById('ptFormTitle').innerHTML='<i class="fas fa-plus-circle" style="color:#2980b9"></i> Add Payment Term';
+}
+
+function showT(msg,type){
+  const el=document.getElementById('toastEl');
+  el.textContent=msg; el.className='toast '+type+' show';
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>

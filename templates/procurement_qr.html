@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code Generator - Procurement</title>
+<link rel="stylesheet" href="../static/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f5f6fa;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#2c3e50,#34495e);color:#fff;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-left a{color:rgba(255,255,255,.75);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px}
+.topbar-left a:hover{color:#fff}
+.topbar-title{font-size:17px;font-weight:700}
+.container{max-width:900px;margin:0 auto;padding:24px}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.card{background:#fff;border-radius:10px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card h3{font-size:15px;font-weight:700;color:#2c3e50;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:5px}
+.form-group input,.form-group select{width:100%;padding:10px 12px;border:2px solid #eee;border-radius:6px;font-size:13px;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#2c3e50}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-action{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;width:100%;justify-content:center;margin-top:4px}
+.btn-action:hover{opacity:.85}
+.btn-dark{background:#2c3e50;color:#fff}
+.btn-success{background:#27ae60;color:#fff}
+.btn-secondary{background:#ecf0f1;color:#2c3e50}
+.qr-display{text-align:center;border:2px dashed #ddd;border-radius:10px;padding:30px 20px;background:#fafafa;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.qr-display i{font-size:52px;color:#ccc}
+.qr-display p{color:#aaa;font-size:13px}
+#qrCanvas{display:none}
+.info-box{background:#f8f9fa;border-radius:8px;padding:14px;font-size:13px;color:#636e72;margin-top:16px}
+.info-box .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee}
+.info-box .row:last-child{border-bottom:none}
+.info-box .row strong{color:#2c3e50}
+.toast{position:fixed;bottom:20px;right:20px;background:#2c3e50;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;z-index:9999}
+.toast.success{background:#27ae60}.toast.error{background:#e74c3c}.toast.show{display:block}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/procurement-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    <span style="color:rgba(255,255,255,.4)">|</span>
+    <span class="topbar-title"><i class="fas fa-qrcode" style="margin-right:6px"></i>QR Code Generator</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="layout">
+    <!-- Left: Controls -->
+    <div class="card">
+      <h3><i class="fas fa-sliders-h" style="color:#2c3e50"></i> Configuration</h3>
+      <div class="form-group">
+        <label>Select Product</label>
+        <select id="qrProduct" onchange="onProductChange()">
+          <option value="">-- Select a product --</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Original Price (PKR)</label>
+          <input type="number" id="qrOrigPrice" readonly style="background:#f8f9fa;color:#636e72">
+        </div>
+        <div class="form-group">
+          <label>Discount (%)</label>
+          <input type="number" id="qrDiscount" min="0" max="100" value="0" oninput="calcPrice()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Discounted Price (PKR)</label>
+          <input type="number" id="qrDiscPrice" readonly style="background:#f8f9fa;color:#27ae60;font-weight:700">
+        </div>
+        <div class="form-group">
+          <label>QR Size</label>
+          <select id="qrSize">
+            <option value="128">Small (128px)</option>
+            <option value="200" selected>Medium (200px)</option>
+            <option value="300">Large (300px)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Custom Label (optional)</label>
+        <input id="qrLabel" placeholder="e.g., Special Offer, Sale Price">
+      </div>
+      <button class="btn-action btn-dark" onclick="generateQR()"><i class="fas fa-qrcode"></i> Generate QR Code</button>
+      <div id="infoBox" class="info-box" style="display:none">
+        <div class="row"><span>Product</span><strong id="infoName">-</strong></div>
+        <div class="row"><span>Original Price</span><strong id="infoOrig">-</strong></div>
+        <div class="row"><span>Discount</span><strong id="infoDisc" style="color:#e67e22">-</strong></div>
+        <div class="row"><span>Final Price</span><strong id="infoFinal" style="color:#27ae60">-</strong></div>
+      </div>
+    </div>
+
+    <!-- Right: QR Preview -->
+    <div class="card">
+      <h3><i class="fas fa-eye" style="color:#2c3e50"></i> QR Preview</h3>
+      <div class="qr-display" id="qrDisplay">
+        <i class="fas fa-qrcode"></i>
+        <p>Select a product and click Generate</p>
+      </div>
+      <div id="printActions" style="display:none;margin-top:16px;display:none">
+        <button class="btn-action btn-success" onclick="printQR()"><i class="fas fa-print"></i> Print QR Code</button>
+        <button class="btn-action btn-secondary" onclick="downloadQR()" style="margin-top:8px"><i class="fas fa-download"></i> Download PNG</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastEl" class="toast"></div>
+
+<script>
+const fmt = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+let products = [];
+let qrInstance = null;
+
+document.addEventListener('DOMContentLoaded', loadProducts);
+
+async function loadProducts(){
+  try{
+    products = await fetch('/api/products').then(r=>r.json());
+    const sel = document.getElementById('qrProduct');
+    products.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p._id;
+      opt.textContent = p.name + (p.category ? ' ('+p.category+')' : '');
+      opt.dataset.price = p.price || 0;
+      sel.appendChild(opt);
+    });
+  }catch(e){ showT('Failed to load products','error'); }
+}
+
+function onProductChange(){
+  const sel = document.getElementById('qrProduct');
+  const opt = sel.options[sel.selectedIndex];
+  if(!opt.value){ document.getElementById('qrOrigPrice').value=''; document.getElementById('qrDiscPrice').value=''; return; }
+  const price = parseFloat(opt.dataset.price)||0;
+  document.getElementById('qrOrigPrice').value = price.toFixed(2);
+  document.getElementById('qrDiscount').value = '0';
+  document.getElementById('qrDiscPrice').value = price.toFixed(2);
+}
+
+function calcPrice(){
+  const orig = parseFloat(document.getElementById('qrOrigPrice').value)||0;
+  const disc = parseFloat(document.getElementById('qrDiscount').value)||0;
+  const final = orig * (1 - disc/100);
+  document.getElementById('qrDiscPrice').value = final.toFixed(2);
+}
+
+function generateQR(){
+  const sel = document.getElementById('qrProduct');
+  const opt = sel.options[sel.selectedIndex];
+  if(!opt.value){ showT('Please select a product','error'); return; }
+
+  const productName = opt.textContent.split('(')[0].trim();
+  const orig = parseFloat(document.getElementById('qrOrigPrice').value)||0;
+  const disc = parseFloat(document.getElementById('qrDiscount').value)||0;
+  const final = parseFloat(document.getElementById('qrDiscPrice').value)||0;
+  const label = document.getElementById('qrLabel').value.trim();
+  const size = parseInt(document.getElementById('qrSize').value)||200;
+
+  const qrData = JSON.stringify({
+    product: productName,
+    price: final,
+    discount: disc > 0 ? disc+'%' : null,
+    label: label || null,
+    generated: new Date().toISOString().split('T')[0]
+  });
+
+  // Clear previous QR
+  const display = document.getElementById('qrDisplay');
+  display.innerHTML = '';
+  if(qrInstance){ qrInstance.clear(); qrInstance = null; }
+
+  const qrContainer = document.createElement('div');
+  qrContainer.id = 'qrCodeInner';
+  display.appendChild(qrContainer);
+
+  qrInstance = new QRCode(qrContainer, {
+    text: qrData,
+    width: size,
+    height: size,
+    colorDark: '#2c3e50',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  // Add label below QR
+  const lbl = document.createElement('div');
+  lbl.style.cssText = 'text-align:center;margin-top:12px;font-size:13px;color:#2c3e50';
+  lbl.innerHTML = `<strong>${productName}</strong><br><span style="color:#27ae60;font-size:15px;font-weight:700">${fmt(final)}</span>${disc>0?'<br><span style="color:#e67e22;font-size:11px">'+disc+'% off</span>':''}${label?'<br><span style="color:#636e72;font-size:11px">'+label+'</span>':''}`;
+  display.appendChild(lbl);
+
+  // Info box
+  document.getElementById('infoName').textContent = productName;
+  document.getElementById('infoOrig').textContent = fmt(orig);
+  document.getElementById('infoDisc').textContent = disc > 0 ? disc+'%' : 'None';
+  document.getElementById('infoFinal').textContent = fmt(final);
+  document.getElementById('infoBox').style.display = 'block';
+  document.getElementById('printActions').style.display = 'flex';
+  document.getElementById('printActions').style.flexDirection = 'column';
+
+  showT('QR Code generated!','success');
+}
+
+function printQR(){
+  const sel = document.getElementById('qrProduct');
+  const productName = sel.options[sel.selectedIndex].textContent.split('(')[0].trim();
+  const final = parseFloat(document.getElementById('qrDiscPrice').value)||0;
+  const disc = parseFloat(document.getElementById('qrDiscount').value)||0;
+  const label = document.getElementById('qrLabel').value.trim();
+  const inner = document.getElementById('qrCodeInner');
+  if(!inner){ showT('Generate QR first','error'); return; }
+  const img = inner.querySelector('img');
+  const src = img ? img.src : '';
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>QR - ${productName}</title>
+    <style>body{font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fff}
+    .box{text-align:center;padding:30px;border:2px solid #eee;border-radius:12px;max-width:320px}
+    h2{font-size:16px;color:#2c3e50;margin-bottom:8px}
+    .price{font-size:22px;font-weight:800;color:#27ae60;margin:8px 0}
+    .disc{font-size:13px;color:#e67e22}
+    .lbl{font-size:12px;color:#636e72;margin-top:4px}
+    img{max-width:220px;margin:12px 0}
+    @media print{.noprint{display:none}}</style></head><body>
+    <div class="box">
+      <h2>${productName}</h2>
+      <img src="${src}" alt="QR Code">
+      <div class="price">${fmt(final)}</div>
+      ${disc>0?'<div class="disc">'+disc+'% Discount Applied</div>':''}
+      ${label?'<div class="lbl">'+label+'</div>':''}
+    </div>
+    <button class="noprint" onclick="window.print()" style="margin-top:20px;padding:10px 24px;background:#2c3e50;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">Print</button>
+    </body></html>`);
+  win.document.close();
+}
+
+function downloadQR(){
+  const inner = document.getElementById('qrCodeInner');
+  if(!inner){ showT('Generate QR first','error'); return; }
+  const canvas = inner.querySelector('canvas');
+  const img = inner.querySelector('img');
+  if(canvas){
+    const link = document.createElement('a');
+    link.download = 'qrcode.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  } else if(img){
+    const link = document.createElement('a');
+    link.download = 'qrcode.png';
+    link.href = img.src;
+    link.click();
+  }
+}
+
+function showT(msg,type){
+  const el=document.getElementById('toastEl');
+  el.textContent=msg; el.className='toast '+type+' show';
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>

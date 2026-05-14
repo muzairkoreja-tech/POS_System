@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Management - Admin</title>
+<link rel="stylesheet" href="../static/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f5f6fa;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-left a{color:rgba(255,255,255,.75);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px}
+.topbar-left a:hover{color:#fff}
+.topbar-title{font-size:17px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.btn-add{background:#fff;color:#c0392b;border:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-add:hover{opacity:.9}
+.container{max-width:1100px;margin:0 auto;padding:24px}
+
+/* Summary cards */
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.sum-card{background:#fff;border-radius:10px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;align-items:center;gap:14px}
+.sum-icon{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0}
+.sum-num{font-size:22px;font-weight:800;color:#2c3e50;line-height:1}
+.sum-lbl{font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+
+/* Search bar */
+.search-bar{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.search-bar input{border:none;outline:none;flex:1;font-size:14px;background:transparent}
+.search-bar i{color:#aaa}
+
+/* Table */
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+th{background:#f8f9fa;padding:12px 16px;text-align:left;font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #eee}
+td{padding:13px 16px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:middle}
+tr:hover td{background:#fafafa}
+.role-badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;text-transform:uppercase;white-space:nowrap}
+.role-admin{background:#fde8e8;color:#c0392b}
+.role-procurement{background:#d6eaf8;color:#1a5276}
+.role-sales{background:#fdebd0;color:#7d6608}
+.role-sales-mgr{background:#d5f5e3;color:#1a6b3a}
+.role-finance{background:#f0e6ff;color:#6c3483}
+.avatar{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;margin-right:8px}
+.btn-sm{padding:5px 12px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:opacity .2s}
+.btn-sm:hover{opacity:.85}
+.btn-del{background:#fde8e8;color:#c0392b}
+.btn-reset{background:#fef5e7;color:#8a4d00}
+
+/* Modal overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#fff;border-radius:12px;width:100%;max-width:500px}
+.modal-header{padding:20px 24px;border-bottom:1px solid #eee;background:linear-gradient(135deg,#e74c3c,#c0392b);border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{color:#fff;font-size:16px;font-weight:700;margin:0}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.8);font-size:22px;cursor:pointer;line-height:1}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:5px}
+.form-group input,.form-group select{width:100%;padding:10px 12px;border:2px solid #eee;border-radius:6px;font-size:13px;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#e74c3c}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-action{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn-action:hover{opacity:.85}
+.btn-primary{background:#e74c3c;color:#fff}
+.btn-secondary{background:#ecf0f1;color:#2c3e50}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#2c3e50;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;z-index:9999}
+.toast.success{background:#27ae60}.toast.error{background:#e74c3c}.toast.show{display:block}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/admin-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    <span style="color:rgba(255,255,255,.4)">|</span>
+    <span class="topbar-title"><i class="fas fa-users" style="margin-right:6px"></i>User Management</span>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-add" onclick="openCreate()"><i class="fas fa-user-plus"></i> Add User</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="sum-grid">
+    <div class="sum-card">
+      <div class="sum-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-users"></i></div>
+      <div><div class="sum-num" id="cntTotal">—</div><div class="sum-lbl">Total Users</div></div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-icon" style="background:linear-gradient(135deg,#c0392b,#96281b)"><i class="fas fa-shield-alt"></i></div>
+      <div><div class="sum-num" id="cntAdmin">—</div><div class="sum-lbl">Admins</div></div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-truck"></i></div>
+      <div><div class="sum-num" id="cntProcurement">—</div><div class="sum-lbl">Procurement</div></div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-icon" style="background:linear-gradient(135deg,#e67e22,#d35400)"><i class="fas fa-cash-register"></i></div>
+      <div><div class="sum-num" id="cntSales">—</div><div class="sum-lbl">Sales</div></div>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <i class="fas fa-search"></i>
+    <input id="searchInput" placeholder="Search by username, name or email..." oninput="filterTable()">
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>User</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="userBody">
+      <tr><td colspan="6" style="text-align:center;padding:30px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Create User Modal -->
+<div class="overlay" id="createOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3><i class="fas fa-user-plus"></i> Add New User</h3>
+      <button class="modal-close" onclick="closeCreate()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Username *</label><input id="nu" placeholder="e.g., john_doe"></div>
+        <div class="form-group"><label>Full Name *</label><input id="nf" placeholder="e.g., John Doe"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" id="ne" placeholder="user@example.com"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Role *</label>
+          <select id="nr">
+            <option value="sales_person">Sales Person (Cashier)</option>
+            <option value="sales_manager">Sales Manager</option>
+            <option value="procurement_manager">Procurement Manager</option>
+            <option value="finance_manager">Finance Manager</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Password *</label><input type="password" id="np" placeholder="Min 6 characters"></div>
+      </div>
+      <div style="background:#fef9e7;border-radius:8px;padding:12px;font-size:12px;color:#7d6608;display:flex;align-items:flex-start;gap:8px">
+        <i class="fas fa-info-circle" style="margin-top:1px;flex-shrink:0"></i>
+        <span>The user will be able to log in immediately after creation. Admins have full system access including approval of Purchase Requisitions.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-action btn-secondary" onclick="closeCreate()">Cancel</button>
+      <button class="btn-action btn-primary" onclick="saveUser()"><i class="fas fa-save"></i> Create User</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastEl" class="toast"></div>
+
+<script>
+let usersData = [];
+
+document.addEventListener('DOMContentLoaded', loadUsers);
+
+async function loadUsers(){
+  try{
+    usersData = await fetch('/api/users').then(r=>r.json());
+    renderTable(usersData);
+    updateSummary(usersData);
+  }catch(e){ showT('Failed to load users','error'); }
+}
+
+function updateSummary(list){
+  document.getElementById('cntTotal').textContent = list.length;
+  document.getElementById('cntAdmin').textContent = list.filter(u=>u.role==='admin').length;
+  document.getElementById('cntProcurement').textContent = list.filter(u=>u.role==='procurement_manager').length;
+  document.getElementById('cntSales').textContent = list.filter(u=>['sales_person','sales_manager'].includes(u.role)).length;
+}
+
+function roleClass(role){
+  if(role==='admin') return 'role-admin';
+  if(role==='procurement_manager') return 'role-procurement';
+  if(role==='sales_manager') return 'role-sales-mgr';
+  if(role==='finance_manager') return 'role-finance';
+  return 'role-sales';
+}
+
+function roleLabel(role){
+  const labels = {
+    admin: 'Admin',
+    procurement_manager: 'Procurement Manager',
+    sales_manager: 'Sales Manager',
+    sales_person: 'Sales Person (Cashier)',
+    finance_manager: 'Finance Manager'
+  };
+  return labels[role] || role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+}
+
+function avatarColor(role){
+  if(role==='admin') return '#c0392b';
+  if(role==='procurement_manager') return '#2980b9';
+  if(role==='sales_manager') return '#1a6b3a';
+  if(role==='finance_manager') return '#7d3c98';
+  return '#d35400';
+}
+
+function renderTable(list){
+  const tb = document.getElementById('userBody');
+  if(!list.length){
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#aaa">No users found</td></tr>';
+    return;
+  }
+  tb.innerHTML = list.map((u,i)=>{
+    const initials = (u.full_name||u.username||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const created = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const isAdmin = u.username === 'admin';
+    const actions = isAdmin
+      ? '<span style="color:#aaa;font-size:12px">Protected</span>'
+      : `<button class="btn-sm btn-del" onclick="delUser('${u._id}','${u.username}')"><i class="fas fa-trash"></i> Delete</button>`;
+    return `<tr>
+      <td style="color:#aaa">${i+1}</td>
+      <td>
+        <div style="display:flex;align-items:center">
+          <div class="avatar" style="background:${avatarColor(u.role)}">${initials}</div>
+          <div><strong>${u.username}</strong>${isAdmin?'<span style="color:#e74c3c;font-size:10px;margin-left:6px">SUPER ADMIN</span>':''}<br><small style="color:#aaa">${u.full_name||''}</small></div>
+        </div>
+      </td>
+      <td>${u.email||'—'}</td>
+      <td><span class="role-badge ${roleClass(u.role)}">${roleLabel(u.role)}</span></td>
+      <td>${created}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(){
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = usersData.filter(u=>
+    (u.username||'').toLowerCase().includes(q)||
+    (u.full_name||'').toLowerCase().includes(q)||
+    (u.email||'').toLowerCase().includes(q)
+  );
+  renderTable(filtered);
+}
+
+function openCreate(){
+  ['nu','nf','ne','np'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nr').value='sales_person';
+  document.getElementById('createOverlay').style.display='flex';
+}
+function closeCreate(){ document.getElementById('createOverlay').style.display='none'; }
+
+async function saveUser(){
+  const username = document.getElementById('nu').value.trim();
+  const full_name = document.getElementById('nf').value.trim();
+  const email = document.getElementById('ne').value.trim();
+  const role = document.getElementById('nr').value;
+  const password = document.getElementById('np').value;
+  if(!username||!full_name||!role||!password){ showT('Fill all required fields','error'); return; }
+  if(password.length < 6){ showT('Password must be at least 6 characters','error'); return; }
+  try{
+    const r = await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,full_name,email,role,password})});
+    const d = await r.json();
+    if(r.ok){ showT('User created successfully!','success'); closeCreate(); loadUsers(); }
+    else showT(d.message||'Failed to create user','error');
+  }catch(e){ showT('Failed to create user','error'); }
+}
+
+async function delUser(id, username){
+  if(!confirm(`Are you sure you want to delete user "${username}"? This cannot be undone.`)) return;
+  try{
+    const r = await fetch('/api/users/'+id,{method:'DELETE'});
+    const d = await r.json();
+    if(d.success){ showT('User deleted','success'); loadUsers(); }
+    else showT(d.message||'Failed to delete','error');
+  }catch(e){ showT('Failed to delete user','error'); }
+}
+
+function showT(msg,type){
+  const el = document.getElementById('toastEl');
+  el.textContent = msg; el.className = 'toast '+type+' show';
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>

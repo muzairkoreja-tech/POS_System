@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finance Dashboard - POS System</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0faf8;min-height:100vh}
+.dashboard-nav{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600}
+.nav-brand i{font-size:24px;color:#fff}
+.nav-right{display:flex;align-items:center;gap:20px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:14px}
+.nav-user i{font-size:20px}
+.role-badge{background:rgba(255,255,255,.25);padding:4px 10px;border-radius:12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.btn-logout{background:rgba(231,76,60,.8);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;transition:background .3s}
+.btn-logout:hover{background:#e74c3c}
+.dashboard-container{max-width:1300px;margin:0 auto;padding:24px}
+.page-title{font-size:24px;font-weight:700;color:#16a085;margin-bottom:4px}
+.page-subtitle{color:#7f8c8d;font-size:14px;margin-bottom:24px}
+.section-heading{font-size:15px;font-weight:700;color:#2c3e50;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:28px}
+.kpi-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-top:4px solid #16a085;transition:transform .2s,box-shadow .2s}
+.kpi-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.kpi-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.kpi-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0}
+.kpi-label{font-size:12px;color:#7f8c8d;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.kpi-value{font-size:20px;font-weight:700;color:#2c3e50;margin-top:2px}
+.kpi-period{font-size:11px;color:#95a5a6;margin-top:6px}
+.negative{color:#e74c3c !important}
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:28px}
+.quick-card{text-decoration:none;background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:block;transition:transform .2s,box-shadow .2s;border-left:4px solid #16a085}
+.quick-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.quick-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;margin-bottom:12px}
+.quick-title{font-size:14px;font-weight:700;color:#2c3e50;margin-bottom:4px}
+.quick-desc{font-size:12px;color:#7f8c8d}
+.quick-arrow{font-size:12px;color:#16a085;font-weight:600;margin-top:8px}
+.je-badge{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-left:8px}
+.toast{position:fixed;bottom:20px;right:20px;background:#2c3e50;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;z-index:2000}
+.toast.show{display:block}
+.period-label{background:#e8f8f5;color:#16a085;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;margin-bottom:20px}
+</style>
+</head>
+<body>
+<nav class="dashboard-nav">
+  <div class="nav-brand"><i class="fas fa-chart-line"></i><span>Finance Dashboard</span></div>
+  <div class="nav-right">
+    <div class="nav-user">
+      <i class="fas fa-user-circle"></i>
+      <span id="navUserName">Finance</span>
+      <span class="role-badge" id="navRoleBadge">Finance</span>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+
+<div class="dashboard-container">
+  <h1 class="page-title"><i class="fas fa-chart-line"></i> Finance Dashboard</h1>
+  <p class="page-subtitle">Real-time financial overview and quick access to finance modules</p>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
+    <div class="period-label" style="margin-bottom:0"><i class="fas fa-calendar-alt"></i> This Month: <span id="periodLabel">—</span> &nbsp;<span class="je-badge">Journal Entries: <span id="jeCount">—</span></span></div>
+    <button onclick="postSampleData()" id="seedBtn" style="background:linear-gradient(135deg,#8e44ad,#9b59b6);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;">
+      <i class="fas fa-flask"></i> Post Sample Procurement Cycle
+    </button>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="section-heading"><i class="fas fa-tachometer-alt"></i> Key Performance Indicators</div>
+  <div class="kpi-grid">
+
+    <div class="kpi-card" style="border-top-color:#27ae60">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#27ae60,#2ecc71)"><i class="fas fa-arrow-up"></i></div>
+        <div>
+          <div class="kpi-label">Monthly Revenue</div>
+          <div class="kpi-value" id="kpiRevenue">—</div>
+        </div>
+      </div>
+      <div class="kpi-period">Sales + Other Income</div>
+    </div>
+
+    <div class="kpi-card" style="border-top-color:#e67e22">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#e67e22,#f39c12)"><i class="fas fa-shopping-cart"></i></div>
+        <div>
+          <div class="kpi-label">Monthly COGS</div>
+          <div class="kpi-value" id="kpiCogs">—</div>
+        </div>
+      </div>
+      <div class="kpi-period">Cost of Goods Sold</div>
+    </div>
+
+    <div class="kpi-card" style="border-top-color:#16a085">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#16a085,#1abc9c)"><i class="fas fa-percentage"></i></div>
+        <div>
+          <div class="kpi-label">Gross Profit</div>
+          <div class="kpi-value" id="kpiGross">—</div>
+        </div>
+      </div>
+      <div class="kpi-period">Revenue minus COGS</div>
+    </div>
+
+    <div class="kpi-card" style="border-top-color:#8e44ad">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#8e44ad,#9b59b6)"><i class="fas fa-hand-holding-usd"></i></div>
+        <div>
+          <div class="kpi-label">Net Profit</div>
+          <div class="kpi-value" id="kpiNet">—</div>
+        </div>
+      </div>
+      <div class="kpi-period">After all expenses</div>
+    </div>
+
+    <div class="kpi-card" style="border-top-color:#2980b9">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#2980b9,#3498db)"><i class="fas fa-coins"></i></div>
+        <div>
+          <div class="kpi-label">Cash Balance</div>
+          <div class="kpi-value" id="kpiCash">—</div>
+        </div>
+      </div>
+      <div class="kpi-period">Cash + Bank accounts</div>
+    </div>
+
+    <div class="kpi-card" style="border-top-color:#f1c40f">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#f39c12,#f1c40f)"><i class="fas fa-file-invoice-dollar"></i></div>
+        <div>
+          <div class="kpi-label">Accounts Receivable</div>
+          <div class="kpi-value" id="kpiAR">—</div>
+        </div>
+      </div>
+      <div class="kpi-period">Owed by customers</div>
+    </div>
+
+    <div class="kpi-card" style="border-top-color:#e74c3c">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-file-invoice"></i></div>
+        <div>
+          <div class="kpi-label">Accounts Payable</div>
+          <div class="kpi-value" id="kpiAP">—</div>
+        </div>
+      </div>
+      <div class="kpi-period">Owed to vendors</div>
+    </div>
+
+    <div class="kpi-card" style="border-top-color:#6c5ce7">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#6c5ce7,#a29bfe)"><i class="fas fa-boxes"></i></div>
+        <div>
+          <div class="kpi-label">Inventory Value</div>
+          <div class="kpi-value" id="kpiInventory">—</div>
+        </div>
+      </div>
+      <div class="kpi-period">Stock at cost</div>
+    </div>
+
+  </div>
+
+  <!-- Quick Access -->
+  <div class="section-heading"><i class="fas fa-th-large"></i> Finance Modules</div>
+  <div class="quick-grid">
+    <a href="/finance/coa" class="quick-card" style="border-left-color:#3498db">
+      <div class="quick-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-list-ol"></i></div>
+      <div class="quick-title">Chart of Accounts</div>
+      <div class="quick-desc">Manage GL accounts, add custom accounts, view COA</div>
+      <div class="quick-arrow">Open &rarr;</div>
+    </a>
+    <a href="/finance/gl" class="quick-card" style="border-left-color:#16a085">
+      <div class="quick-icon" style="background:linear-gradient(135deg,#16a085,#1abc9c)"><i class="fas fa-book-open"></i></div>
+      <div class="quick-title">General Ledger</div>
+      <div class="quick-desc">View transaction history with running balances per account</div>
+      <div class="quick-arrow">Open &rarr;</div>
+    </a>
+    <a href="/finance/journal" class="quick-card" style="border-left-color:#8e44ad">
+      <div class="quick-icon" style="background:linear-gradient(135deg,#8e44ad,#9b59b6)"><i class="fas fa-journal-whills"></i></div>
+      <div class="quick-title">Journal Entries</div>
+      <div class="quick-desc">View all posted entries and create manual journal entries</div>
+      <div class="quick-arrow">Open &rarr;</div>
+    </a>
+    <a href="/finance/reports" class="quick-card" style="border-left-color:#e67e22">
+      <div class="quick-icon" style="background:linear-gradient(135deg,#e67e22,#f39c12)"><i class="fas fa-chart-bar"></i></div>
+      <div class="quick-title">Financial Reports</div>
+      <div class="quick-desc">Income statement, cash flow, equity statement</div>
+      <div class="quick-arrow">Open &rarr;</div>
+    </a>
+    <a href="/finance/reports#trial-balance" class="quick-card" style="border-left-color:#27ae60">
+      <div class="quick-icon" style="background:linear-gradient(135deg,#27ae60,#2ecc71)"><i class="fas fa-balance-scale"></i></div>
+      <div class="quick-title">Trial Balance</div>
+      <div class="quick-desc">Verify DR = CR totals across all accounts</div>
+      <div class="quick-arrow">Open &rarr;</div>
+    </a>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+function fmt(n){return 'PKR '+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'');setTimeout(()=>t.className='toast',3000);}
+function handleLogout(){fetch('/api/auth/logout',{method:'POST'}).then(()=>{sessionStorage.clear();window.location.href='/login';});}
+
+document.addEventListener('DOMContentLoaded',function(){
+  var name=sessionStorage.getItem('full_name')||'Finance Manager';
+  var role=sessionStorage.getItem('role')||'finance_manager';
+  document.getElementById('navUserName').textContent=name;
+  document.getElementById('navRoleBadge').textContent=role.replace('_',' ');
+  loadKPIs();
+});
+
+function loadKPIs(){
+  fetch('/api/finance/dashboard-kpis')
+    .then(r=>r.json())
+    .then(d=>{
+      document.getElementById('kpiRevenue').textContent=fmt(d.revenue);
+      document.getElementById('kpiCogs').textContent=fmt(d.cogs);
+      document.getElementById('kpiGross').textContent=fmt(d.gross_profit);
+      var netEl=document.getElementById('kpiNet');
+      netEl.textContent=fmt(d.net_profit);
+      if(d.net_profit<0) netEl.classList.add('negative');
+      document.getElementById('kpiCash').textContent=fmt(d.cash);
+      document.getElementById('kpiAR').textContent=fmt(d.ar);
+      document.getElementById('kpiAP').textContent=fmt(d.ap);
+      document.getElementById('kpiInventory').textContent=fmt(d.inventory);
+      document.getElementById('jeCount').textContent=(d.journal_count||0).toLocaleString();
+      if(d.period) document.getElementById('periodLabel').textContent=d.period;
+    })
+    .catch(()=>showToast('Failed to load KPIs','error'));
+}
+
+async function postSampleData(){
+  var btn=document.getElementById('seedBtn');
+  btn.disabled=true;
+  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Posting...';
+  try{
+    var r=await fetch('/api/finance/seed-sample',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(!r.ok||d.error){showToast(d.error||'Failed to post sample data','error');return;}
+    showToast((d.posted||0)+' journal entries posted successfully!');
+    loadKPIs();
+    var s=d.summary||{};
+    alert(
+      '✅ Sample Procurement Cycle Posted!\n\n'+
+      'Capital Injected:    PKR '+(s.capital_injected||0).toLocaleString()+'\n'+
+      'Inventory Purchased: PKR '+(s.inventory_purchased||0).toLocaleString()+'\n'+
+      'Sales Revenue:       PKR '+(s.sales_revenue||0).toLocaleString()+'\n'+
+      'COGS:                PKR '+(s.cogs||0).toLocaleString()+'\n'+
+      'Gross Profit:        PKR '+(s.gross_profit||0).toLocaleString()+'\n'+
+      'Operating Expenses:  PKR '+(s.operating_expenses||0).toLocaleString()+'\n'+
+      'Net Profit:          PKR '+(s.net_profit||0).toLocaleString()+'\n\n'+
+      'Go to Financial Reports to see the full statements.'
+    );
+  }catch(e){
+    showToast('Request failed: '+e.message,'error');
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='<i class="fas fa-flask"></i> Post Sample Procurement Cycle';
+  }
+}
+</script>
+</body>
+</html>

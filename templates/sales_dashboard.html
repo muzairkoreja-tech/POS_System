@@ -1,274 +1,858 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Dashboard - POS System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f6fa;
-            min-height: 100vh;
-            overflow-y: auto;
-        }
-        .dashboard-nav {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
-            padding: 0 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 60px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 18px;
-            font-weight: 600;
-        }
-        .nav-brand i { font-size: 24px; color: #27ae60; }
-        .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        .nav-user {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-        .nav-user i { font-size: 20px; }
-        .nav-user .role-badge {
-            background: rgba(255,255,255,0.2);
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .btn-logout {
-            background: rgba(231,76,60,0.8);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: background 0.3s;
-        }
-        .btn-logout:hover { background: #e74c3c; }
-        .btn-pos {
-            background: rgba(39,174,96,0.8);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: background 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn-pos:hover { background: #229954; }
-        .dashboard-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-        .page-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 8px;
-        }
-        .page-subtitle {
-            color: #7f8c8d;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-        .empty-dashboard {
-            text-align: center;
-            padding: 80px 20px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-        .empty-dashboard i {
-            font-size: 80px;
-            color: #bdc3c7;
-            margin-bottom: 20px;
-        }
-        .empty-dashboard h3 {
-            color: #7f8c8d;
-            font-size: 20px;
-            margin-bottom: 8px;
-        }
-        .empty-dashboard p {
-            color: #95a5a6;
-            font-size: 14px;
-        }
-        .dashboard-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-        .stat-card {
-            background: white;
-            border-radius: 10px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .stat-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-        }
-        .stat-icon.green { background: rgba(39,174,96,0.1); color: #27ae60; }
-        .stat-icon.blue { background: rgba(52,152,219,0.1); color: #3498db; }
-        .stat-icon.orange { background: rgba(230,126,34,0.1); color: #e67e22; }
-        .stat-icon.red { background: rgba(231,76,60,0.1); color: #e74c3c; }
-        .stat-info h3 { font-size: 26px; color: #2c3e50; margin-bottom: 2px; }
-        .stat-info p { color: #7f8c8d; font-size: 13px; }
-        .actions-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Dashboard - POS System</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0fdf4;min-height:100vh}
+
+/* ── Nav ── */
+.dashboard-nav{background:linear-gradient(135deg,#1a6b3a,#27ae60);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;box-shadow:0 2px 12px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:700}
+.nav-brand i{font-size:22px}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:14px}
+.role-badge{background:rgba(255,255,255,.25);padding:3px 10px;border-radius:12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.btn-nav{border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:opacity .2s}
+.btn-nav:hover{opacity:.88}
+.btn-pos{background:#fff;color:#1a6b3a}
+.btn-logout{background:rgba(231,76,60,.8);color:#fff}
+
+/* ── Layout ── */
+.container{max-width:1360px;margin:0 auto;padding:24px}
+.page-title{font-size:22px;font-weight:700;color:#1a6b3a;margin-bottom:4px}
+.page-sub{color:#7f8c8d;font-size:13px;margin-bottom:20px}
+
+/* ── Period Filter ── */
+.period-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:24px;background:#fff;padding:14px 18px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.period-btn{padding:7px 18px;border:2px solid #e0e0e0;background:#fff;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;color:#555;transition:all .2s}
+.period-btn.active{background:#27ae60;border-color:#27ae60;color:#fff}
+.period-btn:hover:not(.active){border-color:#27ae60;color:#27ae60}
+.period-sep{color:#ccc;font-size:14px}
+.custom-date-wrap{display:flex;align-items:center;gap:8px;margin-left:auto}
+.custom-date-wrap input{padding:7px 10px;border:2px solid #e0e0e0;border-radius:6px;font-size:12px;color:#2c3e50;font-family:inherit}
+.btn-apply{background:#27ae60;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+
+/* ── KPI Cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-top:4px solid #27ae60;transition:transform .2s,box-shadow .2s}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.1)}
+.kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.kpi-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px}
+.kpi-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px}
+.kpi-badge.up{background:#d5f5e3;color:#1e8449}
+.kpi-badge.down{background:#fde8e8;color:#c0392b}
+.kpi-badge.neutral{background:#eee;color:#7f8c8d}
+.kpi-val{font-size:22px;font-weight:800;color:#2c3e50;line-height:1.1}
+.kpi-lbl{font-size:11px;color:#95a5a6;text-transform:uppercase;letter-spacing:.4px;margin-top:4px}
+.kpi-sub{font-size:12px;color:#7f8c8d;margin-top:6px}
+
+/* ── Chart Cards ── */
+.chart-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.chart-title{font-size:13px;font-weight:700;color:#2c3e50;display:flex;align-items:center;gap:7px}
+.chart-title i{font-size:14px}
+.chart-sub{font-size:11px;color:#aaa}
+
+/* ── Section heading ── */
+.sec-head{font-size:14px;font-weight:700;color:#2c3e50;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.sec-head i{color:#27ae60}
+
+/* ── Transactions table ── */
+.txn-table{width:100%;border-collapse:collapse;font-size:13px}
+.txn-table th{background:#f8fdf9;padding:10px 14px;text-align:left;font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e8f5e9}
+.txn-table td{padding:11px 14px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+.txn-table tr:hover td{background:#f8fdf9}
+.badge{display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:capitalize}
+.badge-cash{background:#d5f5e3;color:#1e8449}
+.badge-card{background:#ebf5fb;color:#1a5276}
+.badge-online{background:#f0e6ff;color:#6c3483}
+.badge-credit{background:#fef5e7;color:#8a4d00}
+
+/* ── Summary report table ── */
+.report-table{width:100%;border-collapse:collapse;font-size:13px}
+.report-table th{background:#f8fdf9;padding:10px 14px;text-align:left;font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e8f5e9}
+.report-table td{padding:10px 14px;border-bottom:1px solid #f0f0f0}
+.report-table tfoot td{background:#f8fdf9;font-weight:700;border-top:2px solid #d5f5e3;color:#1a6b3a}
+
+/* ── Tab strip ── */
+.tab-strip{display:flex;gap:4px;background:#f0f0f0;padding:4px;border-radius:8px;width:fit-content;margin-bottom:18px}
+.tab-btn{padding:7px 18px;border:none;background:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:#7f8c8d;transition:all .2s}
+.tab-btn.active{background:#fff;color:#27ae60;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:20px;right:20px;padding:12px 22px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.2);display:none;z-index:9999;animation:slideUp .3s ease}
+.toast.show{display:block}
+.toast.success{background:#27ae60}
+.toast.error{background:#e74c3c}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── Empty state ── */
+.empty-state{text-align:center;padding:50px 20px;color:#aaa}
+.empty-state i{font-size:48px;margin-bottom:12px;display:block}
+
+/* ── Cashier KPI cards ── */
+.cashier-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:24px}
+.cashier-card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:4px solid #27ae60;position:relative;overflow:hidden}
+.cashier-card.on-shift{border-left-color:#27ae60}
+.cashier-card.off-shift{border-left-color:#bdc3c7;opacity:.75}
+.cashier-status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px}
+.cashier-status-dot.online{background:#27ae60;animation:pulse 1.5s infinite}
+.cashier-status-dot.offline{background:#bdc3c7}
+.cashier-name{font-size:14px;font-weight:700;color:#2c3e50;margin-bottom:3px}
+.cashier-shift-time{font-size:11px;color:#7f8c8d;margin-bottom:10px}
+.cashier-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cs-box{background:#f8fdf9;border-radius:7px;padding:8px 10px;text-align:center}
+.cs-val{font-size:14px;font-weight:700;color:#2c3e50}
+.cs-lbl{font-size:10px;color:#95a5a6;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.over-short-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700;margin-top:8px}
+.pill-over{background:#d5f5e3;color:#1e8449}
+.pill-short{background:#fde8e8;color:#c0392b}
+.pill-bal{background:#eaf4fb;color:#1a5276}
+.shift-summary-bar{background:#f0fdf4;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;border:1px solid #d5f5e3}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+</style>
 </head>
 <body>
-    <nav class="dashboard-nav">
-        <div class="nav-brand">
-            <i class="fas fa-cash-register"></i>
-            <span>POS System</span>
-        </div>
-        <div class="nav-right">
-            <div class="nav-user">
-                <i class="fas fa-user-circle"></i>
-                <span id="navUserName">Sales Person</span>
-                <span class="role-badge" id="navRoleBadge">Sales</span>
-            </div>
-            <button class="btn-logout" onclick="handleLogout()">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
-        </div>
-    </nav>
 
-    <div class="dashboard-container">
-        <h1 class="page-title"><i class="fas fa-cash-register"></i> Sales Dashboard</h1>
-        <p class="page-subtitle">Point of Sale - Cash Counter Operations</p>
-
-        <div class="actions-row">
-            <button class="btn-pos" onclick="goToPOS()">
-                <i class="fas fa-shopping-cart"></i> Go to POS
-            </button>
-        </div>
-
-        <!-- Stats -->
-        <div class="dashboard-stats">
-            <div class="stat-card">
-                <div class="stat-icon green"><i class="fas fa-dollar-sign"></i></div>
-                <div class="stat-info">
-                    <h3 id="todaySales">$0.00</h3>
-                    <p>Today's Sales</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon blue"><i class="fas fa-receipt"></i></div>
-                <div class="stat-info">
-                    <h3 id="todayTransactions">0</h3>
-                    <p>Today's Transactions</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon orange"><i class="fas fa-boxes"></i></div>
-                <div class="stat-info">
-                    <h3 id="totalProducts">0</h3>
-                    <p>Products in Stock</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
-                <div class="stat-info">
-                    <h3 id="lowStock">0</h3>
-                    <p>Low Stock Items</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="empty-dashboard" id="mainContent">
-            <i class="fas fa-cash-register"></i>
-            <h3>Welcome, Sales Person!</h3>
-            <p>Click "Go to POS" above or use the POS system to start billing customers.</p>
-            <p style="margin-top: 8px; font-size: 13px; color: #bdc3c7;">Your sales dashboard is ready for use.</p>
-        </div>
+<!-- ── Navigation ── -->
+<nav class="dashboard-nav">
+  <div class="nav-brand"><i class="fas fa-cash-register"></i><span>Sales Dashboard</span></div>
+  <div class="nav-right">
+    <div class="nav-user">
+      <i class="fas fa-user-circle" style="font-size:20px"></i>
+      <span id="navUserName">Sales</span>
+      <span class="role-badge" id="navRoleBadge">Sales</span>
     </div>
+    <button class="btn-nav btn-pos" onclick="window.location.href='/pos'"><i class="fas fa-cash-register"></i> Open POS</button>
+    <button class="btn-nav" style="background:rgba(255,255,255,.15);color:#fff" onclick="window.location.href='/pos/shifts'"><i class="fas fa-clock"></i> Shifts</button>
+    <button class="btn-nav" style="background:rgba(255,255,255,.15);color:#fff" onclick="window.location.href='/pos/customers'"><i class="fas fa-users"></i> Customers</button>
+    <button class="btn-nav btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const fullName = sessionStorage.getItem('full_name') || '{{ user }}';
-            const role = sessionStorage.getItem('role') || '{{ role }}';
-            document.getElementById('navUserName').textContent = fullName;
-            document.getElementById('navRoleBadge').textContent = role.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+<div class="container">
+  <h1 class="page-title"><i class="fas fa-chart-line" style="margin-right:8px"></i>Sales Dashboard</h1>
+  <p class="page-sub">Real-time sales performance, analytics and transaction reports</p>
 
-            loadStats();
-        });
+  <!-- ── Period Filter Bar ── -->
+  <div class="period-bar">
+    <button class="period-btn active" data-period="today"      onclick="setPeriod(this,'today')">Today</button>
+    <button class="period-btn"        data-period="yesterday"  onclick="setPeriod(this,'yesterday')">Yesterday</button>
+    <button class="period-btn"        data-period="week"       onclick="setPeriod(this,'week')">This Week</button>
+    <button class="period-btn"        data-period="month"      onclick="setPeriod(this,'month')">This Month</button>
+    <button class="period-btn"        data-period="last_month" onclick="setPeriod(this,'last_month')">Last Month</button>
+    <span class="period-sep">|</span>
+    <div class="custom-date-wrap">
+      <label style="font-size:12px;color:#7f8c8d">From</label>
+      <input type="date" id="dateFrom">
+      <label style="font-size:12px;color:#7f8c8d">To</label>
+      <input type="date" id="dateTo">
+      <button class="btn-apply" onclick="applyCustomRange()"><i class="fas fa-search"></i> Apply</button>
+    </div>
+    <div style="margin-left:8px;font-size:12px;color:#aaa" id="periodLabel"></div>
+  </div>
 
-        function loadStats() {
-            Promise.all([
-                fetch('/api/products').then(r => r.json()),
-                fetch('/api/stats/today').then(r => r.json())
-            ])
-            .then(([products, stats]) => {
-                document.getElementById('totalProducts').textContent = products.length;
-                document.getElementById('todaySales').textContent = '$' + (stats.today_sales || 0).toFixed(2);
-                document.getElementById('todayTransactions').textContent = stats.today_transactions || 0;
-                document.getElementById('lowStock').textContent = stats.low_stock_products || 0;
-            })
-            .catch(err => console.error('Failed to load stats:', err));
+  <!-- ── KPI Cards ── -->
+  <div class="kpi-grid">
+    <div class="kpi-card" style="border-top-color:#27ae60">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-coins"></i></div>
+        <span class="kpi-badge neutral" id="kpiRevBadge">—</span>
+      </div>
+      <div class="kpi-val" id="kpiRevenue">—</div>
+      <div class="kpi-lbl">Total Revenue</div>
+      <div class="kpi-sub" id="kpiRevSub">—</div>
+    </div>
+    <div class="kpi-card" style="border-top-color:#3498db">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-receipt"></i></div>
+        <span class="kpi-badge neutral" id="kpiTxnBadge">—</span>
+      </div>
+      <div class="kpi-val" id="kpiTxns">—</div>
+      <div class="kpi-lbl">Transactions</div>
+      <div class="kpi-sub" id="kpiTxnSub">—</div>
+    </div>
+    <div class="kpi-card" style="border-top-color:#8e44ad">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#8e44ad,#9b59b6)"><i class="fas fa-shopping-basket"></i></div>
+        <span class="kpi-badge neutral" id="kpiAvgBadge">&nbsp;</span>
+      </div>
+      <div class="kpi-val" id="kpiAvg">—</div>
+      <div class="kpi-lbl">Avg Basket Value</div>
+      <div class="kpi-sub">revenue ÷ transactions</div>
+    </div>
+    <div class="kpi-card" style="border-top-color:#f39c12">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#f39c12,#e67e22)"><i class="fas fa-calendar-week"></i></div>
+        <span class="kpi-badge neutral" id="kpiWeekBadge">&nbsp;</span>
+      </div>
+      <div class="kpi-val" id="kpiWeek">—</div>
+      <div class="kpi-lbl">This Week</div>
+      <div class="kpi-sub" id="kpiWeekSub">—</div>
+    </div>
+    <div class="kpi-card" style="border-top-color:#16a085">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#16a085,#1abc9c)"><i class="fas fa-calendar-alt"></i></div>
+        <span class="kpi-badge neutral" id="kpiMonthBadge">—</span>
+      </div>
+      <div class="kpi-val" id="kpiMonth">—</div>
+      <div class="kpi-lbl">This Month</div>
+      <div class="kpi-sub" id="kpiMonthSub">—</div>
+    </div>
+    <div class="kpi-card" style="border-top-color:#e74c3c">
+      <div class="kpi-header">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-exclamation-triangle"></i></div>
+        <span class="kpi-badge neutral" id="kpiLowBadge">&nbsp;</span>
+      </div>
+      <div class="kpi-val" id="kpiLow">—</div>
+      <div class="kpi-lbl">Low Stock Items</div>
+      <div class="kpi-sub"><a href="/procurement/stock" style="color:#e74c3c;font-weight:600;text-decoration:none">View alerts →</a></div>
+    </div>
+  </div>
+
+  <!-- ── Cashier KPI Panel ── -->
+  <div class="sec-head" style="margin-bottom:12px"><i class="fas fa-id-badge" style="color:#e67e22"></i> Cashier Performance — Today</div>
+
+  <!-- Shift summary bar -->
+  <div class="shift-summary-bar" id="shiftSummaryBar">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:10px;height:10px;border-radius:50%;background:#27ae60;animation:pulse 1.5s infinite"></div>
+      <span style="font-size:13px;font-weight:700;color:#1a6b3a"><span id="activeShiftCount">—</span> Active Shift(s)</span>
+    </div>
+    <div style="height:20px;width:1px;background:#d5f5e3"></div>
+    <div style="font-size:12px;color:#555"><i class="fas fa-receipt" style="color:#27ae60"></i> <strong id="totalShiftTxns">—</strong> Transactions Today</div>
+    <div style="font-size:12px;color:#555"><i class="fas fa-money-bill-wave" style="color:#27ae60"></i> <strong id="totalShiftCash">—</strong> Cash Collected</div>
+    <div style="font-size:12px;color:#555"><i class="fas fa-chart-line" style="color:#27ae60"></i> <strong id="totalShiftSales">—</strong> Total Revenue</div>
+    <a href="/pos/shifts" style="margin-left:auto;font-size:12px;font-weight:700;color:#27ae60;text-decoration:none;display:flex;align-items:center;gap:5px"><i class="fas fa-external-link-alt"></i> Full Shift Report</a>
+  </div>
+
+  <!-- Per-cashier cards -->
+  <div class="cashier-grid" id="cashierGrid">
+    <div style="grid-column:1/-1;text-align:center;padding:30px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading cashier data…</div>
+  </div>
+
+  <!-- ── Charts Row 1: 7-day Trend + Hourly ── -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title"><i class="fas fa-chart-area" style="color:#27ae60"></i> 7-Day Revenue Trend</div>
+        <span class="chart-sub" id="trendSub"></span>
+      </div>
+      <canvas id="chartTrend" height="120"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title"><i class="fas fa-clock" style="color:#3498db"></i> Today's Hourly Sales</div>
+        <span class="chart-sub">PKR</span>
+      </div>
+      <canvas id="chartHourly" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Charts Row 2: Top Products + Category + Payment ── -->
+  <div style="display:grid;grid-template-columns:2fr 1.2fr 1fr;gap:20px;margin-bottom:24px">
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title"><i class="fas fa-trophy" style="color:#f39c12"></i> Top 10 Products</div>
+        <span class="chart-sub" id="topProdSub">by revenue</span>
+      </div>
+      <canvas id="chartTopProd" height="220"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title"><i class="fas fa-chart-pie" style="color:#8e44ad"></i> By Category</div>
+        <span class="chart-sub">revenue share</span>
+      </div>
+      <canvas id="chartCat" height="220"></canvas>
+      <div id="catEmpty" class="empty-state" style="display:none;padding:30px 10px"><i class="fas fa-chart-pie"></i>No data</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title"><i class="fas fa-credit-card" style="color:#16a085"></i> Payment Methods</div>
+        <span class="chart-sub" id="pmSub">this month</span>
+      </div>
+      <canvas id="chartPM" height="220"></canvas>
+      <div id="pmEmpty" class="empty-state" style="display:none;padding:30px 10px"><i class="fas fa-credit-card"></i>No data</div>
+    </div>
+  </div>
+
+  <!-- ── Sales Report Section ── -->
+  <div class="sec-head"><i class="fas fa-table"></i> Sales Reports</div>
+
+  <div class="tab-strip">
+    <button class="tab-btn active" onclick="showTab('transactions',this)">Recent Transactions</button>
+    <button class="tab-btn" onclick="showTab('daily',this)">Daily Summary</button>
+  </div>
+
+  <!-- Transactions Tab -->
+  <div id="tabTransactions">
+    <div class="chart-card" style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#2c3e50">Recent Transactions</div>
+          <div style="font-size:11px;color:#aaa" id="txnRangeLbl">Showing results for selected period</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:12px;color:#7f8c8d">Filter:</span>
+          <select id="pmFilter" onchange="filterTransactions()" style="padding:6px 10px;border:2px solid #eee;border-radius:6px;font-size:12px">
+            <option value="">All Payment Methods</option>
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="online">Online</option>
+            <option value="credit">Credit</option>
+          </select>
+          <input id="txnSearch" type="text" placeholder="Search customer / receipt…" oninput="filterTransactions()" style="padding:6px 10px;border:2px solid #eee;border-radius:6px;font-size:12px;width:200px">
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="txn-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Receipt</th><th>Date & Time</th><th>Customer</th>
+              <th>Items</th><th>Payment</th><th style="text-align:right">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="txnBody">
+            <tr><td colspan="7" style="text-align:center;padding:30px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#7f8c8d">
+        <span id="txnCount">—</span>
+        <span id="txnTotal" style="font-weight:700;color:#27ae60">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Summary Tab -->
+  <div id="tabDaily" style="display:none">
+    <div class="chart-card" style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:#2c3e50">Daily Revenue Summary</div>
+        <span style="font-size:11px;color:#aaa" id="dailyRangeLbl">Based on current date filter</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="report-table">
+          <thead>
+            <tr><th>Date</th><th>Day</th><th>Transactions</th><th>Total Revenue</th><th>Avg Basket</th><th>Top Product</th></tr>
+          </thead>
+          <tbody id="dailyBody">
+            <tr><td colspan="6" style="text-align:center;padding:30px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+          </tbody>
+          <tfoot><tr><td colspan="2" id="dailyFootLbl">Total</td><td id="dailyFootTxn">—</td><td id="dailyFootRev">—</td><td id="dailyFootAvg">—</td><td></td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ── Globals ──────────────────────────────────────────────────────────────────
+const fmt   = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const fmtK  = n => n >= 1000000 ? 'PKR '+(n/1000000).toFixed(1)+'M' : n >= 1000 ? 'PKR '+(n/1000).toFixed(1)+'K' : fmt(n);
+const COLORS = ['#27ae60','#3498db','#8e44ad','#f39c12','#e74c3c','#16a085','#e67e22','#2980b9','#1abc9c','#c0392b'];
+const charts = {};
+
+let activePeriod = 'today';
+let customFrom = '', customTo = '';
+let allTransactions = [];
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('navUserName').textContent = sessionStorage.getItem('full_name') || 'Sales';
+  document.getElementById('navRoleBadge').textContent = (sessionStorage.getItem('role') || 'sales_person').replace(/_/g,' ');
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('dateFrom').value = today;
+  document.getElementById('dateTo').value   = today;
+  loadAll();
+});
+
+function loadAll(){
+  loadSummary();
+  loadTrend();
+  loadHourly();
+  loadTopProducts();
+  loadCategories();
+  loadPaymentMethods();
+  loadTransactions();
+  loadCashierKpis();
+}
+
+// ── Period helpers ────────────────────────────────────────────────────────────
+function setPeriod(btn, period){
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  activePeriod = period;
+  customFrom = ''; customTo = '';
+  const {from, to} = periodDates(period);
+  document.getElementById('dateFrom').value = from;
+  document.getElementById('dateTo').value   = to;
+  document.getElementById('periodLabel').textContent = '';
+  loadAll();
+}
+
+function applyCustomRange(){
+  const from = document.getElementById('dateFrom').value;
+  const to   = document.getElementById('dateTo').value;
+  if(!from || !to){ showToast('Select both dates','error'); return; }
+  if(from > to){ showToast('From date must be before To date','error'); return; }
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  activePeriod  = 'custom';
+  customFrom    = from;
+  customTo      = to;
+  document.getElementById('periodLabel').textContent = from + ' → ' + to;
+  loadAll();
+}
+
+function periodDates(period){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = dt => `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+  const today = fmt(d);
+  if(period==='today')      return {from:today, to:today};
+  if(period==='yesterday'){ const y=new Date(d); y.setDate(d.getDate()-1); const s=fmt(y); return {from:s,to:s}; }
+  if(period==='week'){
+    const mon=new Date(d); mon.setDate(d.getDate()-((d.getDay()+6)%7));
+    return {from:fmt(mon), to:today};
+  }
+  if(period==='month')      return {from:`${d.getFullYear()}-${pad(d.getMonth()+1)}-01`, to:today};
+  if(period==='last_month'){
+    const lm=new Date(d.getFullYear(), d.getMonth()-1, 1);
+    const le=new Date(d.getFullYear(), d.getMonth(), 0);
+    return {from:fmt(lm), to:fmt(le)};
+  }
+  return {from:today, to:today};
+}
+
+function getRange(){
+  if(activePeriod==='custom') return {from:customFrom, to:customTo};
+  return periodDates(activePeriod);
+}
+
+// ── Summary KPIs ─────────────────────────────────────────────────────────────
+async function loadSummary(){
+  try{
+    const [summ, statsToday] = await Promise.all([
+      fetch('/api/analytics/sales-summary').then(r=>r.json()),
+      fetch('/api/stats/today').then(r=>r.json())
+    ]);
+    const {from, to} = getRange();
+
+    // Revenue KPI — based on current period
+    let rev=0, txn=0;
+    if(activePeriod==='today')     { rev=summ.today.revenue;      txn=summ.today.transactions; }
+    else if(activePeriod==='yesterday'){ rev=summ.yesterday.revenue; txn=summ.yesterday.transactions; }
+    else if(activePeriod==='week') { rev=summ.this_week.revenue;   txn=summ.this_week.transactions; }
+    else if(activePeriod==='month'||activePeriod==='custom'){ rev=summ.this_month.revenue; txn=summ.this_month.transactions; }
+    else if(activePeriod==='last_month'){ rev=summ.last_month.revenue; txn=summ.last_month.transactions; }
+
+    document.getElementById('kpiRevenue').textContent = fmt(rev);
+    document.getElementById('kpiTxns').textContent    = txn.toLocaleString();
+    document.getElementById('kpiAvg').textContent     = txn>0 ? fmt(rev/txn) : 'PKR 0.00';
+    document.getElementById('kpiRevSub').textContent  = txn + ' transaction' + (txn!==1?'s':'');
+    document.getElementById('kpiTxnSub').textContent  = fmt(rev) + ' total';
+
+    // vs yesterday badge
+    const chg = summ.vs_yesterday;
+    const revBadge = document.getElementById('kpiRevBadge');
+    if(chg !== null && chg !== undefined){
+      revBadge.textContent = (chg>=0?'▲':'▼')+' '+Math.abs(chg)+'%';
+      revBadge.className   = 'kpi-badge '+(chg>=0?'up':'down');
+      document.getElementById('kpiRevSub').textContent = 'vs yesterday';
+    }
+
+    // Week / Month static
+    document.getElementById('kpiWeek').textContent    = fmtK(summ.this_week.revenue);
+    document.getElementById('kpiWeekSub').textContent = summ.this_week.transactions + ' transactions';
+    document.getElementById('kpiMonth').textContent   = fmtK(summ.this_month.revenue);
+
+    const mChg = summ.vs_last_month;
+    const mBadge = document.getElementById('kpiMonthBadge');
+    if(mChg !== null && mChg !== undefined){
+      mBadge.textContent = (mChg>=0?'▲':'▼')+' '+Math.abs(mChg)+'% vs last month';
+      mBadge.className   = 'kpi-badge '+(mChg>=0?'up':'down');
+    }
+    document.getElementById('kpiMonthSub').textContent = summ.this_month.transactions + ' transactions';
+
+    // Low stock
+    document.getElementById('kpiLow').textContent = statsToday.low_stock_products || 0;
+    const lowBadge = document.getElementById('kpiLowBadge');
+    if((statsToday.low_stock_products||0)>0){ lowBadge.textContent='⚠ Action needed'; lowBadge.className='kpi-badge down'; }
+    else { lowBadge.textContent='All OK'; lowBadge.className='kpi-badge up'; }
+  }catch(e){ console.error('Summary load error',e); }
+}
+
+// ── 7-Day Trend ───────────────────────────────────────────────────────────────
+async function loadTrend(){
+  try{
+    const data = await fetch('/api/analytics/sales-trend').then(r=>r.json());
+    const total = data.reduce((s,d)=>s+d.revenue,0);
+    document.getElementById('trendSub').textContent = '7-day total: '+fmt(total);
+    mkChart('chartTrend',{
+      type:'line',
+      data:{
+        labels: data.map(d=>d.date),
+        datasets:[{
+          label:'Revenue',
+          data: data.map(d=>d.revenue),
+          borderColor:'#27ae60', backgroundColor:'rgba(39,174,96,.12)',
+          tension:.4, fill:true, pointRadius:5, pointBackgroundColor:'#27ae60', pointHoverRadius:7
+        },{
+          label:'Transactions',
+          data: data.map(d=>d.transactions),
+          borderColor:'#3498db', backgroundColor:'transparent',
+          tension:.4, fill:false, pointRadius:4, pointBackgroundColor:'#3498db',
+          yAxisID:'y2', borderDash:[4,3]
+        }]
+      },
+      options:{
+        responsive:true, interaction:{mode:'index',intersect:false},
+        plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
+          tooltip:{callbacks:{label:ctx=>ctx.dataset.yAxisID==='y2'?ctx.parsed.y+' txns':fmt(ctx.parsed.y)}}},
+        scales:{
+          y:{position:'left',ticks:{callback:v=>'PKR '+Number(v).toLocaleString()},grid:{color:'#f0f0f0'}},
+          y2:{position:'right',ticks:{callback:v=>v+' txns'},grid:{display:false}}
         }
+      }
+    });
+  }catch(e){ console.error('Trend error',e); }
+}
 
-        function goToPOS() {
-            window.location.href = '/pos';
+// ── Hourly Sales ──────────────────────────────────────────────────────────────
+async function loadHourly(){
+  try{
+    const data = await fetch('/api/analytics/hourly-sales').then(r=>r.json());
+    const now  = new Date().getHours();
+    const bgs  = data.map((_,i)=>i===now?'rgba(39,174,96,.9)':'rgba(39,174,96,.35)');
+    mkChart('chartHourly',{
+      type:'bar',
+      data:{
+        labels: data.map(d=>d.label),
+        datasets:[{label:'Revenue (PKR)', data:data.map(d=>d.revenue), backgroundColor:bgs, borderRadius:3}]
+      },
+      options:{
+        responsive:true,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmt(ctx.parsed.y)+' ('+data[ctx.dataIndex].transactions+' txns)'}}},
+        scales:{
+          y:{ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v,maxTicksLimit:5},grid:{color:'#f5f5f5'}},
+          x:{ticks:{maxTicksLimit:8,font:{size:9}},grid:{display:false}}
         }
+      }
+    });
+  }catch(e){ console.error('Hourly error',e); }
+}
 
-        function handleLogout() {
-            fetch('/api/auth/logout', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {'Content-Type': 'application/json'}
-            })
-            .then(() => {
-                sessionStorage.clear();
-                window.location.href = '/login';
-            })
-            .catch(() => {
-                sessionStorage.clear();
-                window.location.href = '/login';
-            });
+// ── Top Products ──────────────────────────────────────────────────────────────
+async function loadTopProducts(){
+  try{
+    const data = await fetch('/api/analytics/top-products?limit=10').then(r=>r.json());
+    document.getElementById('topProdSub').textContent = data.length ? 'top '+data.length+' products' : 'no data';
+    if(!data.length){ document.getElementById('chartTopProd').parentElement.innerHTML+='<div class="empty-state"><i class="fas fa-boxes"></i>No sales data yet</div>'; return; }
+    mkChart('chartTopProd',{
+      type:'bar',
+      data:{
+        labels: data.map(p=>p.name.length>22?p.name.substring(0,21)+'…':p.name),
+        datasets:[{
+          label:'Revenue (PKR)', data:data.map(p=>p.revenue),
+          backgroundColor:COLORS, borderRadius:5
+        }]
+      },
+      options:{
+        indexAxis:'y', responsive:true,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmt(ctx.parsed.x)+' ('+data[ctx.dataIndex].quantity+' units)'}}},
+        scales:{
+          x:{ticks:{callback:v=>'PKR '+Number(v).toLocaleString()},grid:{color:'#f5f5f5'}},
+          y:{grid:{display:false},ticks:{font:{size:11}}}
         }
-    </script>
+      }
+    });
+  }catch(e){ console.error('Top products error',e); }
+}
+
+// ── Category Breakdown ────────────────────────────────────────────────────────
+async function loadCategories(){
+  try{
+    const data = await fetch('/api/analytics/category-breakdown').then(r=>r.json());
+    if(!data.length){ document.getElementById('chartCat').style.display='none'; document.getElementById('catEmpty').style.display='block'; return; }
+    mkChart('chartCat',{
+      type:'doughnut',
+      data:{
+        labels:data.map(c=>c.category),
+        datasets:[{data:data.map(c=>c.revenue),backgroundColor:COLORS,borderWidth:2,borderColor:'#fff',hoverOffset:8}]
+      },
+      options:{
+        responsive:true, cutout:'58%',
+        plugins:{
+          legend:{position:'bottom',labels:{boxWidth:10,padding:8,font:{size:10}}},
+          tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fmt(ctx.parsed)}}
+        }
+      }
+    });
+  }catch(e){ console.error('Category error',e); }
+}
+
+// ── Payment Methods ───────────────────────────────────────────────────────────
+async function loadPaymentMethods(){
+  try{
+    const pmPeriod = activePeriod==='today'?'today':activePeriod==='week'?'week':'month';
+    document.getElementById('pmSub').textContent = pmPeriod;
+    const data = await fetch('/api/analytics/payment-methods?period='+pmPeriod).then(r=>r.json());
+    if(!data.length){ document.getElementById('chartPM').style.display='none'; document.getElementById('pmEmpty').style.display='block'; return; }
+    const pmColors={'cash':'#27ae60','card':'#3498db','online':'#8e44ad','credit':'#f39c12'};
+    mkChart('chartPM',{
+      type:'doughnut',
+      data:{
+        labels:data.map(p=>p.method),
+        datasets:[{
+          data:data.map(p=>p.revenue),
+          backgroundColor:data.map(p=>pmColors[p.method.toLowerCase()]||'#aaa'),
+          borderWidth:2, borderColor:'#fff', hoverOffset:8
+        }]
+      },
+      options:{
+        responsive:true, cutout:'58%',
+        plugins:{
+          legend:{position:'bottom',labels:{boxWidth:10,padding:8,font:{size:10}}},
+          tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fmt(ctx.parsed)+' ('+data[ctx.dataIndex].count+' txns)'}}
+        }
+      }
+    });
+  }catch(e){ console.error('PM error',e); }
+}
+
+// ── Transactions ──────────────────────────────────────────────────────────────
+async function loadTransactions(){
+  const tbody = document.getElementById('txnBody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try{
+    const {from, to} = getRange();
+    document.getElementById('txnRangeLbl').textContent = 'Period: '+from+' → '+to;
+    document.getElementById('dailyRangeLbl').textContent = 'Period: '+from+' → '+to;
+    const d = await fetch('/api/analytics/sales-report?from='+from+'&to='+to+'&limit=200').then(r=>r.json());
+    allTransactions = d.transactions || [];
+    renderTransactions(allTransactions);
+    buildDailySummary(allTransactions);
+  }catch(e){
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;padding:24px">Failed to load transactions</td></tr>';
+  }
+}
+
+function renderTransactions(txns){
+  const pmF   = (document.getElementById('pmFilter').value||'').toLowerCase();
+  const query = (document.getElementById('txnSearch').value||'').toLowerCase();
+  const tbody = document.getElementById('txnBody');
+
+  const filtered = txns.filter(s=>{
+    const pm   = (s.payment_method||'').toLowerCase();
+    const cust = (s.customer_name||'').toLowerCase();
+    const id   = (s._id||'').toLowerCase();
+    if(pmF && !pm.includes(pmF)) return false;
+    if(query && !cust.includes(query) && !id.includes(query)) return false;
+    return true;
+  });
+
+  if(!filtered.length){
+    tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><i class="fas fa-receipt"></i>No transactions found</div></td></tr>';
+    document.getElementById('txnCount').textContent='0 transactions';
+    document.getElementById('txnTotal').textContent='Total: PKR 0.00';
+    return;
+  }
+
+  const pmBadge = pm => {
+    const c = {'cash':'badge-cash','card':'badge-card','online':'badge-online','credit':'badge-credit'};
+    return `<span class="badge ${c[pm?.toLowerCase()]||'badge-cash'}">${pm||'cash'}</span>`;
+  };
+
+  tbody.innerHTML = filtered.map((s,i)=>{
+    const ts   = s.timestamp ? new Date(s.timestamp) : null;
+    const date = ts ? ts.toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const time = ts ? ts.toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit'}) : '';
+    const items= s.items ? s.items.length : 0;
+    const rid  = (s._id||'').substring(0,8).toUpperCase();
+    return `<tr>
+      <td style="color:#aaa;font-size:11px">${i+1}</td>
+      <td><strong style="color:#27ae60;font-family:monospace">#${rid}</strong></td>
+      <td>${date}<br><small style="color:#aaa">${time}</small></td>
+      <td>${s.customer_name||'<span style="color:#bbb">Walk-in</span>'}</td>
+      <td style="text-align:center"><strong>${items}</strong> item${items!==1?'s':''}</td>
+      <td>${pmBadge(s.payment_method)}</td>
+      <td style="text-align:right"><strong style="color:#2c3e50">${fmt(s.total)}</strong></td>
+    </tr>`;
+  }).join('');
+
+  const total = filtered.reduce((s,t)=>s+(t.total||0),0);
+  document.getElementById('txnCount').textContent  = filtered.length + ' transaction' + (filtered.length!==1?'s':'');
+  document.getElementById('txnTotal').textContent  = 'Total: '+fmt(total);
+}
+
+function filterTransactions(){ renderTransactions(allTransactions); }
+
+// ── Daily Summary ─────────────────────────────────────────────────────────────
+function buildDailySummary(txns){
+  const daily = {};
+  txns.forEach(s=>{
+    const ts = s.timestamp ? new Date(s.timestamp) : null;
+    if(!ts) return;
+    const dk = ts.toISOString().split('T')[0];
+    if(!daily[dk]) daily[dk]={date:dk, revenue:0, transactions:0, products:{}};
+    daily[dk].revenue      += s.total||0;
+    daily[dk].transactions += 1;
+    (s.items||[]).forEach(it=>{
+      daily[dk].products[it.product_name] = (daily[dk].products[it.product_name]||0) + (it.subtotal||0);
+    });
+  });
+
+  const rows = Object.values(daily).sort((a,b)=>b.date.localeCompare(a.date));
+  const tbody = document.getElementById('dailyBody');
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><i class="fas fa-calendar-times"></i>No data for this period</div></td></tr>';
+    document.getElementById('dailyFootRev').textContent='PKR 0.00';
+    document.getElementById('dailyFootTxn').textContent='0';
+    document.getElementById('dailyFootAvg').textContent='PKR 0.00';
+    return;
+  }
+  const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  tbody.innerHTML = rows.map(r=>{
+    const dt = new Date(r.date);
+    const topProd = Object.entries(r.products).sort((a,b)=>b[1]-a[1])[0];
+    return `<tr>
+      <td><strong>${r.date}</strong></td>
+      <td style="color:#7f8c8d">${DAYS[dt.getDay()]}</td>
+      <td style="text-align:center"><strong>${r.transactions}</strong></td>
+      <td><strong style="color:#27ae60">${fmt(r.revenue)}</strong></td>
+      <td>${fmt(r.revenue/r.transactions)}</td>
+      <td style="font-size:12px;color:#7f8c8d">${topProd?topProd[0]:'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const totRev = rows.reduce((s,r)=>s+r.revenue,0);
+  const totTxn = rows.reduce((s,r)=>s+r.transactions,0);
+  document.getElementById('dailyFootLbl').textContent  = rows.length + ' day'+(rows.length!==1?'s':'');
+  document.getElementById('dailyFootTxn').textContent  = totTxn;
+  document.getElementById('dailyFootRev').textContent  = fmt(totRev);
+  document.getElementById('dailyFootAvg').textContent  = totTxn>0 ? fmt(totRev/totTxn) : 'PKR 0.00';
+}
+
+// ── Tab toggle ────────────────────────────────────────────────────────────────
+function showTab(name, btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tabTransactions').style.display = name==='transactions'?'block':'none';
+  document.getElementById('tabDaily').style.display        = name==='daily'?'block':'none';
+}
+
+// ── Chart helper ──────────────────────────────────────────────────────────────
+function mkChart(id, cfg){
+  if(charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id).getContext('2d'), cfg);
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, type='success'){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className='toast show '+(type||'');
+  setTimeout(()=>t.className='toast', 3200);
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function handleLogout(){
+  fetch('/api/auth/logout',{method:'POST'}).then(()=>{sessionStorage.clear();window.location.href='/login';});
+}
+
+// ── Cashier KPI ───────────────────────────────────────────────────────────────
+async function loadCashierKpis(){
+  const grid = document.getElementById('cashierGrid');
+  try{
+    const data = await fetch('/api/shifts/cashier-kpis').then(r=>r.json());
+
+    // Summary bar
+    const activeCount = data.filter(c=>c.open_shifts>0).length;
+    const totalTxns   = data.reduce((s,c)=>s+c.transactions,0);
+    const totalCash   = data.reduce((s,c)=>s+c.cash_sales,0);
+    const totalSales  = data.reduce((s,c)=>s+c.total_sales,0);
+    document.getElementById('activeShiftCount').textContent = activeCount;
+    document.getElementById('totalShiftTxns').textContent  = totalTxns;
+    document.getElementById('totalShiftCash').textContent  = fmt(totalCash);
+    document.getElementById('totalShiftSales').textContent = fmt(totalSales);
+
+    if(!data.length){
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#bdc3c7">
+        <i class="fas fa-user-clock" style="font-size:38px;display:block;margin-bottom:12px"></i>
+        <div style="font-weight:600">No cashier shifts recorded today</div>
+        <div style="font-size:12px;margin-top:4px">Shifts appear here once a cashier opens one at the POS</div>
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = data.map(c=>{
+      const onShift  = c.open_shifts > 0;
+      const dotCls   = onShift ? 'online' : 'offline';
+      const cardCls  = onShift ? 'on-shift' : 'off-shift';
+      const statusTxt= onShift ? 'On Shift' : 'Shift Closed';
+
+      // Duration of current shift
+      let durTxt = '—';
+      if(onShift && c.current_shift_opened){
+        const ms = Date.now() - new Date(c.current_shift_opened);
+        const h  = Math.floor(ms/3600000);
+        const m  = Math.floor((ms%3600000)/60000);
+        durTxt = `${h}h ${m}m`;
+      }
+
+      // Over/short pill
+      let osPill = '';
+      if(c.shifts > 0){
+        const os = c.over_short;
+        if(os > 0.01)       osPill = `<span class="over-short-pill pill-over"><i class="fas fa-arrow-up"></i> Over ${fmt(os)}</span>`;
+        else if(os < -0.01) osPill = `<span class="over-short-pill pill-short"><i class="fas fa-arrow-down"></i> Short ${fmt(Math.abs(os))}</span>`;
+        else                osPill = `<span class="over-short-pill pill-bal"><i class="fas fa-check"></i> Balanced</span>`;
+      }
+
+      return `<div class="cashier-card ${cardCls}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+          <div>
+            <div class="cashier-name"><span class="cashier-status-dot ${dotCls}"></span>${c.cashier_name}</div>
+            <div class="cashier-shift-time">
+              ${statusTxt}${onShift ? ' &bull; '+durTxt : ''} &bull; ${c.shifts} shift${c.shifts!==1?'s':''} today
+            </div>
+          </div>
+          ${onShift ? '<span style="background:#d5f5e3;color:#1e8449;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;white-space:nowrap">LIVE</span>' : ''}
+        </div>
+        <div class="cashier-stats">
+          <div class="cs-box">
+            <div class="cs-val">${c.transactions}</div>
+            <div class="cs-lbl">Transactions</div>
+          </div>
+          <div class="cs-box">
+            <div class="cs-val" style="font-size:12px">${fmt(c.total_sales)}</div>
+            <div class="cs-lbl">Revenue</div>
+          </div>
+          <div class="cs-box">
+            <div class="cs-val" style="font-size:12px">${fmt(c.cash_sales)}</div>
+            <div class="cs-lbl">Cash</div>
+          </div>
+          <div class="cs-box">
+            <div class="cs-val" style="font-size:12px">${c.transactions>0?fmt(c.total_sales/c.transactions):'—'}</div>
+            <div class="cs-lbl">Avg Basket</div>
+          </div>
+        </div>
+        ${osPill}
+      </div>`;
+    }).join('');
+
+  }catch(e){
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#aaa">Failed to load cashier data</div>`;
+  }
+}
+</script>
 </body>
 </html>

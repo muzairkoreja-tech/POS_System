@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shift Management - POS System</title>
+<link rel="stylesheet" href="../static/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f5f6fa;min-height:100vh}
+.dashboard-nav{background:linear-gradient(135deg,#2c3e50,#34495e);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600}
+.nav-brand i{color:#e74c3c;font-size:22px}
+.nav-right{display:flex;align-items:center;gap:16px}
+.role-badge{background:rgba(231,76,60,.3);padding:4px 10px;border-radius:12px;font-size:11px;text-transform:uppercase;font-weight:700;letter-spacing:.5px}
+.btn-nav{background:rgba(255,255,255,.12);color:#fff;border:none;padding:8px 15px;border-radius:6px;cursor:pointer;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:600;transition:background .2s}
+.btn-nav:hover{background:rgba(255,255,255,.2)}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.page-title{font-size:22px;font-weight:700;color:#2c3e50;margin-bottom:4px}
+.page-sub{color:#7f8c8d;font-size:13px;margin-bottom:24px}
+
+/* Stats */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+.stat-box{background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);text-align:center}
+.stat-val{font-size:22px;font-weight:800;color:#2c3e50;line-height:1}
+.stat-lbl{font-size:10px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.4px;margin-top:4px}
+
+/* Active shift banner */
+.active-banner{background:linear-gradient(135deg,#1e8449,#27ae60);border-radius:12px;padding:20px 24px;color:#fff;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 16px rgba(39,174,96,.3)}
+.active-banner.no-shift{background:linear-gradient(135deg,#7f8c8d,#95a5a6)}
+.pulse-dot{width:10px;height:10px;border-radius:50%;background:#fff;animation:pulse 1.5s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+
+/* Card */
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);overflow:hidden;margin-bottom:24px}
+.card-header{padding:16px 20px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;background:#fafafa}
+.card-header h3{font-size:14px;font-weight:700;color:#2c3e50;display:flex;align-items:center;gap:8px}
+
+/* Table */
+table{width:100%;border-collapse:collapse}
+th{background:#f8f9fa;padding:10px 16px;text-align:left;font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #eee;white-space:nowrap}
+td{padding:11px 16px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+
+/* Badge */
+.badge{padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-open{background:#d5f5e3;color:#1e8449}
+.badge-closed{background:#f0f0f0;color:#555}
+.badge-over{background:#d5f5e3;color:#1e8449}
+.badge-short{background:#fde8e8;color:#c0392b}
+
+/* Buttons */
+.btn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:opacity .2s;white-space:nowrap}
+.btn:hover{opacity:.85}
+.btn-primary{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff}
+.btn-danger{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff}
+.btn-secondary{background:#ecf0f1;color:#555}
+.btn-xs{padding:5px 10px;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.btn-xs:hover{opacity:.8}
+.btn-view-xs{background:#ebf5fb;color:#1a5276}
+.btn-close-xs{background:#fde8e8;color:#c0392b}
+
+/* Summary panel */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.sum-box{background:#f8f9fa;border-radius:9px;padding:14px}
+.sum-label{font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.sum-val{font-size:17px;font-weight:700;color:#2c3e50}
+.recon-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;font-size:13px}
+.recon-row:last-child{border-bottom:none;font-weight:700}
+.recon-label{color:#555}
+.recon-val{font-weight:600;color:#2c3e50}
+
+/* Modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.modal.show{display:flex}
+.modal-box{background:#fff;border-radius:14px;width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{padding:20px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:16px;font-weight:700;color:#2c3e50}
+.modal-close{background:none;border:none;font-size:22px;color:#aaa;cursor:pointer;line-height:1}
+.modal-close:hover{color:#333}
+.modal-body{padding:24px}
+.modal-foot{padding:16px 24px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.form-control{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;outline:none}
+.form-control:focus{border-color:#27ae60}
+
+/* Close shift form */
+.recon-section{background:#f8f9fa;border-radius:10px;padding:16px;margin-bottom:16px}
+.recon-section h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555;margin-bottom:12px}
+.over-short{border-radius:8px;padding:12px 16px;text-align:center;font-size:15px;font-weight:700;margin-top:12px}
+.over{background:#d5f5e3;color:#1e8449}
+.short{background:#fde8e8;color:#c0392b}
+.balanced{background:#eaf4fb;color:#1a5276}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#2c3e50;color:#fff;padding:12px 22px;border-radius:9px;box-shadow:0 4px 12px rgba(0,0,0,.2);display:none;z-index:2000;font-size:13px;font-weight:600}
+.toast.show{display:block;animation:slideUp .3s ease}
+.toast.success{background:#1e8449}.toast.error{background:#c0392b}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* Chart */
+.chart-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:24px}
+.chart-title{font-size:13px;font-weight:700;color:#2c3e50;margin-bottom:16px;display:flex;align-items:center;gap:7px}
+</style>
+</head>
+<body>
+
+<nav class="dashboard-nav">
+  <div class="nav-brand"><i class="fas fa-clock"></i><span>Shift Management</span></div>
+  <div class="nav-right">
+    <a href="/" class="btn-nav"><i class="fas fa-cash-register"></i> POS</a>
+    <a href="/admin" class="btn-nav"><i class="fas fa-tachometer-alt"></i> Admin</a>
+    <div style="display:flex;align-items:center;gap:8px;font-size:14px">
+      <i class="fas fa-user-circle" style="font-size:20px"></i>
+      <span id="navUserName">User</span>
+      <span class="role-badge" id="navRoleBadge">Admin</span>
+    </div>
+    <button class="btn-nav" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+
+<div class="container">
+  <h1 class="page-title"><i class="fas fa-clock" style="color:#e67e22;margin-right:8px"></i>Shift Management</h1>
+  <p class="page-sub">Open &amp; close cash drawers, monitor cashier shifts, and reconcile cash.</p>
+
+  <!-- Summary stats -->
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-val" id="sTotal">—</div>
+      <div class="stat-lbl">Total Shifts</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="sOpen" style="color:#27ae60">—</div>
+      <div class="stat-lbl">Currently Open</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="sSales">—</div>
+      <div class="stat-lbl">Sales Today</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="sCash">—</div>
+      <div class="stat-lbl">Cash Collected</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="sOver" style="color:#1e8449">—</div>
+      <div class="stat-lbl">Avg. Over/Short</div>
+    </div>
+  </div>
+
+  <!-- Active shift banner -->
+  <div id="activeBanner" class="active-banner no-shift" style="display:none">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="pulse-dot"></div>
+      <div>
+        <div style="font-size:16px;font-weight:700" id="bannerTitle">No active shift</div>
+        <div style="font-size:13px;opacity:.85" id="bannerSub">Open a shift to start selling</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" id="openShiftBtn" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="openOpenShiftModal()">
+        <i class="fas fa-door-open"></i> Open Shift
+      </button>
+      <button class="btn" id="closeShiftBtn" style="background:#c0392b;color:#fff;display:none" onclick="openCloseShiftModal()">
+        <i class="fas fa-door-closed"></i> Close Shift
+      </button>
+    </div>
+  </div>
+
+  <!-- Shift history table -->
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-history" style="color:#e67e22"></i> Shift History</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="filterStatus" class="form-control" style="width:130px;padding:6px 10px" onchange="loadShifts()">
+          <option value="">All Statuses</option>
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+        </select>
+        <button class="btn btn-secondary" onclick="loadShifts()" style="padding:6px 14px"><i class="fas fa-sync"></i> Refresh</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Shift #</th><th>Cashier</th><th>Opened</th><th>Closed</th><th>Duration</th><th>Transactions</th><th>Cash Sales</th><th>Opening Float</th><th>Over/Short</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="shiftBody">
+          <tr><td colspan="11" style="text-align:center;padding:36px;color:#aaa"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Chart: last 14 days -->
+  <div class="chart-card">
+    <div class="chart-title"><i class="fas fa-chart-bar" style="color:#e67e22"></i> Daily Sales Revenue — Last 14 Days</div>
+    <canvas id="chartRevenue" height="80"></canvas>
+  </div>
+
+</div>
+
+<!-- Open Shift Modal -->
+<div class="modal" id="openModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-door-open" style="color:#27ae60;margin-right:6px"></i>Open New Shift</h3>
+      <button class="modal-close" onclick="closeModals()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:8px;padding:14px;margin-bottom:18px">
+        <p style="font-size:13px;color:#1e8449"><i class="fas fa-info-circle"></i> Count the cash in the drawer before opening the shift. Enter the exact amount below.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Opening Float (Cash in Drawer — PKR)</label>
+        <input type="number" class="form-control" id="openFloat" min="0" step="0.01" placeholder="0.00" style="font-size:18px;font-weight:700;text-align:center">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <textarea class="form-control" id="openNotes" rows="2" placeholder="Any notes for this shift…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="openShift()"><i class="fas fa-play"></i> Open Shift</button>
+    </div>
+  </div>
+</div>
+
+<!-- Close Shift Modal -->
+<div class="modal" id="closeModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-door-closed" style="color:#e74c3c;margin-right:6px"></i>Close Shift</h3>
+      <button class="modal-close" onclick="closeModals()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Shift summary -->
+      <div class="recon-section">
+        <h4><i class="fas fa-receipt" style="margin-right:6px"></i>Shift Summary</h4>
+        <div class="recon-row"><span class="recon-label">Cashier</span><span class="recon-val" id="cs_cashier">—</span></div>
+        <div class="recon-row"><span class="recon-label">Shift Opened</span><span class="recon-val" id="cs_opened">—</span></div>
+        <div class="recon-row"><span class="recon-label">Total Transactions</span><span class="recon-val" id="cs_txns">—</span></div>
+        <div class="recon-row"><span class="recon-label">Opening Float</span><span class="recon-val" id="cs_float">—</span></div>
+        <div class="recon-row"><span class="recon-label">Cash Sales</span><span class="recon-val" id="cs_cash_sales">—</span></div>
+        <div class="recon-row"><span class="recon-label" style="font-weight:700">Expected Cash in Drawer</span><span class="recon-val" id="cs_expected" style="color:#1e8449;font-size:16px">—</span></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Actual Cash in Drawer (Count &amp; Enter — PKR)</label>
+        <input type="number" class="form-control" id="closingFloat" min="0" step="0.01" placeholder="0.00" style="font-size:18px;font-weight:700;text-align:center" oninput="calcOverShort()">
+      </div>
+
+      <div class="over-short balanced" id="overShortDisplay" style="display:none"></div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">Closing Notes</label>
+        <textarea class="form-control" id="closeNotes" rows="2" placeholder="Any discrepancies or notes…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-danger" onclick="closeShift()"><i class="fas fa-lock"></i> Close Shift</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shift Summary Modal (view) -->
+<div class="modal" id="summaryModal">
+  <div class="modal-box" style="width:580px">
+    <div class="modal-head">
+      <h3><i class="fas fa-file-alt" style="color:#e67e22;margin-right:6px"></i>Shift Summary</h3>
+      <button class="modal-close" onclick="closeModals()">×</button>
+    </div>
+    <div class="modal-body" id="summaryBody">
+      <div style="text-align:center;padding:30px;color:#aaa"><i class="fas fa-spinner fa-spin"></i></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModals()">Close</button>
+      <button class="btn btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastEl" class="toast"></div>
+
+<script>
+const fmt = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+let activeShift = null;
+let allShifts = [];
+let revenueChart = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('navUserName').textContent = sessionStorage.getItem('full_name') || 'User';
+  const role = sessionStorage.getItem('role') || 'admin';
+  document.getElementById('navRoleBadge').textContent = role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  loadActiveShift();
+  loadShifts();
+});
+
+async function loadActiveShift(){
+  try{
+    const r = await fetch('/api/shifts/active');
+    if(r.status === 404 || !r.ok){
+      activeShift = null;
+      showBanner(false);
+      return;
+    }
+    activeShift = await r.json();
+    showBanner(true);
+  }catch(e){ showBanner(false); }
+}
+
+function showBanner(hasActive){
+  const banner = document.getElementById('activeBanner');
+  banner.style.display = 'flex';
+  if(hasActive && activeShift){
+    banner.className = 'active-banner';
+    const opened = new Date(activeShift.opened_at).toLocaleString('en-PK',{hour12:true,hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'});
+    document.getElementById('bannerTitle').textContent = `Shift Open — ${activeShift.cashier_name || 'Cashier'}`;
+    document.getElementById('bannerSub').textContent = `Opened at ${opened} · Float: ${fmt(activeShift.opening_float||0)} · ${activeShift.transaction_count||0} transactions`;
+    document.getElementById('openShiftBtn').style.display='none';
+    document.getElementById('closeShiftBtn').style.display='flex';
+  } else {
+    banner.className = 'active-banner no-shift';
+    document.getElementById('bannerTitle').textContent = 'No Active Shift';
+    document.getElementById('bannerSub').textContent = 'Open a shift to start selling';
+    document.getElementById('openShiftBtn').style.display='flex';
+    document.getElementById('closeShiftBtn').style.display='none';
+  }
+}
+
+async function loadShifts(){
+  const status = document.getElementById('filterStatus').value;
+  const url = '/api/shifts' + (status ? '?status='+status : '');
+  try{
+    allShifts = await fetch(url).then(r=>r.json());
+    renderStats();
+    renderTable();
+    renderChart();
+  }catch(e){ showToast('Failed to load shifts','error'); }
+}
+
+function renderStats(){
+  document.getElementById('sTotal').textContent = allShifts.length;
+  const opens = allShifts.filter(s=>s.status==='open').length;
+  document.getElementById('sOpen').textContent = opens;
+  const todaySales = allShifts.filter(s=>{
+    const d = new Date(s.opened_at);
+    const now = new Date();
+    return d.toDateString()===now.toDateString();
+  }).reduce((sum,s)=>sum+(s.total_sales||0),0);
+  document.getElementById('sSales').textContent = fmt(todaySales);
+  const cashTotal = allShifts.reduce((sum,s)=>sum+((s.payment_breakdown&&s.payment_breakdown.cash)||0),0);
+  document.getElementById('sCash').textContent = fmt(cashTotal);
+  const closed = allShifts.filter(s=>s.status==='closed'&&s.over_short!==undefined);
+  const avgOS = closed.length ? closed.reduce((s,x)=>s+(x.over_short||0),0)/closed.length : 0;
+  const osEl = document.getElementById('sOver');
+  osEl.textContent = (avgOS>=0?'+':'')+fmt(avgOS);
+  osEl.style.color = avgOS>0?'#27ae60':avgOS<0?'#e74c3c':'#555';
+}
+
+function renderTable(){
+  const tb = document.getElementById('shiftBody');
+  if(!allShifts.length){
+    tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:40px;color:#aaa"><i class="fas fa-clock" style="font-size:36px;display:block;margin-bottom:10px"></i>No shifts found</td></tr>';
+    return;
+  }
+  tb.innerHTML = allShifts.map(s=>{
+    const opened = s.opened_at ? new Date(s.opened_at).toLocaleString('en-PK',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+    const closed = s.closed_at ? new Date(s.closed_at).toLocaleString('en-PK',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+    let dur = '—';
+    if(s.opened_at && s.closed_at){
+      const ms = new Date(s.closed_at)-new Date(s.opened_at);
+      const h = Math.floor(ms/3600000);
+      const m = Math.floor((ms%3600000)/60000);
+      dur = `${h}h ${m}m`;
+    } else if(s.status==='open' && s.opened_at){
+      const ms = Date.now()-new Date(s.opened_at);
+      const h = Math.floor(ms/3600000);
+      const m = Math.floor((ms%3600000)/60000);
+      dur = `<span style="color:#27ae60">${h}h ${m}m ▶</span>`;
+    }
+    const os = s.over_short;
+    let osHtml = '—';
+    if(s.status==='closed' && os!==undefined){
+      const color = os>0?'#1e8449':os<0?'#c0392b':'#555';
+      osHtml = `<span style="color:${color};font-weight:700">${os>=0?'+':''}${fmt(os)}</span>`;
+    }
+    const statusBadge = s.status==='open'
+      ? '<span class="badge badge-open"><i class="fas fa-circle" style="font-size:8px"></i> Open</span>'
+      : '<span class="badge badge-closed">Closed</span>';
+    return `<tr>
+      <td><strong style="color:#667eea">#${s.shift_number||s._id?.substring(0,6)||'—'}</strong></td>
+      <td>${s.cashier_name||'—'}</td>
+      <td style="white-space:nowrap;font-size:12px">${opened}</td>
+      <td style="white-space:nowrap;font-size:12px">${closed}</td>
+      <td>${dur}</td>
+      <td style="text-align:center">${s.transaction_count||0}</td>
+      <td><strong style="color:#1e8449">${fmt((s.payment_breakdown&&s.payment_breakdown.cash)||0)}</strong></td>
+      <td>${fmt(s.opening_float||0)}</td>
+      <td>${osHtml}</td>
+      <td>${statusBadge}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-xs btn-view-xs" onclick="viewSummary('${s._id}')"><i class="fas fa-eye"></i> View</button>
+        ${s.status==='open'?`<button class="btn-xs btn-close-xs" onclick="quickClose('${s._id}')"><i class="fas fa-lock"></i> Close</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderChart(){
+  const byDay = {};
+  allShifts.forEach(s=>{
+    if(!s.opened_at) return;
+    const d = new Date(s.opened_at).toLocaleDateString('en-PK',{day:'2-digit',month:'short'});
+    byDay[d] = (byDay[d]||0)+(s.total_sales||0);
+  });
+  const labels = Object.keys(byDay).slice(-14);
+  const data = labels.map(l=>byDay[l]||0);
+  if(revenueChart) revenueChart.destroy();
+  const ctx = document.getElementById('chartRevenue').getContext('2d');
+  revenueChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{label:'Revenue (PKR)',data,backgroundColor:'rgba(39,174,96,.7)',borderColor:'#1e8449',borderWidth:1,borderRadius:5}]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmt(ctx.parsed.y)}}},
+      scales:{y:{ticks:{callback:v=>'PKR '+Number(v).toLocaleString()},grid:{color:'#f0f0f0'}},x:{grid:{display:false}}}
+    }
+  });
+}
+
+function openOpenShiftModal(){
+  document.getElementById('openFloat').value='';
+  document.getElementById('openNotes').value='';
+  document.getElementById('openModal').classList.add('show');
+}
+
+async function openShift(){
+  const float = parseFloat(document.getElementById('openFloat').value)||0;
+  const notes = document.getElementById('openNotes').value.trim();
+  try{
+    const r = await fetch('/api/shifts', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({opening_float:float, notes, cashier_id: sessionStorage.getItem('user_id'), cashier_name: sessionStorage.getItem('full_name')})
+    });
+    const d = await r.json();
+    if(r.ok){
+      showToast('Shift opened successfully!','success');
+      closeModals();
+      activeShift = d;
+      showBanner(true);
+      loadShifts();
+    } else { showToast(d.message||'Failed to open shift','error'); }
+  }catch(e){ showToast('Error opening shift','error'); }
+}
+
+function openCloseShiftModal(){
+  if(!activeShift){ showToast('No active shift found','error'); return; }
+  document.getElementById('cs_cashier').textContent = activeShift.cashier_name||'—';
+  const opened = new Date(activeShift.opened_at).toLocaleString('en-PK',{hour12:true,hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('cs_opened').textContent = opened;
+  document.getElementById('cs_txns').textContent = activeShift.transaction_count||0;
+  document.getElementById('cs_float').textContent = fmt(activeShift.opening_float||0);
+  const cashSales = (activeShift.payment_breakdown&&activeShift.payment_breakdown.cash)||0;
+  document.getElementById('cs_cash_sales').textContent = fmt(cashSales);
+  const expected = (activeShift.opening_float||0) + cashSales;
+  document.getElementById('cs_expected').textContent = fmt(expected);
+  document.getElementById('closingFloat').value='';
+  document.getElementById('overShortDisplay').style.display='none';
+  document.getElementById('closeNotes').value='';
+  document.getElementById('closeModal').classList.add('show');
+}
+
+function calcOverShort(){
+  const actual = parseFloat(document.getElementById('closingFloat').value)||0;
+  const cashSales = activeShift ? ((activeShift.payment_breakdown&&activeShift.payment_breakdown.cash)||0) : 0;
+  const expected = (activeShift ? (activeShift.opening_float||0) : 0) + cashSales;
+  const diff = actual - expected;
+  const el = document.getElementById('overShortDisplay');
+  el.style.display='block';
+  if(Math.abs(diff)<0.01){
+    el.className='over-short balanced';
+    el.innerHTML='<i class="fas fa-check-circle"></i> Balanced — cash matches exactly';
+  } else if(diff>0){
+    el.className='over-short over';
+    el.innerHTML=`<i class="fas fa-arrow-up"></i> OVER by ${fmt(diff)}`;
+  } else {
+    el.className='over-short short';
+    el.innerHTML=`<i class="fas fa-arrow-down"></i> SHORT by ${fmt(Math.abs(diff))}`;
+  }
+}
+
+async function closeShift(){
+  if(!activeShift){ showToast('No active shift','error'); return; }
+  const closing = parseFloat(document.getElementById('closingFloat').value);
+  if(isNaN(closing)){ showToast('Enter closing cash amount','error'); return; }
+  const notes = document.getElementById('closeNotes').value.trim();
+  try{
+    const r = await fetch(`/api/shifts/${activeShift._id}/close`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({closing_float:closing, notes})
+    });
+    const d = await r.json();
+    if(r.ok){
+      showToast('Shift closed successfully!','success');
+      closeModals();
+      activeShift = null;
+      showBanner(false);
+      loadShifts();
+    } else { showToast(d.message||'Failed to close shift','error'); }
+  }catch(e){ showToast('Error closing shift','error'); }
+}
+
+async function quickClose(shiftId){
+  const closing = prompt('Enter actual cash in drawer (PKR):');
+  if(closing===null) return;
+  const amt = parseFloat(closing)||0;
+  try{
+    const r = await fetch(`/api/shifts/${shiftId}/close`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({closing_float:amt})
+    });
+    if(r.ok){
+      showToast('Shift closed','success');
+      if(activeShift && activeShift._id===shiftId){ activeShift=null; showBanner(false); }
+      loadShifts();
+    } else {
+      const d=await r.json(); showToast(d.message||'Failed','error');
+    }
+  }catch(e){ showToast('Error','error'); }
+}
+
+async function viewSummary(shiftId){
+  document.getElementById('summaryBody').innerHTML='<div style="text-align:center;padding:40px;color:#aaa"><i class="fas fa-spinner fa-spin" style="font-size:24px"></i></div>';
+  document.getElementById('summaryModal').classList.add('show');
+  try{
+    const s = await fetch(`/api/shifts/${shiftId}/summary`).then(r=>r.json());
+    const opened = s.opened_at ? new Date(s.opened_at).toLocaleString('en-PK',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+    const closed = s.closed_at ? new Date(s.closed_at).toLocaleString('en-PK',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}) : 'Still Open';
+    const cashSales = (s.payment_breakdown&&s.payment_breakdown.cash)||0;
+    const expected = (s.opening_float||0)+cashSales;
+    const os = s.over_short;
+    let osColor='#555', osLabel='—';
+    if(os!==undefined){ osColor=os>0?'#1e8449':os<0?'#c0392b':'#3498db'; osLabel=(os>=0?'+':'')+fmt(os); }
+    const pmBreakdown = s.payment_breakdown||{};
+    const pmRows = Object.entries(pmBreakdown).map(([k,v])=>`<div class="recon-row"><span class="recon-label" style="text-transform:capitalize">${k}</span><span class="recon-val">${fmt(v)}</span></div>`).join('');
+    document.getElementById('summaryBody').innerHTML = `
+      <div class="summary-grid">
+        <div class="sum-box"><div class="sum-label">Cashier</div><div class="sum-val">${s.cashier_name||'—'}</div></div>
+        <div class="sum-box"><div class="sum-label">Status</div><div class="sum-val" style="color:${s.status==='open'?'#27ae60':'#555'};text-transform:capitalize">${s.status||'—'}</div></div>
+        <div class="sum-box"><div class="sum-label">Opened</div><div class="sum-val" style="font-size:13px">${opened}</div></div>
+        <div class="sum-box"><div class="sum-label">Closed</div><div class="sum-val" style="font-size:13px">${closed}</div></div>
+      </div>
+      <div class="recon-section">
+        <h4><i class="fas fa-cash-register" style="margin-right:6px"></i>Sales Reconciliation</h4>
+        <div class="recon-row"><span class="recon-label">Total Transactions</span><span class="recon-val">${s.transaction_count||0}</span></div>
+        <div class="recon-row"><span class="recon-label">Total Revenue</span><span class="recon-val">${fmt(s.total_sales||0)}</span></div>
+        <div class="recon-row"><span class="recon-label">Opening Float</span><span class="recon-val">${fmt(s.opening_float||0)}</span></div>
+        ${pmRows}
+        <div class="recon-row"><span class="recon-label">Expected in Drawer</span><span class="recon-val" style="color:#1e8449">${fmt(expected)}</span></div>
+        <div class="recon-row"><span class="recon-label">Actual Closing</span><span class="recon-val">${s.closing_float!==undefined?fmt(s.closing_float):'—'}</span></div>
+        <div class="recon-row" style="border-top:2px solid #eee;padding-top:10px"><span class="recon-label" style="font-weight:700;font-size:14px">Over / Short</span><span style="font-weight:800;font-size:16px;color:${osColor}">${osLabel}</span></div>
+      </div>
+      ${s.notes ? `<div class="form-group"><div class="form-label">Notes</div><div style="background:#f8f9fa;border-radius:7px;padding:10px;font-size:13px;color:#555">${s.notes}</div></div>` : ''}`;
+  }catch(e){
+    document.getElementById('summaryBody').innerHTML='<div style="text-align:center;padding:30px;color:#e74c3c">Failed to load summary</div>';
+  }
+}
+
+function closeModals(){
+  document.querySelectorAll('.modal').forEach(m=>m.classList.remove('show'));
+}
+
+function showToast(msg, type='success'){
+  const el = document.getElementById('toastEl');
+  el.textContent = msg;
+  el.className = 'toast ' + type;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+function handleLogout(){
+  fetch('/api/auth/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'}})
+    .then(()=>{sessionStorage.clear();window.location.href='/login';})
+    .catch(()=>{sessionStorage.clear();window.location.href='/login';});
+}
+</script>
+</body>
+</html>

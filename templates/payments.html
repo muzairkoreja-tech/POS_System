@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Payment Management — POS Supermarket</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
+
+/* NAV */
+.nav{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:0 24px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.nav-brand{font-size:18px;font-weight:700;color:#f0b429;margin-right:8px}
+.nav-sub{font-size:13px;color:#94a3b8;flex:1}
+.nav-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:background .2s}
+.nav-btn:hover{background:rgba(255,255,255,.2)}
+.nav-btn.primary{background:#f0b429;color:#1a1a2e;border-color:#f0b429;font-weight:600}
+.nav-btn.primary:hover{background:#d99f20}
+
+/* PAGE WRAPPER */
+.page{max-width:1400px;margin:0 auto;padding:24px 20px}
+
+/* STATS BAR */
+.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid #e2e8f0;display:flex;flex-direction:column;gap:6px}
+.stat-card.indigo{border-left-color:#6366f1}
+.stat-card.green{border-left-color:#10b981}
+.stat-card.blue{border-left-color:#3b82f6}
+.stat-card.orange{border-left-color:#f59e0b}
+.stat-card.purple{border-left-color:#8b5cf6}
+.stat-lbl{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.stat-val{font-size:22px;font-weight:700;color:#1a1a2e}
+.stat-sub{font-size:11px;color:#94a3b8}
+
+/* FILTER BAR */
+.filter-bar{background:#fff;border-radius:12px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.filter-bar label{font-size:12px;color:#64748b;font-weight:600;white-space:nowrap}
+.filter-bar select,.filter-bar input{border:1px solid #e2e8f0;border-radius:8px;padding:7px 12px;font-size:13px;color:#1a1a2e;background:#fff;outline:none;transition:border .2s}
+.filter-bar select:focus,.filter-bar input:focus{border-color:#6366f1}
+.filter-bar .spacer{flex:1}
+.btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:#6366f1;color:#fff}
+.btn-primary:hover{background:#4f46e5}
+.btn-success{background:#10b981;color:#fff}
+.btn-success:hover{background:#059669}
+.btn-danger{background:#ef4444;color:#fff}
+.btn-danger:hover{background:#dc2626}
+.btn-outline{background:#fff;border:1px solid #e2e8f0;color:#374151}
+.btn-outline:hover{background:#f8fafc}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* TABLE CARD */
+.table-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden;margin-bottom:24px}
+.table-header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9}
+.table-title{font-size:15px;font-weight:700;color:#1a1a2e}
+.table-count{font-size:12px;color:#94a3b8;background:#f1f5f9;padding:3px 10px;border-radius:20px}
+table{width:100%;border-collapse:collapse}
+th{padding:11px 16px;text-align:left;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+td{padding:12px 16px;font-size:13px;color:#374151;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+.empty-row td{text-align:center;padding:40px;color:#94a3b8;font-style:italic}
+
+/* TYPE BADGE / ICON */
+.type-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.type-employee{background:#dbeafe;color:#1d4ed8}
+.type-vendor{background:#fef3c7;color:#92400e}
+.type-other{background:#f3e8ff;color:#6d28d9}
+
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.status-completed{background:#d1fae5;color:#065f46}
+.status-pending{background:#fef3c7;color:#92400e}
+.status-cancelled{background:#fee2e2;color:#991b1b}
+
+.method-chip{background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+
+/* REPORTS SECTION */
+.reports-grid{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:24px}
+.chart-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:20px}
+.chart-title{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:16px}
+.chart-wrap{position:relative;height:260px}
+
+.summary-table{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:20px}
+.summary-table h3{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:14px}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.sum-row:last-child{border-bottom:none;font-weight:700;color:#1a1a2e;padding-top:14px;font-size:14px}
+.sum-label{color:#64748b}
+.sum-amount{font-weight:600;color:#1a1a2e}
+.sum-count{font-size:11px;color:#94a3b8;background:#f1f5f9;padding:2px 7px;border-radius:10px;margin-left:6px}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{padding:20px 24px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1}
+.modal-head h2{font-size:16px;font-weight:700;color:#1a1a2e}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;line-height:1;padding:4px}
+.modal-close:hover{color:#374151}
+.modal-body{padding:24px}
+.modal-foot{padding:16px 24px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#fff}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid.full{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.span2{grid-column:span 2}
+.form-lbl{font-size:12px;font-weight:600;color:#374151}
+.form-ctrl{border:1px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a1a2e;width:100%;outline:none;transition:border .2s;font-family:inherit}
+.form-ctrl:focus{border-color:#6366f1}
+.form-ctrl[readonly]{background:#f8fafc;color:#64748b}
+textarea.form-ctrl{resize:vertical;min-height:70px}
+
+.section-divider{margin:16px 0 4px;font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.8px;padding-bottom:6px;border-bottom:2px solid #eef2ff}
+
+/* Amount display in modal */
+.pay-summary{background:#f8fafc;border-radius:10px;padding:14px 16px;margin:12px 0}
+.pay-summary-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px;color:#374151}
+.pay-summary-row.total{font-weight:700;color:#1a1a2e;font-size:15px;border-top:1px solid #e2e8f0;padding-top:10px;margin-top:6px}
+
+/* Detail view modal */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.detail-item{display:flex;flex-direction:column;gap:3px}
+.detail-lbl{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.detail-val{font-size:14px;color:#1a1a2e;font-weight:600}
+
+@media(max-width:900px){
+  .stats-bar{grid-template-columns:repeat(2,1fr)}
+  .reports-grid{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .form-group.span2{grid-column:span 1}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <span class="nav-brand">&#9679; POS</span>
+  <span class="nav-sub">Payment Management</span>
+  <a href="/admin" class="nav-btn">&#8592; Admin Dashboard</a>
+  <a href="/hr" class="nav-btn">HR Module</a>
+  <button class="nav-btn primary" onclick="openAddModal()">&#43; New Payment</button>
+</nav>
+
+<div class="page">
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-card indigo">
+      <span class="stat-lbl">This Month Total</span>
+      <span class="stat-val" id="statMonthTotal">PKR 0</span>
+      <span class="stat-sub" id="statMonthCount">0 payments</span>
+    </div>
+    <div class="stat-card green">
+      <span class="stat-lbl">Salary Paid</span>
+      <span class="stat-val" id="statSalary">PKR 0</span>
+      <span class="stat-sub" id="statSalaryCount">0 employees</span>
+    </div>
+    <div class="stat-card blue">
+      <span class="stat-lbl">Vendor Paid</span>
+      <span class="stat-val" id="statVendor">PKR 0</span>
+      <span class="stat-sub" id="statVendorCount">0 invoices</span>
+    </div>
+    <div class="stat-card orange">
+      <span class="stat-lbl">Other Payments</span>
+      <span class="stat-val" id="statOther">PKR 0</span>
+      <span class="stat-sub" id="statOtherCount">0 payments</span>
+    </div>
+    <div class="stat-card purple">
+      <span class="stat-lbl">YTD Total</span>
+      <span class="stat-val" id="statYTD">PKR 0</span>
+      <span class="stat-sub" id="statYTDCount">Year to date</span>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <label>Type</label>
+    <select id="filterType" onchange="applyFilters()">
+      <option value="">All Types</option>
+      <option value="employee">Employee / Salary</option>
+      <option value="vendor">Vendor / Supplier</option>
+      <option value="other">Other</option>
+    </select>
+    <label>Status</label>
+    <select id="filterStatus" onchange="applyFilters()">
+      <option value="">All Status</option>
+      <option value="completed">Completed</option>
+      <option value="pending">Pending</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+    <label>Method</label>
+    <select id="filterMethod" onchange="applyFilters()">
+      <option value="">All Methods</option>
+      <option value="cash">Cash</option>
+      <option value="bank_transfer">Bank Transfer</option>
+      <option value="cheque">Cheque</option>
+      <option value="online">Online</option>
+    </select>
+    <label>From</label>
+    <input type="date" id="filterFrom" onchange="applyFilters()">
+    <label>To</label>
+    <input type="date" id="filterTo" onchange="applyFilters()">
+    <div class="spacer"></div>
+    <button class="btn btn-outline btn-sm" onclick="clearFilters()">Clear</button>
+    <button class="btn btn-primary btn-sm" onclick="loadPayments()">&#8635; Refresh</button>
+  </div>
+
+  <!-- PAYMENTS TABLE -->
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Payment Records</span>
+      <span class="table-count" id="pmtCount">0 records</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Payment ID</th>
+          <th>Type</th>
+          <th>Payee</th>
+          <th>Category / Reference</th>
+          <th>Amount</th>
+          <th>Method</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="pmtBody">
+        <tr class="empty-row"><td colspan="9">Loading payments...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="reports-grid">
+    <div class="chart-card">
+      <div class="chart-title">Monthly Outflows by Type (Last 6 Months)</div>
+      <div class="chart-wrap"><canvas id="outflowChart"></canvas></div>
+    </div>
+    <div class="summary-table">
+      <h3>Payment Summary</h3>
+      <div id="summaryRows">
+        <div class="sum-row"><span class="sum-label">Loading...</span></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ADD PAYMENT MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle">New Payment</h2>
+      <button class="modal-close" onclick="closeAddModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editPmtId">
+
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-lbl">Payment Type *</label>
+        <select class="form-ctrl" id="pmtType" onchange="onTypeChange()">
+          <option value="">-- Select Type --</option>
+          <option value="employee">Employee / Salary</option>
+          <option value="vendor">Vendor / Supplier</option>
+          <option value="other">Other Payment</option>
+        </select>
+      </div>
+
+      <!-- EMPLOYEE SECTION -->
+      <div id="sectionEmployee" style="display:none">
+        <div class="section-divider">Employee Payment</div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="form-group">
+            <label class="form-lbl">Select Employee *</label>
+            <select class="form-ctrl" id="empSelect" onchange="onEmployeeChange()">
+              <option value="">-- Select Employee --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-lbl">Payroll / Month *</label>
+            <select class="form-ctrl" id="payrollSelect" onchange="onPayrollChange()">
+              <option value="">-- Select Payroll --</option>
+            </select>
+          </div>
+        </div>
+        <div class="pay-summary" id="empPaySummary" style="display:none">
+          <div class="pay-summary-row"><span>Basic Salary</span><span id="psBaic">—</span></div>
+          <div class="pay-summary-row"><span>Allowances</span><span id="psAllowances">—</span></div>
+          <div class="pay-summary-row"><span>Deductions</span><span id="psDeductions">—</span></div>
+          <div class="pay-summary-row total"><span>Net Payable</span><span id="psNet">—</span></div>
+        </div>
+      </div>
+
+      <!-- VENDOR SECTION -->
+      <div id="sectionVendor" style="display:none">
+        <div class="section-divider">Vendor Payment</div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="form-group">
+            <label class="form-lbl">Select Vendor *</label>
+            <select class="form-ctrl" id="vendorSelect" onchange="onVendorChange()">
+              <option value="">-- Select Vendor --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-lbl">Unpaid Invoice *</label>
+            <select class="form-ctrl" id="invoiceSelect" onchange="onInvoiceChange()">
+              <option value="">-- Select Invoice --</option>
+            </select>
+          </div>
+        </div>
+        <div class="pay-summary" id="vendorPaySummary" style="display:none">
+          <div class="pay-summary-row"><span>Invoice Number</span><span id="viNum">—</span></div>
+          <div class="pay-summary-row"><span>Invoice Date</span><span id="viDate">—</span></div>
+          <div class="pay-summary-row total"><span>Amount Due</span><span id="viAmount">—</span></div>
+        </div>
+      </div>
+
+      <!-- OTHER SECTION -->
+      <div id="sectionOther" style="display:none">
+        <div class="section-divider">Other Payment</div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="form-group">
+            <label class="form-lbl">Payee Name *</label>
+            <input type="text" class="form-ctrl" id="otherPayee" placeholder="Who is being paid?">
+          </div>
+          <div class="form-group">
+            <label class="form-lbl">Category</label>
+            <select class="form-ctrl" id="otherCategory">
+              <option value="utilities">Utilities</option>
+              <option value="rent">Rent</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="marketing">Marketing</option>
+              <option value="transport">Transport</option>
+              <option value="miscellaneous">Miscellaneous</option>
+            </select>
+          </div>
+          <div class="form-group span2">
+            <label class="form-lbl">Description</label>
+            <textarea class="form-ctrl" id="otherDesc" rows="2" placeholder="Payment description..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMMON FIELDS -->
+      <div id="commonFields" style="display:none;margin-top:16px">
+        <div class="section-divider">Payment Details</div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="form-group">
+            <label class="form-lbl">Amount (PKR) *</label>
+            <input type="number" class="form-ctrl" id="pmtAmount" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label class="form-lbl">Payment Method *</label>
+            <select class="form-ctrl" id="pmtMethod">
+              <option value="cash">Cash</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="cheque">Cheque</option>
+              <option value="online">Online</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-lbl">Payment Date *</label>
+            <input type="date" class="form-ctrl" id="pmtDate">
+          </div>
+          <div class="form-group">
+            <label class="form-lbl">Reference No.</label>
+            <input type="text" class="form-ctrl" id="pmtRef" placeholder="Cheque / TXN no.">
+          </div>
+          <div class="form-group span2">
+            <label class="form-lbl">Notes</label>
+            <textarea class="form-ctrl" id="pmtNotes" rows="2" placeholder="Additional notes..."></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeAddModal()">Cancel</button>
+      <button class="btn btn-success" onclick="savePayment()">&#10003; Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Payment Detail</h2>
+      <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="detailBody">Loading...</div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeDetailModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const pkr = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+let allPayments = [];
+let outflowChart = null;
+let employees = [];
+let payrolls = [];
+let vendors = [];
+let invoices = [];
+
+// ── LOAD STATS ──
+async function loadStats() {
+  try {
+    const r = await fetch('/api/payments/stats');
+    const d = await r.json();
+    document.getElementById('statMonthTotal').textContent = pkr(d.this_month?.total || 0);
+    document.getElementById('statMonthCount').textContent = (d.this_month?.count || 0) + ' payments';
+    document.getElementById('statSalary').textContent = pkr(d.this_month?.employee || 0);
+    document.getElementById('statSalaryCount').textContent = (d.this_month?.employee_count || 0) + ' employees';
+    document.getElementById('statVendor').textContent = pkr(d.this_month?.vendor || 0);
+    document.getElementById('statVendorCount').textContent = (d.this_month?.vendor_count || 0) + ' invoices';
+    document.getElementById('statOther').textContent = pkr(d.this_month?.other || 0);
+    document.getElementById('statOtherCount').textContent = (d.this_month?.other_count || 0) + ' payments';
+    document.getElementById('statYTD').textContent = pkr(d.ytd?.total || 0);
+    document.getElementById('statYTDCount').textContent = new Date().getFullYear() + ' year to date';
+  } catch(e) { console.error(e); }
+}
+
+// ── LOAD PAYMENTS ──
+async function loadPayments() {
+  try {
+    const r = await fetch('/api/payments');
+    const d = await r.json();
+    allPayments = d.payments || [];
+    applyFilters();
+  } catch(e) {
+    document.getElementById('pmtBody').innerHTML = '<tr class="empty-row"><td colspan="9">Failed to load payments</td></tr>';
+  }
+}
+
+function applyFilters() {
+  const type   = document.getElementById('filterType').value;
+  const status = document.getElementById('filterStatus').value;
+  const method = document.getElementById('filterMethod').value;
+  const from   = document.getElementById('filterFrom').value;
+  const to     = document.getElementById('filterTo').value;
+
+  let data = allPayments.filter(p => {
+    if (type   && p.type   !== type)   return false;
+    if (status && p.status !== status) return false;
+    if (method && p.method !== method) return false;
+    if (from && p.date < from)         return false;
+    if (to   && p.date > to)           return false;
+    return true;
+  });
+  renderTable(data);
+}
+
+function clearFilters() {
+  ['filterType','filterStatus','filterMethod','filterFrom','filterTo'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = '';
+  });
+  applyFilters();
+}
+
+function renderTable(data) {
+  document.getElementById('pmtCount').textContent = data.length + ' records';
+  if (!data.length) {
+    document.getElementById('pmtBody').innerHTML = '<tr class="empty-row"><td colspan="9">No payments found</td></tr>';
+    return;
+  }
+  document.getElementById('pmtBody').innerHTML = data.map(p => {
+    const typeClass = {employee:'type-employee', vendor:'type-vendor', other:'type-other'}[p.type] || 'type-other';
+    const typeLabel = {employee:'&#128100; Employee', vendor:'&#127981; Vendor', other:'&#127760; Other'}[p.type] || p.type;
+    const statusClass = {completed:'status-completed', pending:'status-pending', cancelled:'status-cancelled'}[p.status] || 'status-pending';
+    const method = (p.method||'').replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+    return `<tr>
+      <td><span style="font-family:monospace;font-size:12px;color:#6366f1">${p.payment_id||p._id||'—'}</span></td>
+      <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
+      <td><strong>${p.payee||'—'}</strong></td>
+      <td style="color:#64748b;font-size:12px">${p.category||p.reference||'—'}</td>
+      <td><strong>${pkr(p.amount)}</strong></td>
+      <td><span class="method-chip">${method}</span></td>
+      <td style="color:#64748b">${fmtDate(p.date)}</td>
+      <td><span class="status-badge ${statusClass}">&#9679; ${(p.status||'').charAt(0).toUpperCase()+(p.status||'').slice(1)}</span></td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="viewDetail('${p._id}')">View</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── LOAD REPORTS ──
+async function loadReports() {
+  try {
+    const r = await fetch('/api/payments/report');
+    const d = await r.json();
+    renderOutflowChart(d.monthly || []);
+    renderSummaryTable(d.summary || {});
+  } catch(e) { console.error(e); }
+}
+
+function renderOutflowChart(monthly) {
+  const labels = monthly.map(m => m.month);
+  const emp    = monthly.map(m => m.employee || 0);
+  const vnd    = monthly.map(m => m.vendor   || 0);
+  const oth    = monthly.map(m => m.other    || 0);
+
+  const ctx = document.getElementById('outflowChart').getContext('2d');
+  if (outflowChart) outflowChart.destroy();
+  outflowChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Employee', data: emp, backgroundColor: '#6366f1', borderRadius: 4 },
+        { label: 'Vendor',   data: vnd, backgroundColor: '#f59e0b', borderRadius: 4 },
+        { label: 'Other',    data: oth, backgroundColor: '#8b5cf6', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ' ' + pkr(ctx.raw) } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, ticks: { callback: v => 'PKR ' + (v/1000).toFixed(0) + 'k' } }
+      }
+    }
+  });
+}
+
+function renderSummaryTable(s) {
+  const rows = [
+    { label: 'Employee Payments', amount: s.employee_total||0, count: s.employee_count||0 },
+    { label: 'Vendor Payments',   amount: s.vendor_total||0,   count: s.vendor_count||0 },
+    { label: 'Other Payments',    amount: s.other_total||0,    count: s.other_count||0 },
+  ];
+  const grandTotal = (s.employee_total||0) + (s.vendor_total||0) + (s.other_total||0);
+  const html = rows.map(r => `
+    <div class="sum-row">
+      <span class="sum-label">${r.label}<span class="sum-count">${r.count}</span></span>
+      <span class="sum-amount">${pkr(r.amount)}</span>
+    </div>`).join('') + `
+    <div class="sum-row total">
+      <span>Grand Total</span>
+      <span>${pkr(grandTotal)}</span>
+    </div>`;
+  document.getElementById('summaryRows').innerHTML = html;
+}
+
+// ── MODAL: ADD PAYMENT ──
+function openAddModal() {
+  document.getElementById('editPmtId').value = '';
+  document.getElementById('modalTitle').textContent = 'New Payment';
+  document.getElementById('pmtType').value = '';
+  document.getElementById('pmtDate').value = new Date().toISOString().split('T')[0];
+  ['sectionEmployee','sectionVendor','sectionOther','commonFields'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('empPaySummary').style.display = 'none';
+  document.getElementById('vendorPaySummary').style.display = 'none';
+  document.getElementById('addModal').classList.add('open');
+}
+
+function closeAddModal() {
+  document.getElementById('addModal').classList.remove('open');
+}
+
+async function onTypeChange() {
+  const type = document.getElementById('pmtType').value;
+  ['sectionEmployee','sectionVendor','sectionOther'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('commonFields').style.display = type ? 'block' : 'none';
+  document.getElementById('pmtAmount').value = '';
+
+  if (type === 'employee') {
+    document.getElementById('sectionEmployee').style.display = 'block';
+    await loadEmployeeOptions();
+  } else if (type === 'vendor') {
+    document.getElementById('sectionVendor').style.display = 'block';
+    await loadVendorOptions();
+  } else if (type === 'other') {
+    document.getElementById('sectionOther').style.display = 'block';
+  }
+}
+
+async function loadEmployeeOptions() {
+  if (employees.length) return;
+  try {
+    const r = await fetch('/api/hr/employees');
+    const d = await r.json();
+    employees = (d.employees || []).filter(e => e.status === 'active');
+    const sel = document.getElementById('empSelect');
+    sel.innerHTML = '<option value="">-- Select Employee --</option>' +
+      employees.map(e => `<option value="${e._id}">${e.emp_id} — ${e.name}</option>`).join('');
+  } catch(e) {}
+}
+
+async function onEmployeeChange() {
+  const eid = document.getElementById('empSelect').value;
+  document.getElementById('payrollSelect').innerHTML = '<option value="">-- Select Payroll --</option>';
+  document.getElementById('empPaySummary').style.display = 'none';
+  if (!eid) return;
+  try {
+    const r = await fetch('/api/hr/payroll?employee_id=' + eid + '&status=pending');
+    const d = await r.json();
+    payrolls = d.payroll || [];
+    const sel = document.getElementById('payrollSelect');
+    if (!payrolls.length) {
+      sel.innerHTML = '<option value="">No pending payroll</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">-- Select Month --</option>' +
+      payrolls.map(p => `<option value="${p._id}">${p.month} — ${pkr(p.net_salary)}</option>`).join('');
+  } catch(e) {}
+}
+
+function onPayrollChange() {
+  const pid = document.getElementById('payrollSelect').value;
+  if (!pid) { document.getElementById('empPaySummary').style.display = 'none'; return; }
+  const p = payrolls.find(x => x._id === pid);
+  if (!p) return;
+  document.getElementById('psBaic').textContent      = pkr(p.basic_salary);
+  document.getElementById('psAllowances').textContent = pkr(p.allowances_total||0);
+  document.getElementById('psDeductions').textContent = pkr(p.deductions_total||0);
+  document.getElementById('psNet').textContent        = pkr(p.net_salary);
+  document.getElementById('pmtAmount').value = (p.net_salary||0).toFixed(2);
+  document.getElementById('empPaySummary').style.display = 'block';
+}
+
+async function loadVendorOptions() {
+  if (vendors.length) return;
+  try {
+    const r = await fetch('/api/vendors');
+    const d = await r.json();
+    vendors = d.vendors || d || [];
+    const sel = document.getElementById('vendorSelect');
+    sel.innerHTML = '<option value="">-- Select Vendor --</option>' +
+      vendors.map(v => `<option value="${v._id}">${v.name||v.vendor_name}</option>`).join('');
+  } catch(e) {}
+}
+
+async function onVendorChange() {
+  const vid = document.getElementById('vendorSelect').value;
+  document.getElementById('invoiceSelect').innerHTML = '<option value="">-- Select Invoice --</option>';
+  document.getElementById('vendorPaySummary').style.display = 'none';
+  if (!vid) return;
+  try {
+    const r = await fetch('/api/vendor-invoices?vendor_id=' + vid + '&status=unpaid');
+    const d = await r.json();
+    invoices = d.invoices || d || [];
+    const sel = document.getElementById('invoiceSelect');
+    if (!invoices.length) {
+      sel.innerHTML = '<option value="">No unpaid invoices</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">-- Select Invoice --</option>' +
+      invoices.map(i => `<option value="${i._id}">${i.invoice_number||i._id} — ${pkr(i.total||i.amount)}</option>`).join('');
+  } catch(e) {}
+}
+
+function onInvoiceChange() {
+  const iid = document.getElementById('invoiceSelect').value;
+  if (!iid) { document.getElementById('vendorPaySummary').style.display = 'none'; return; }
+  const inv = invoices.find(x => x._id === iid);
+  if (!inv) return;
+  document.getElementById('viNum').textContent    = inv.invoice_number || inv._id;
+  document.getElementById('viDate').textContent   = fmtDate(inv.date || inv.created_at);
+  document.getElementById('viAmount').textContent = pkr(inv.total || inv.amount);
+  document.getElementById('pmtAmount').value = (inv.total || inv.amount || 0).toFixed(2);
+  document.getElementById('vendorPaySummary').style.display = 'block';
+}
+
+async function savePayment() {
+  const type = document.getElementById('pmtType').value;
+  if (!type) { alert('Please select a payment type'); return; }
+
+  const amount = parseFloat(document.getElementById('pmtAmount').value);
+  if (!amount || amount <= 0) { alert('Please enter a valid amount'); return; }
+
+  const method = document.getElementById('pmtMethod').value;
+  const date   = document.getElementById('pmtDate').value;
+  if (!date) { alert('Please select a payment date'); return; }
+
+  const payload = {
+    type, amount, method, date,
+    reference: document.getElementById('pmtRef').value,
+    notes:     document.getElementById('pmtNotes').value,
+    status:    'completed'
+  };
+
+  if (type === 'employee') {
+    const eid = document.getElementById('empSelect').value;
+    const pid = document.getElementById('payrollSelect').value;
+    if (!eid || !pid) { alert('Please select an employee and payroll record'); return; }
+    payload.employee_id = eid;
+    payload.payroll_id  = pid;
+    const emp = employees.find(e => e._id === eid);
+    payload.payee = emp ? emp.name : 'Employee';
+    payload.category = 'salary';
+  } else if (type === 'vendor') {
+    const vid = document.getElementById('vendorSelect').value;
+    const iid = document.getElementById('invoiceSelect').value;
+    if (!vid || !iid) { alert('Please select a vendor and invoice'); return; }
+    payload.vendor_id  = vid;
+    payload.invoice_id = iid;
+    const vnd = vendors.find(v => v._id === vid);
+    payload.payee = vnd ? (vnd.name || vnd.vendor_name) : 'Vendor';
+    payload.category = 'vendor_payment';
+  } else {
+    const payee = document.getElementById('otherPayee').value.trim();
+    if (!payee) { alert('Please enter payee name'); return; }
+    payload.payee    = payee;
+    payload.category = document.getElementById('otherCategory').value;
+    payload.description = document.getElementById('otherDesc').value;
+  }
+
+  try {
+    const r = await fetch('/api/payments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Save failed');
+    closeAddModal();
+    employees = []; vendors = []; payrolls = []; invoices = [];
+    await Promise.all([loadPayments(), loadStats(), loadReports()]);
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+// ── DETAIL MODAL ──
+async function viewDetail(id) {
+  document.getElementById('detailBody').innerHTML = 'Loading...';
+  document.getElementById('detailModal').classList.add('open');
+  try {
+    const r = await fetch('/api/payments/' + id);
+    const p = await r.json();
+    const typeClass = {employee:'type-employee', vendor:'type-vendor', other:'type-other'}[p.type] || 'type-other';
+    const statusClass = {completed:'status-completed', pending:'status-pending', cancelled:'status-cancelled'}[p.status] || 'status-pending';
+    const method = (p.method||'').replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+    document.getElementById('detailBody').innerHTML = `
+      <div class="detail-grid" style="margin-bottom:16px">
+        <div class="detail-item">
+          <span class="detail-lbl">Payment ID</span>
+          <span class="detail-val" style="font-family:monospace;color:#6366f1">${p.payment_id||p._id}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-lbl">Status</span>
+          <span><span class="status-badge ${statusClass}">&#9679; ${(p.status||'').charAt(0).toUpperCase()+(p.status||'').slice(1)}</span></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-lbl">Type</span>
+          <span><span class="type-badge ${typeClass}">${p.type}</span></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-lbl">Payee</span>
+          <span class="detail-val">${p.payee||'—'}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-lbl">Amount</span>
+          <span class="detail-val" style="color:#10b981;font-size:18px">${pkr(p.amount)}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-lbl">Method</span>
+          <span class="detail-val">${method}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-lbl">Date</span>
+          <span class="detail-val">${fmtDate(p.date)}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-lbl">Category</span>
+          <span class="detail-val">${p.category||'—'}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-lbl">Reference</span>
+          <span class="detail-val">${p.reference||'—'}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-lbl">Created</span>
+          <span class="detail-val">${fmtDate(p.created_at)}</span>
+        </div>
+      </div>
+      ${p.notes ? `<div style="background:#f8fafc;border-radius:8px;padding:12px;font-size:13px;color:#374151"><strong>Notes:</strong> ${p.notes}</div>` : ''}
+    `;
+  } catch(e) {
+    document.getElementById('detailBody').innerHTML = '<p style="color:#ef4444">Failed to load payment details</p>';
+  }
+}
+
+function closeDetailModal() {
+  document.getElementById('detailModal').classList.remove('open');
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', async () => {
+  await Promise.all([loadStats(), loadPayments(), loadReports()]);
+});
+
+window.addEventListener('click', e => {
+  if (e.target.id === 'addModal') closeAddModal();
+  if (e.target.id === 'detailModal') closeDetailModal();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goods Receipts - POS System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',sans-serif;background:#f0f2f8;color:#2d3436;min-height:100vh;}
+
+        .topbar{background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.25);position:sticky;top:0;z-index:200;}
+        .topbar-left{display:flex;align-items:center;gap:14px;}
+        .topbar-left h1{font-size:17px;font-weight:700;}
+        .topbar-right{display:flex;gap:10px;align-items:center;}
+        .btn{padding:8px 18px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:opacity .2s,transform .15s;white-space:nowrap;}
+        .btn:hover:not(:disabled){opacity:.88;transform:translateY(-1px);}
+        .btn:disabled{opacity:.55;cursor:not-allowed;}
+        .btn-primary{background:#667eea;color:#fff;}
+        .btn-success{background:#27ae60;color:#fff;}
+        .btn-warning{background:#f39c12;color:#fff;}
+        .btn-danger{background:#e74c3c;color:#fff;}
+        .btn-secondary{background:#636e72;color:#fff;}
+        .btn-orange{background:#e67e22;color:#fff;}
+        .btn-sm{padding:5px 12px;font-size:12px;}
+        .btn-white{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35);}
+        .btn-white:hover{background:rgba(255,255,255,.28);}
+
+        .stats-bar{background:#fff;border-bottom:1px solid #e8e8e8;padding:10px 24px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+        .stat-pill{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all .2s;}
+        .stat-pill.all{background:#f0f2f8;color:#636e72;border-color:#dde0e8;}
+        .stat-pill.all.active,.stat-pill.all:hover{background:#e67e22;color:#fff;border-color:#e67e22;}
+        .stat-pill.draft{background:#f5f5f5;color:#7f8c8d;border-color:#ddd;}
+        .stat-pill.draft.active,.stat-pill.draft:hover{background:#636e72;color:#fff;border-color:#636e72;}
+        .stat-pill.confirmed{background:#e8f5e9;color:#1b5e20;border-color:#66bb6a;}
+        .stat-pill.confirmed.active,.stat-pill.confirmed:hover{background:#27ae60;color:#fff;border-color:#27ae60;}
+        .stat-count{background:rgba(0,0,0,.12);border-radius:10px;padding:1px 7px;margin-left:4px;font-size:11px;}
+
+        .main{max-width:1320px;margin:0 auto;padding:20px;}
+        .filter-bar{background:#fff;border-radius:10px;padding:12px 16px;display:flex;gap:10px;align-items:center;margin-bottom:16px;box-shadow:0 1px 6px rgba(0,0,0,.06);}
+        .filter-bar input{flex:1;padding:8px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none;}
+        .filter-bar input:focus{border-color:#e67e22;}
+
+        .card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.07);overflow:hidden;}
+        .card-header{padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;}
+        .card-header h3{font-size:14px;font-weight:700;color:#2d3436;}
+        table{width:100%;border-collapse:collapse;font-size:13px;}
+        th{background:#f8f9fa;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#636e72;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #eee;white-space:nowrap;}
+        td{padding:11px 14px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+        tr:last-child td{border-bottom:none;}
+        tbody tr:hover td{background:#fffdf5;}
+
+        .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+        .badge-draft{background:#ecf0f1;color:#636e72;}
+        .badge-confirmed{background:#d1fae5;color:#065f46;}
+
+        .empty-state{text-align:center;padding:60px 20px;color:#aaa;}
+        .empty-state i{font-size:52px;margin-bottom:14px;display:block;opacity:.35;}
+        .empty-state p{font-size:14px;}
+
+        /* ══ Create GR Full Screen ══ */
+        .fs-overlay{display:none;position:fixed;inset:0;background:rgba(30,30,60,.55);z-index:900;align-items:center;justify-content:center;}
+        .fs-modal{background:#f0f2f8;border-radius:16px;width:98vw;max-width:1080px;height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.35);overflow:hidden;animation:popIn .22s ease;}
+        @keyframes popIn{from{transform:scale(.96) translateY(12px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+        .fs-header{background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+        .fs-header h2{font-size:16px;font-weight:700;}
+        .fs-close{background:rgba(255,255,255,.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+        .fs-close:hover{background:rgba(255,255,255,.35);}
+
+        .gr-header-strip{background:#fff;border-bottom:1px solid #e0e0e0;padding:12px 18px;display:flex;gap:14px;flex-wrap:wrap;flex-shrink:0;}
+        .phf{display:flex;flex-direction:column;gap:4px;min-width:150px;flex:1;}
+        .phf label{font-size:11px;font-weight:700;color:#636e72;text-transform:uppercase;letter-spacing:.4px;}
+        .phf input,.phf select{padding:7px 10px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:13px;outline:none;background:#fff;}
+        .phf input:focus,.phf select:focus{border-color:#e67e22;box-shadow:0 0 0 3px rgba(230,126,34,.1);}
+
+        .fs-body{display:flex;flex:1;overflow:hidden;}
+
+        /* Left: PO Reference */
+        .po-ref-panel{width:340px;flex-shrink:0;background:#fff;border-right:1px solid #e8e8e8;display:flex;flex-direction:column;}
+        .prp-header{padding:12px 14px;border-bottom:1px solid #eee;flex-shrink:0;}
+        .prp-header h4{font-size:13px;font-weight:700;color:#2d3436;margin-bottom:6px;}
+        .prp-header select{width:100%;padding:7px 10px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:13px;outline:none;}
+        .prp-header select:focus{border-color:#e67e22;}
+        .prp-list{flex:1;overflow-y:auto;padding:8px;}
+        .prp-list::-webkit-scrollbar{width:4px;}
+        .prp-list::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px;}
+        .po-ref-item{background:#f8f9fa;border:1.5px solid #e8e8e8;border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+        .po-ref-item.added{background:#fff8e1;border-color:#f39c12;}
+        .pri-name{font-size:13px;font-weight:700;color:#2d3436;}
+        .pri-meta{font-size:11px;color:#636e72;margin-top:2px;}
+        .pri-badges{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+        .pri-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;}
+        .pri-badge.ordered{background:#fff3cd;color:#856404;}
+        .pri-badge.received{background:#d1fae5;color:#065f46;}
+        .pri-badge.remain{background:#fef3c7;color:#92400e;}
+        .add-line-btn{background:none;border:1px solid #f39c12;color:#e67e22;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;float:right;}
+        .add-line-btn:hover{background:#f39c12;color:#fff;}
+        .add-line-btn.done{background:#27ae60;color:#fff;border-color:#27ae60;}
+        .no-po-hint{text-align:center;padding:30px;color:#bbb;font-size:12px;}
+        .no-po-hint i{font-size:30px;display:block;margin-bottom:8px;opacity:.3;}
+
+        /* Right: GR Line Items */
+        .gr-items-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+        .pip-header{padding:12px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+        .pip-header h4{font-size:13px;font-weight:700;color:#2d3436;}
+        .pip-body{flex:1;overflow-y:auto;padding:10px 14px;}
+        .pip-body::-webkit-scrollbar{width:4px;}
+        .pip-body::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px;}
+        .item-empty{text-align:center;padding:40px;color:#bbb;}
+        .item-empty i{font-size:36px;display:block;margin-bottom:8px;opacity:.4;}
+        .gr-item-card{background:#fff;border:1.5px solid #e8e8e8;border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+        .ic-name{font-size:13px;font-weight:700;color:#2d3436;margin-bottom:2px;}
+        .ic-meta{font-size:11px;color:#636e72;}
+        .ic-fields{display:flex;gap:8px;margin-top:8px;align-items:flex-end;flex-wrap:wrap;}
+        .ic-fields label{display:block;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:3px;}
+        .ic-input{padding:5px 8px;border:1.5px solid #e0e0e0;border-radius:6px;font-size:13px;outline:none;width:90px;}
+        .ic-input:focus{border-color:#e67e22;}
+        .ic-del{background:none;border:none;color:#e74c3c;cursor:pointer;font-size:16px;padding:2px;margin-left:auto;flex-shrink:0;align-self:flex-end;}
+        .ic-del:hover{color:#c0392b;}
+        .stock-notice{background:#fff3cd;border-left:4px solid #f39c12;border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;color:#856404;margin:10px 14px;flex-shrink:0;}
+
+        .pip-footer{border-top:1px solid #eee;padding:12px 16px;display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-shrink:0;background:#fff;}
+
+        /* ══ View Modal ══ */
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(30,30,60,.55);z-index:900;align-items:center;justify-content:center;padding:20px;}
+        .modal{display:block;background:#fff;border-radius:14px;width:100%;max-width:820px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:popIn .22s ease;}
+        .modal-header{padding:18px 22px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:5;}
+        .modal-header h4{font-size:16px;font-weight:700;}
+        .modal-body{padding:22px;}
+        .modal-footer{padding:14px 22px;border-top:1px solid #eee;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;position:sticky;bottom:0;background:#fff;z-index:5;}
+        .m-close{background:none;border:none;font-size:22px;cursor:pointer;color:#999;line-height:1;}
+        .m-close:hover{color:#333;}
+        .detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+        .dg-item .lbl{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.4px;}
+        .dg-item .val{font-size:14px;font-weight:600;color:#2d3436;margin-top:3px;}
+        .sec-title{font-size:11px;font-weight:700;color:#636e72;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid #f0f0f0;}
+        .view-items{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px;}
+        .view-items th{background:#f8f9fa;padding:8px 12px;font-size:11px;font-weight:700;color:#636e72;text-transform:uppercase;border-bottom:1px solid #eee;}
+        .view-items td{padding:9px 12px;border-bottom:1px solid #f0f0f0;}
+        .view-items tr:last-child td{border-bottom:none;}
+        .item-num{width:24px;height:24px;background:#e67e22;color:#fff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+        .alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:14px;}
+        .alert-success{background:#eafaf1;border-left:4px solid #27ae60;color:#1e8449;}
+        .alert-info{background:#e8f4fd;border-left:4px solid #3498db;color:#1565c0;}
+        .alert-danger{background:#fff0f0;border-left:4px solid #e74c3c;color:#c0392b;}
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="topbar-left">
+        <button class="btn btn-white btn-sm" onclick="window.location.href='/procurement-dashboard'"><i class="fas fa-arrow-left"></i></button>
+        <h1><i class="fas fa-truck" style="margin-right:6px;opacity:.85;"></i>Goods Receipts</h1>
+    </div>
+    <div class="topbar-right">
+        <button class="btn btn-white btn-sm" onclick="window.location.href='/procurement/po'"><i class="fas fa-shopping-cart"></i> POs</button>
+        <button class="btn btn-white" onclick="loadGRs()"><i class="fas fa-sync"></i> Refresh</button>
+        <button class="btn btn-white" onclick="openCreate()"><i class="fas fa-plus"></i> New GR</button>
+    </div>
+</div>
+
+<div class="stats-bar">
+    <span class="stat-pill all active" onclick="filterStatus('',this)">All <span class="stat-count" id="cnt-all">0</span></span>
+    <span class="stat-pill draft" onclick="filterStatus('draft',this)">Draft <span class="stat-count" id="cnt-draft">0</span></span>
+    <span class="stat-pill confirmed" onclick="filterStatus('confirmed',this)">Confirmed <span class="stat-count" id="cnt-confirmed">0</span></span>
+</div>
+
+<div class="main">
+    <div class="filter-bar">
+        <i class="fas fa-search" style="color:#aaa;"></i>
+        <input type="text" id="grSearch" placeholder="Search by GR number, PO reference, or vendor…" oninput="filterTable()">
+        <button class="btn btn-warning btn-sm" onclick="openCreate()"><i class="fas fa-plus"></i> New GR</button>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h3 id="tableTitle">All Goods Receipts</h3>
+            <span style="font-size:12px;color:#999;" id="tableCount"></span>
+        </div>
+        <div id="grTableWrap">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══ CREATE GR ══ -->
+<div class="fs-overlay" id="createOverlay">
+    <div class="fs-modal">
+        <div class="fs-header">
+            <h2><i class="fas fa-truck" style="margin-right:8px;opacity:.8;"></i>Create Goods Receipt</h2>
+            <button class="fs-close" onclick="closeCreate()">&times;</button>
+        </div>
+        <div class="gr-header-strip">
+            <div class="phf" style="flex:1.5;">
+                <label>Delivery Date</label>
+                <input type="date" id="grDeliveryDate">
+            </div>
+            <div class="phf">
+                <label>Delivery Note No.</label>
+                <input type="text" id="grDeliveryNote" placeholder="Vendor's delivery note">
+            </div>
+            <div class="phf" style="flex:2;">
+                <label>Notes</label>
+                <input type="text" id="grNotes" placeholder="Optional">
+            </div>
+        </div>
+        <div class="stock-notice"><i class="fas fa-info-circle"></i> <strong>Note:</strong> Confirming this GR will automatically update product stock levels.</div>
+        <div class="fs-body">
+            <!-- Left: PO Items Reference -->
+            <div class="po-ref-panel">
+                <div class="prp-header">
+                    <h4><i class="fas fa-shopping-cart" style="color:#e67e22;margin-right:6px;"></i>Link to PO *</h4>
+                    <select id="poSelector" onchange="loadPOItems()">
+                        <option value="">— Select Sent PO —</option>
+                    </select>
+                </div>
+                <div class="prp-list" id="poItemsList">
+                    <div class="no-po-hint"><i class="fas fa-shopping-cart"></i>Select a PO to see ordered items</div>
+                </div>
+            </div>
+
+            <!-- Right: GR Line Items -->
+            <div class="gr-items-panel">
+                <div class="pip-header">
+                    <h4><i class="fas fa-boxes" style="color:#e67e22;margin-right:6px;"></i>Received Items <span id="itemCountBadge" style="background:#e67e22;color:#fff;border-radius:12px;padding:1px 8px;font-size:11px;margin-left:4px;">0</span></h4>
+                    <button class="btn btn-sm btn-secondary" onclick="clearItems()"><i class="fas fa-trash"></i> Clear</button>
+                </div>
+                <div class="pip-body" id="itemsContainer">
+                    <div class="item-empty" id="itemsEmpty">
+                        <i class="fas fa-hand-point-left"></i>
+                        <p style="font-size:13px;color:#bbb;">Select a PO and click "+ Add" for each item received</p>
+                    </div>
+                </div>
+                <div class="pip-footer">
+                    <div id="createAlertInline"></div>
+                    <button class="btn btn-secondary" onclick="closeCreate()">Cancel</button>
+                    <button class="btn btn-warning" id="saveDraftBtn" onclick="saveGR(false)"><i class="fas fa-save"></i> Save Draft</button>
+                    <button class="btn btn-success" id="saveConfirmBtn" onclick="saveGR(true)"><i class="fas fa-check-circle"></i> Save &amp; Confirm Stock</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══ VIEW GR ══ -->
+<div class="modal-overlay" id="viewOverlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h4 id="viewTitle">GR Details</h4>
+            <button class="m-close" onclick="closeView()">&times;</button>
+        </div>
+        <div class="modal-body" id="viewBody"></div>
+        <div class="modal-footer" id="viewFooter"></div>
+    </div>
+</div>
+
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+let allGRs = [];
+let poItems = [];
+let grLineItems = [];
+let currentFilter = '';
+let currentGRId = null;
+
+function showInlineAlert(msg) {
+    $('createAlertInline').innerHTML = `<span style="font-size:12px;color:#e74c3c;font-weight:600;">${msg}</span>`;
+    setTimeout(() => { $('createAlertInline').innerHTML = ''; }, 4000);
+}
+
+function statusBadge(s) {
+    const map = { draft:'badge-draft', confirmed:'badge-confirmed' };
+    const label = s === 'confirmed' ? 'Confirmed' : 'Draft';
+    return `<span class="badge ${map[s]||'badge-draft'}">${label}</span>`;
+}
+
+async function loadGRs() {
+    $('grTableWrap').innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div>';
+    try {
+        const data = await fetch('/api/procurement/gr').then(r => r.json());
+        allGRs = data;
+        $('cnt-all').textContent = data.length;
+        $('cnt-draft').textContent = data.filter(g => g.status === 'draft').length;
+        $('cnt-confirmed').textContent = data.filter(g => g.status === 'confirmed').length;
+        renderTable(data);
+    } catch(e) {
+        $('grTableWrap').innerHTML = '<div class="empty-state" style="color:#e74c3c;"><i class="fas fa-exclamation-circle"></i><p>Failed to load.</p></div>';
+    }
+}
+
+function renderTable(data) {
+    if (!data.length) {
+        $('grTableWrap').innerHTML = '<div class="empty-state"><i class="fas fa-truck"></i><p>No goods receipts found</p></div>';
+        $('tableCount').textContent = '';
+        return;
+    }
+    $('tableCount').textContent = `${data.length} record(s)`;
+    const rows = data.map(gr => `<tr>
+        <td><strong style="color:#e67e22;">${gr.doc_number||'—'}</strong></td>
+        <td>${gr.po_number||'—'}</td>
+        <td>${gr.vendor_name||'—'}</td>
+        <td style="text-align:center;">${(gr.items||[]).length}</td>
+        <td>${gr.delivery_date||'—'}</td>
+        <td>${statusBadge(gr.status||'draft')}</td>
+        <td>${gr.created_by_name||'—'}</td>
+        <td><button class="btn btn-primary btn-sm" onclick="viewGR('${gr._id}')"><i class="fas fa-eye"></i> View</button></td>
+    </tr>`).join('');
+    $('grTableWrap').innerHTML = `<table>
+        <thead><tr><th>GR No.</th><th>PO Ref.</th><th>Vendor</th><th style="text-align:center;">Items</th><th>Delivery Date</th><th>Status</th><th>Created By</th><th>Action</th></tr></thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function filterStatus(status, el) {
+    currentFilter = status;
+    document.querySelectorAll('.stat-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    const filtered = status ? allGRs.filter(g => g.status === status) : allGRs;
+    $('tableTitle').textContent = status ? (status.charAt(0).toUpperCase()+status.slice(1)) + ' GRs' : 'All Goods Receipts';
+    $('grSearch').value = '';
+    renderTable(filtered);
+}
+
+function filterTable() {
+    const q = $('grSearch').value.toLowerCase();
+    const base = currentFilter ? allGRs.filter(g => g.status === currentFilter) : allGRs;
+    renderTable(q ? base.filter(g =>
+        (g.doc_number||'').toLowerCase().includes(q) ||
+        (g.po_number||'').toLowerCase().includes(q) ||
+        (g.vendor_name||'').toLowerCase().includes(q)
+    ) : base);
+}
+
+/* ── Create GR ── */
+async function openCreate(poIdParam) {
+    poItems = []; grLineItems = [];
+    $('poSelector').innerHTML = '<option value="">— Loading POs… —</option>';
+    $('poItemsList').innerHTML = '<div class="no-po-hint"><i class="fas fa-spinner fa-spin"></i><br>Loading…</div>';
+    $('grDeliveryDate').value = new Date().toISOString().slice(0,10);
+    $('grDeliveryNote').value = '';
+    $('grNotes').value = '';
+    refreshPanel();
+    $('createAlertInline').innerHTML = '';
+    $('createOverlay').style.display = 'flex';
+
+    try {
+        const [sent, partial] = await Promise.all([
+            fetch('/api/procurement/po?status=sent').then(r=>r.json()),
+            fetch('/api/procurement/po?status=partially_received').then(r=>r.json())
+        ]);
+        const pos = [...sent, ...partial];
+        $('poSelector').innerHTML = '<option value="">— Select PO —</option>' +
+            pos.map(po => `<option value="${po._id}">${po.doc_number} — ${po.vendor_name||'Unknown'}${po.status==='partially_received'?' (Partial)':''}</option>`).join('');
+        if (poIdParam) { $('poSelector').value = poIdParam; await loadPOItems(); }
+        else $('poItemsList').innerHTML = '<div class="no-po-hint"><i class="fas fa-shopping-cart"></i>Select a PO to see ordered items</div>';
+    } catch(e) {
+        $('poSelector').innerHTML = '<option value="">— Failed to load POs —</option>';
+        $('poItemsList').innerHTML = '<div class="no-po-hint" style="color:#e74c3c;">Failed to load POs</div>';
+    }
+}
+
+function closeCreate() { $('createOverlay').style.display = 'none'; }
+
+async function loadPOItems() {
+    const poId = $('poSelector').value;
+    grLineItems = []; refreshPanel();
+    if (!poId) { $('poItemsList').innerHTML = '<div class="no-po-hint"><i class="fas fa-shopping-cart"></i>Select a PO to see ordered items</div>'; return; }
+    $('poItemsList').innerHTML = '<div class="no-po-hint"><i class="fas fa-spinner fa-spin"></i><br>Loading…</div>';
+    try {
+        const po = await fetch(`/api/procurement/po/${poId}`).then(r=>r.json());
+        poItems = (po.items||[]).map(it => ({
+            ...it, remaining: Math.max(0, (it.qty_ordered||0) - (it.qty_received||0))
+        }));
+        renderPOItems();
+    } catch(e) {
+        $('poItemsList').innerHTML = '<div class="no-po-hint" style="color:#e74c3c;">Failed to load PO items</div>';
+    }
+}
+
+function renderPOItems() {
+    if (!poItems.length) { $('poItemsList').innerHTML = '<div class="no-po-hint"><i class="fas fa-inbox"></i>No items in this PO</div>'; return; }
+    const addedIds = new Set(grLineItems.filter(l=>l.po_item_id).map(l=>l.po_item_id));
+    $('poItemsList').innerHTML = poItems.map(it => {
+        const key = it._id||it.product_id;
+        const isAdded = addedIds.has(key);
+        const hasRemain = it.remaining > 0;
+        return `<div class="po-ref-item ${isAdded?'added':''}">
+            <button class="add-line-btn ${isAdded?'done':''}" onclick="addFromPO('${key}')" ${!hasRemain||isAdded?'disabled':''}>
+                ${isAdded?'✓ Added':hasRemain?'+ Add':'Done'}
+            </button>
+            <div class="pri-name">${it.product_name||'—'}</div>
+            <div class="pri-meta">${it.unit||''}</div>
+            <div class="pri-badges">
+                <span class="pri-badge ordered">Ordered: ${it.qty_ordered||0}</span>
+                <span class="pri-badge received">Received: ${it.qty_received||0}</span>
+                <span class="pri-badge remain" style="${!hasRemain?'background:#fde8e8;color:#c0392b;':''}">Pending: ${it.remaining}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function addFromPO(key) {
+    const it = poItems.find(i=>(i._id||i.product_id)===key);
+    if (!it||it.remaining<=0) return;
+    if (grLineItems.some(l=>l.po_item_id===key)) return;
+    grLineItems.push({ product_id:it.product_id||'', product_name:it.product_name, po_item_id:key, qty:it.remaining, unit:it.unit||'', unit_price:it.unit_price||0, batch_no:'', expiry_date:'' });
+    refreshPanel(); renderPOItems();
+}
+
+function removeItem(idx) {
+    grLineItems.splice(idx, 1);
+    refreshPanel(); renderPOItems();
+}
+
+function clearItems() {
+    if (grLineItems.length && !confirm('Remove all items?')) return;
+    grLineItems = []; refreshPanel(); renderPOItems();
+}
+
+function updateLine(idx, field, val) {
+    grLineItems[idx][field] = (field==='batch_no'||field==='expiry_date') ? val : (parseFloat(val)||0);
+}
+
+function refreshPanel() {
+    $('itemCountBadge').textContent = grLineItems.length;
+    $('itemsEmpty').style.display = grLineItems.length ? 'none' : 'block';
+    document.querySelectorAll('#itemsContainer .gr-item-card').forEach(e=>e.remove());
+    const cards = grLineItems.map((it,idx) => `<div class="gr-item-card">
+        <div style="display:flex;gap:10px;">
+            <div style="flex:1;">
+                <div class="ic-name">${it.product_name}</div>
+                <div class="ic-meta">${it.unit}</div>
+                <div class="ic-fields">
+                    <div><label>Qty Received *</label><input type="number" class="ic-input" value="${it.qty}" min="0.001" step="any" onchange="updateLine(${idx},'qty',this.value)"></div>
+                    <div><label>Unit Price</label><input type="number" class="ic-input" value="${it.unit_price}" min="0" step="0.01" onchange="updateLine(${idx},'unit_price',this.value)"></div>
+                    <div><label>Batch No.</label><input type="text" class="ic-input" value="${it.batch_no}" placeholder="Optional" onchange="updateLine(${idx},'batch_no',this.value)"></div>
+                    <div><label>Expiry Date</label><input type="date" class="ic-input" style="width:130px;" value="${it.expiry_date}" onchange="updateLine(${idx},'expiry_date',this.value)"></div>
+                </div>
+            </div>
+            <button class="ic-del" onclick="removeItem(${idx})" title="Remove"><i class="fas fa-times-circle"></i></button>
+        </div>
+    </div>`).join('');
+    $('itemsContainer').insertAdjacentHTML('beforeend', cards);
+}
+
+async function saveGR(confirmAfter) {
+    if (!$('poSelector').value) { showInlineAlert('Please select a PO.'); return; }
+    if (!grLineItems.length) { showInlineAlert('Add at least one received item.'); return; }
+    if (grLineItems.some(it => !it.qty||it.qty<=0)) { showInlineAlert('All quantities must be greater than 0.'); return; }
+
+    $('saveDraftBtn').disabled = $('saveConfirmBtn').disabled = true;
+    $('saveConfirmBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+
+    const poSel = $('poSelector');
+    const payload = {
+        po_id: poSel.value,
+        po_number: poSel.options[poSel.selectedIndex].text.split(' — ')[0],
+        vendor_name: '',
+        delivery_date: $('grDeliveryDate').value || new Date().toISOString().slice(0,10),
+        delivery_note_no: $('grDeliveryNote').value.trim(),
+        notes: $('grNotes').value.trim(),
+        items: grLineItems.map(it => ({
+            product_id: it.product_id, product_name: it.product_name,
+            po_item_id: it.po_item_id, qty_received: it.qty,
+            unit: it.unit, unit_price: it.unit_price,
+            batch_no: it.batch_no, expiry_date: it.expiry_date
+        }))
+    };
+
+    try {
+        const d = await fetch('/api/procurement/gr', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }).then(r=>r.json());
+        if (!d.success) throw new Error(d.message||'Failed to create GR');
+        if (confirmAfter) {
+            const cd = await fetch(`/api/procurement/gr/${d.id}/confirm`, {method:'POST'}).then(r=>r.json());
+            if (!cd.success) throw new Error(cd.message||'Created but failed to confirm GR');
+        }
+        closeCreate(); await loadGRs();
+    } catch(e) {
+        showInlineAlert(e.message);
+    } finally {
+        $('saveDraftBtn').disabled = $('saveConfirmBtn').disabled = false;
+        $('saveConfirmBtn').innerHTML = '<i class="fas fa-check-circle"></i> Save &amp; Confirm Stock';
+    }
+}
+
+/* ── View GR ── */
+async function viewGR(id) {
+    currentGRId = id;
+    $('viewBody').innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>';
+    $('viewFooter').innerHTML = '';
+    $('viewOverlay').style.display = 'flex';
+    try {
+        const gr = await fetch(`/api/procurement/gr/${id}`).then(r=>r.json());
+        $('viewTitle').textContent = `${gr.doc_number}`;
+        const itemRows = (gr.items||[]).map((it,idx)=>`<tr>
+            <td><span class="item-num">${idx+1}</span></td>
+            <td><strong>${it.product_name||'—'}</strong></td>
+            <td style="text-align:center;">${it.qty_received||0}</td>
+            <td>${it.unit||'—'}</td>
+            <td>${fmt(it.unit_price)}</td>
+            <td>${it.batch_no||'—'}</td>
+            <td>${it.expiry_date||'—'}</td>
+        </tr>`).join('');
+        $('viewBody').innerHTML = `
+            ${gr.status==='confirmed'?'<div class="alert alert-success"><i class="fas fa-check-circle"></i> This GR has been confirmed and stock levels have been updated.</div>':''}
+            <div class="detail-grid">
+                <div class="dg-item"><div class="lbl">Status</div><div class="val">${statusBadge(gr.status)}</div></div>
+                <div class="dg-item"><div class="lbl">PO Reference</div><div class="val">${gr.po_number||'—'}</div></div>
+                <div class="dg-item"><div class="lbl">Vendor</div><div class="val">${gr.vendor_name||'—'}</div></div>
+                <div class="dg-item"><div class="lbl">Delivery Date</div><div class="val">${gr.delivery_date||'—'}</div></div>
+                <div class="dg-item"><div class="lbl">Delivery Note No.</div><div class="val">${gr.delivery_note_no||'—'}</div></div>
+                <div class="dg-item"><div class="lbl">Confirmed By</div><div class="val">${gr.confirmed_by||'—'}</div></div>
+            </div>
+            ${gr.notes?`<div style="font-size:13px;color:#636e72;margin-bottom:14px;padding:10px 14px;background:#f8f9fa;border-radius:8px;"><i class="fas fa-sticky-note" style="margin-right:6px;color:#e67e22;"></i>${gr.notes}</div>`:''}
+            <div class="sec-title">Received Items</div>
+            <table class="view-items">
+                <thead><tr><th>#</th><th>Product</th><th style="text-align:center;">Qty Received</th><th>Unit</th><th>Unit Price</th><th>Batch No.</th><th>Expiry</th></tr></thead>
+                <tbody>${itemRows}</tbody>
+            </table>`;
+        let btns = `<button class="btn btn-secondary" onclick="closeView()">Close</button>`;
+        if (gr.status === 'draft') btns += `<button class="btn btn-success" onclick="confirmGR('${gr._id}')"><i class="fas fa-check-circle"></i> Confirm &amp; Update Stock</button>`;
+        if (gr.status === 'confirmed') btns += `<button class="btn btn-primary" onclick="window.location.href='/procurement/invoices?gr_id=${gr._id}'"><i class="fas fa-file-invoice"></i> Create Invoice</button>`;
+        $('viewFooter').innerHTML = btns;
+    } catch(e) {
+        $('viewBody').innerHTML = '<div class="alert alert-danger">Failed to load GR details.</div>';
+    }
+}
+
+function closeView() { $('viewOverlay').style.display = 'none'; }
+
+async function confirmGR(id) {
+    if (!confirm('Confirm this GR? Product stock levels will be updated.')) return;
+    try {
+        const d = await fetch(`/api/procurement/gr/${id}/confirm`, {method:'POST'}).then(r=>r.json());
+        if (d.success) { closeView(); await loadGRs(); }
+        else alert(d.message||'Failed to confirm');
+    } catch(e) { alert('Connection error.'); }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadGRs();
+    const params = new URLSearchParams(window.location.search);
+    const poId = params.get('po_id');
+    if (poId) openCreate(poId);
+});
+
+['createOverlay','viewOverlay'].forEach(id => {
+    $(id).addEventListener('click', function(e) {
+        if (e.target === this) { id==='createOverlay' ? closeCreate() : closeView(); }
+    });
+});
+</script>
+</body>
+</html>

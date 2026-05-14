@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports - Procurement</title>
+<link rel="stylesheet" href="../static/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f5f6fa;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#5c6bc0,#3949ab);color:#fff;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-left a{color:rgba(255,255,255,.75);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px}
+.topbar-left a:hover{color:#fff}
+.topbar-title{font-size:17px;font-weight:700}
+.container{max-width:1100px;margin:0 auto;padding:24px}
+.page-sub{color:#7f8c8d;font-size:14px;margin-bottom:24px}
+.reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+.report-card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid;transition:transform .2s,box-shadow .2s}
+.report-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.10)}
+.report-card-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.report-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0}
+.report-title{font-size:15px;font-weight:700;color:#2c3e50}
+.report-desc{font-size:13px;color:#7f8c8d;margin-bottom:18px;line-height:1.5}
+.report-actions{display:flex;gap:10px}
+.btn-view{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:opacity .2s;color:#fff}
+.btn-view:hover{opacity:.85}
+.btn-dl{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:opacity .2s;background:#27ae60;color:#fff}
+.btn-dl:hover{opacity:.85}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/procurement-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    <span style="color:rgba(255,255,255,.4)">|</span>
+    <span class="topbar-title"><i class="fas fa-chart-bar" style="margin-right:6px"></i>Reports Center</span>
+  </div>
+</div>
+
+<div class="container">
+  <p class="page-sub">View, filter and download procurement and inventory reports.</p>
+  <div class="reports-grid">
+
+    <div class="report-card" style="border-left-color:#3498db">
+      <div class="report-card-header">
+        <div class="report-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-cubes"></i></div>
+        <div class="report-title">Stock Report</div>
+      </div>
+      <div class="report-desc">View current stock levels for all products, grouped by vendor, category or date. Identifies items near reorder levels.</div>
+      <div class="report-actions">
+        <a href="/reports/stock-report" class="btn-view" style="background:#3498db"><i class="fas fa-eye"></i> View</a>
+        <a href="/api/reports/stock-report/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
+      </div>
+    </div>
+
+    <div class="report-card" style="border-left-color:#e67e22">
+      <div class="report-card-header">
+        <div class="report-icon" style="background:linear-gradient(135deg,#e67e22,#d35400)"><i class="fas fa-calendar-times"></i></div>
+        <div class="report-title">Expiry Report</div>
+      </div>
+      <div class="report-desc">Track products approaching or past their expiry date. Essential for FIFO management and waste reduction.</div>
+      <div class="report-actions">
+        <a href="/reports/expiry-report" class="btn-view" style="background:#e67e22"><i class="fas fa-eye"></i> View</a>
+        <a href="/api/reports/expiry-report/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
+      </div>
+    </div>
+
+    <div class="report-card" style="border-left-color:#27ae60">
+      <div class="report-card-header">
+        <div class="report-icon" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-tag"></i></div>
+        <div class="report-title">Price List (PKR)</div>
+      </div>
+      <div class="report-desc">Complete product price list showing cost price, selling price and margin. Filter by category or supplier.</div>
+      <div class="report-actions">
+        <a href="/reports/price-list" class="btn-view" style="background:#27ae60"><i class="fas fa-eye"></i> View</a>
+        <a href="/api/reports/price-list/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
+      </div>
+    </div>
+
+    <div class="report-card" style="border-left-color:#e74c3c">
+      <div class="report-card-header">
+        <div class="report-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-tachometer-alt"></i></div>
+        <div class="report-title">Slow Moving Items</div>
+      </div>
+      <div class="report-desc">Products that have not been sold in the last 30 days. Helps identify dead stock and optimize procurement decisions.</div>
+      <div class="report-actions">
+        <a href="/reports/slow-moving" class="btn-view" style="background:#e74c3c"><i class="fas fa-eye"></i> View</a>
+        <a href="/api/reports/slow-moving/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
+      </div>
+    </div>
+
+    <div class="report-card" style="border-left-color:#9b59b6">
+      <div class="report-card-header">
+        <div class="report-icon" style="background:linear-gradient(135deg,#9b59b6,#8e44ad)"><i class="fas fa-file-invoice-dollar"></i></div>
+        <div class="report-title">Vendor Payments</div>
+      </div>
+      <div class="report-desc">Summary of paid and outstanding amounts per vendor. Useful for accounts payable reconciliation and vendor negotiations.</div>
+      <div class="report-actions">
+        <a href="/reports/vendor-payment" class="btn-view" style="background:#9b59b6"><i class="fas fa-eye"></i> View</a>
+        <a href="/api/reports/vendor-payment/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
+      </div>
+    </div>
+
+    <div class="report-card" style="border-left-color:#1abc9c">
+      <div class="report-card-header">
+        <div class="report-icon" style="background:linear-gradient(135deg,#1abc9c,#16a085)"><i class="fas fa-calendar-day"></i></div>
+        <div class="report-title">Daily Products Added</div>
+      </div>
+      <div class="report-desc">Shows all products registered on a specific date. Track procurement intake and inventory additions over time.</div>
+      <div class="report-actions">
+        <a href="/reports/daily-products" class="btn-view" style="background:#1abc9c"><i class="fas fa-eye"></i> View</a>
+        <a href="/api/reports/daily-products/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

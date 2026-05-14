@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Orders - POS System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',sans-serif;background:#f0f2f8;color:#2d3436;min-height:100vh;}
+
+        /* ── Topbar ── */
+        .topbar{background:linear-gradient(135deg,#27ae60,#2ecc71);color:#fff;padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.25);position:sticky;top:0;z-index:200;}
+        .topbar-left{display:flex;align-items:center;gap:14px;}
+        .topbar-left h1{font-size:17px;font-weight:700;}
+        .topbar-right{display:flex;gap:10px;align-items:center;}
+        .btn{padding:8px 18px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:opacity .2s,transform .15s;white-space:nowrap;}
+        .btn:hover:not(:disabled){opacity:.88;transform:translateY(-1px);}
+        .btn:disabled{opacity:.55;cursor:not-allowed;}
+        .btn-primary{background:#667eea;color:#fff;}
+        .btn-success{background:#27ae60;color:#fff;}
+        .btn-warning{background:#f39c12;color:#fff;}
+        .btn-danger{background:#e74c3c;color:#fff;}
+        .btn-secondary{background:#636e72;color:#fff;}
+        .btn-info{background:#2980b9;color:#fff;}
+        .btn-sm{padding:5px 12px;font-size:12px;}
+        .btn-white{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35);}
+        .btn-white:hover{background:rgba(255,255,255,.28);}
+
+        /* ── Stats Bar ── */
+        .stats-bar{background:#fff;border-bottom:1px solid #e8e8e8;padding:10px 24px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+        .stat-pill{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all .2s;}
+        .stat-pill.all{background:#f0f2f8;color:#636e72;border-color:#dde0e8;}
+        .stat-pill.all.active,.stat-pill.all:hover{background:#27ae60;color:#fff;border-color:#27ae60;}
+        .stat-pill.draft{background:#f5f5f5;color:#7f8c8d;border-color:#ddd;}
+        .stat-pill.draft.active,.stat-pill.draft:hover{background:#636e72;color:#fff;border-color:#636e72;}
+        .stat-pill.sent{background:#fff8e1;color:#f57c00;border-color:#ffca28;}
+        .stat-pill.sent.active,.stat-pill.sent:hover{background:#f39c12;color:#fff;border-color:#f39c12;}
+        .stat-pill.received{background:#e8f5e9;color:#1b5e20;border-color:#66bb6a;}
+        .stat-pill.received.active,.stat-pill.received:hover{background:#27ae60;color:#fff;border-color:#27ae60;}
+        .stat-pill.cancelled{background:#eceff1;color:#546e7a;border-color:#b0bec5;}
+        .stat-pill.cancelled.active,.stat-pill.cancelled:hover{background:#546e7a;color:#fff;border-color:#546e7a;}
+        .stat-count{background:rgba(0,0,0,.12);border-radius:10px;padding:1px 7px;margin-left:4px;font-size:11px;}
+
+        /* ── Main Content ── */
+        .main{max-width:1320px;margin:0 auto;padding:20px;}
+        .filter-bar{background:#fff;border-radius:10px;padding:12px 16px;display:flex;gap:10px;align-items:center;margin-bottom:16px;box-shadow:0 1px 6px rgba(0,0,0,.06);}
+        .filter-bar input{flex:1;padding:8px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none;}
+        .filter-bar input:focus{border-color:#27ae60;}
+
+        /* ── Table Card ── */
+        .card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.07);overflow:hidden;}
+        .card-header{padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;}
+        .card-header h3{font-size:14px;font-weight:700;color:#2d3436;}
+        table{width:100%;border-collapse:collapse;font-size:13px;}
+        th{background:#f8f9fa;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#636e72;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #eee;white-space:nowrap;}
+        td{padding:11px 14px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+        tr:last-child td{border-bottom:none;}
+        tbody tr:hover td{background:#f8fff8;}
+
+        /* ── Badges ── */
+        .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+        .badge-draft{background:#ecf0f1;color:#636e72;}
+        .badge-sent{background:#fff3cd;color:#856404;}
+        .badge-partially_received{background:#dbeafe;color:#1d4ed8;}
+        .badge-fully_received{background:#d1fae5;color:#065f46;}
+        .badge-cancelled{background:#eceff1;color:#546e7a;}
+
+        /* ── Empty / Loading ── */
+        .empty-state{text-align:center;padding:60px 20px;color:#aaa;}
+        .empty-state i{font-size:52px;margin-bottom:14px;display:block;opacity:.35;}
+        .empty-state p{font-size:14px;}
+
+        /* ══════════════════════════════════════════════════
+           CREATE PO — Full Screen
+        ══════════════════════════════════════════════════ */
+        .fs-overlay{display:none;position:fixed;inset:0;background:rgba(30,30,60,.55);z-index:900;align-items:center;justify-content:center;}
+        .fs-modal{background:#f0f2f8;border-radius:16px;width:98vw;max-width:1100px;height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.35);overflow:hidden;animation:popIn .22s ease;}
+        @keyframes popIn{from{transform:scale(.96) translateY(12px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+
+        .fs-header{background:linear-gradient(135deg,#27ae60,#2ecc71);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+        .fs-header h2{font-size:16px;font-weight:700;}
+        .fs-close{background:rgba(255,255,255,.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+        .fs-close:hover{background:rgba(255,255,255,.35);}
+
+        /* PO Header fields strip */
+        .po-header-strip{background:#fff;border-bottom:1px solid #e0e0e0;padding:12px 18px;display:flex;gap:14px;flex-wrap:wrap;flex-shrink:0;}
+        .phf{display:flex;flex-direction:column;gap:4px;min-width:150px;flex:1;}
+        .phf label{font-size:11px;font-weight:700;color:#636e72;text-transform:uppercase;letter-spacing:.4px;}
+        .phf input,.phf select,.phf textarea{padding:7px 10px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:13px;outline:none;font-family:inherit;background:#fff;}
+        .phf input:focus,.phf select:focus{border-color:#27ae60;box-shadow:0 0 0 3px rgba(39,174,96,.1);}
+
+        /* PR Preview banner */
+        .pr-link-banner{background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;margin:10px 18px 0;font-size:13px;color:#1b5e20;display:none;flex-shrink:0;}
+        .pr-link-banner i{color:#27ae60;margin-right:6px;}
+
+        /* Body: PR items left + PO items right */
+        .fs-body{display:flex;flex:1;overflow:hidden;}
+
+        /* ── Left: PR Items Reference ── */
+        .pr-ref-panel{width:360px;flex-shrink:0;background:#fff;border-right:1px solid #e8e8e8;display:flex;flex-direction:column;}
+        .prp-header{padding:12px 14px;border-bottom:1px solid #eee;flex-shrink:0;}
+        .prp-header h4{font-size:13px;font-weight:700;color:#2d3436;margin-bottom:6px;}
+        .pr-select-wrap{display:flex;flex-direction:column;gap:6px;}
+        .pr-select-wrap select{padding:7px 10px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:13px;outline:none;}
+        .pr-select-wrap select:focus{border-color:#27ae60;}
+        .prp-list{flex:1;overflow-y:auto;padding:8px;}
+        .prp-list::-webkit-scrollbar{width:4px;}
+        .prp-list::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px;}
+        .pr-ref-item{background:#f8f9fa;border:1.5px solid #e8e8e8;border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+        .pr-ref-item:hover{background:#e8f5e9;border-color:#a5d6a7;}
+        .pr-ref-item.added{background:#e8f5e9;border-color:#27ae60;}
+        .pri-name{font-size:13px;font-weight:700;color:#2d3436;}
+        .pri-meta{font-size:11px;color:#636e72;margin-top:2px;}
+        .pri-badges{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+        .pri-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;}
+        .pri-badge.qty{background:#e3f2fd;color:#1565c0;}
+        .pri-badge.ordered{background:#f3e5f5;color:#6a1b9a;}
+        .pri-badge.remain{background:#e8f5e9;color:#1b5e20;}
+        .add-line-btn{background:none;border:1px solid #a5d6a7;color:#27ae60;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;float:right;}
+        .add-line-btn:hover{background:#27ae60;color:#fff;}
+        .add-line-btn.done{background:#27ae60;color:#fff;border-color:#27ae60;}
+        .no-pr-hint{text-align:center;padding:30px;color:#bbb;font-size:12px;}
+        .no-pr-hint i{font-size:30px;display:block;margin-bottom:8px;opacity:.3;}
+
+        /* ── Right: PO Line Items ── */
+        .po-items-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+        .pip-header{padding:12px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+        .pip-header h4{font-size:13px;font-weight:700;color:#2d3436;}
+        .pip-body{flex:1;overflow-y:auto;padding:10px 14px;}
+        .pip-body::-webkit-scrollbar{width:4px;}
+        .pip-body::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px;}
+        .item-empty{text-align:center;padding:40px;color:#bbb;}
+        .item-empty i{font-size:36px;display:block;margin-bottom:8px;opacity:.4;}
+        .po-item-card{background:#fff;border:1.5px solid #e8e8e8;border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+        .po-item-card .ic-name{font-size:13px;font-weight:700;color:#2d3436;margin-bottom:2px;}
+        .po-item-card .ic-meta{font-size:11px;color:#636e72;}
+        .po-item-card .ic-fields{display:flex;gap:8px;margin-top:8px;align-items:flex-end;flex-wrap:wrap;}
+        .po-item-card .ic-fields label{display:block;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:3px;}
+        .ic-input{padding:5px 8px;border:1.5px solid #e0e0e0;border-radius:6px;font-size:13px;outline:none;width:90px;}
+        .ic-input:focus{border-color:#27ae60;}
+        .ic-input.wide{width:120px;}
+        .ic-total{font-size:13px;font-weight:700;color:#27ae60;white-space:nowrap;padding-bottom:2px;}
+        .ic-del{background:none;border:none;color:#e74c3c;cursor:pointer;font-size:16px;padding:2px;margin-left:auto;flex-shrink:0;align-self:flex-end;}
+        .ic-del:hover{color:#c0392b;}
+
+        .pip-footer{border-top:1px solid #eee;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:#fff;}
+        .pip-total{font-size:16px;font-weight:700;color:#2d3436;}
+        .pip-total span{color:#27ae60;}
+        .pip-actions{display:flex;gap:10px;align-items:center;}
+
+        /* ══════════════════════════════════════════════════
+           VIEW PO MODAL
+        ══════════════════════════════════════════════════ */
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(30,30,60,.55);z-index:900;align-items:center;justify-content:center;padding:20px;}
+        .modal{display:block;background:#fff;border-radius:14px;width:100%;max-width:820px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:popIn .22s ease;}
+        .modal-header{padding:18px 22px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:5;}
+        .modal-header h4{font-size:16px;font-weight:700;}
+        .modal-body{padding:22px;}
+        .modal-footer{padding:14px 22px;border-top:1px solid #eee;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;position:sticky;bottom:0;background:#fff;z-index:5;}
+        .m-close{background:none;border:none;font-size:22px;cursor:pointer;color:#999;line-height:1;}
+        .m-close:hover{color:#333;}
+
+        .detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+        .dg-item .lbl{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.4px;}
+        .dg-item .val{font-size:14px;font-weight:600;color:#2d3436;margin-top:3px;}
+        .sec-title{font-size:11px;font-weight:700;color:#636e72;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid #f0f0f0;}
+        .view-items{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px;}
+        .view-items th{background:#f8f9fa;padding:8px 12px;font-size:11px;font-weight:700;color:#636e72;text-transform:uppercase;border-bottom:1px solid #eee;}
+        .view-items td{padding:9px 12px;border-bottom:1px solid #f0f0f0;}
+        .view-items tr:last-child td{border-bottom:none;}
+        .item-num{width:24px;height:24px;background:#27ae60;color:#fff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+        .alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:14px;}
+        .alert-danger{background:#fff0f0;border-left:4px solid #e74c3c;color:#c0392b;}
+        .alert-success{background:#eafaf1;border-left:4px solid #27ae60;color:#1e8449;}
+        .alert-warning{background:#fff8e1;border-left:4px solid #f39c12;color:#856404;}
+        .alert-info{background:#e8f4fd;border-left:4px solid #3498db;color:#1565c0;}
+
+        /* Cancel reason modal */
+        .sm-modal{background:#fff;border-radius:14px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:popIn .22s ease;}
+        .sm-header{padding:16px 20px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;}
+        .sm-header h4{font-size:15px;font-weight:700;}
+        .sm-body{padding:18px 20px;}
+        .sm-footer{padding:12px 20px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:flex-end;}
+        .form-group label{display:block;font-size:12px;font-weight:700;color:#636e72;text-transform:uppercase;margin-bottom:5px;}
+        .form-group textarea{width:100%;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none;font-family:inherit;resize:vertical;}
+        .form-group textarea:focus{border-color:#27ae60;}
+    </style>
+</head>
+<body>
+
+<!-- ── Topbar ─────────────────────────────────────── -->
+<div class="topbar">
+    <div class="topbar-left">
+        <button class="btn btn-white btn-sm" onclick="window.location.href='/procurement-dashboard'"><i class="fas fa-arrow-left"></i></button>
+        <h1><i class="fas fa-shopping-cart" style="margin-right:6px;opacity:.85;"></i>Purchase Orders</h1>
+    </div>
+    <div class="topbar-right">
+        <button class="btn btn-white btn-sm" onclick="window.location.href='/procurement/pr'"><i class="fas fa-file-alt"></i> PRs</button>
+        <button class="btn btn-white" onclick="loadPOs()"><i class="fas fa-sync"></i> Refresh</button>
+        <button class="btn btn-white" onclick="openCreate()"><i class="fas fa-plus"></i> New PO</button>
+    </div>
+</div>
+
+<!-- ── Status Filter Pills ──────────────────────────── -->
+<div class="stats-bar">
+    <span class="stat-pill all active" onclick="filterStatus('',this)">All <span class="stat-count" id="cnt-all">0</span></span>
+    <span class="stat-pill draft" onclick="filterStatus('draft',this)">Draft <span class="stat-count" id="cnt-draft">0</span></span>
+    <span class="stat-pill sent" onclick="filterStatus('sent',this)">Sent <span class="stat-count" id="cnt-sent">0</span></span>
+    <span class="stat-pill received" onclick="filterStatus('partially_received',this)">Partial Received <span class="stat-count" id="cnt-partial">0</span></span>
+    <span class="stat-pill received" onclick="filterStatus('fully_received',this)">Fully Received <span class="stat-count" id="cnt-full">0</span></span>
+    <span class="stat-pill cancelled" onclick="filterStatus('cancelled',this)">Cancelled <span class="stat-count" id="cnt-cancelled">0</span></span>
+</div>
+
+<!-- ── Main ───────────────────────────────────────── -->
+<div class="main">
+    <div class="filter-bar">
+        <i class="fas fa-search" style="color:#aaa;"></i>
+        <input type="text" id="poSearch" placeholder="Search by PO number or vendor…" oninput="filterTable()">
+        <button class="btn btn-success btn-sm" onclick="openCreate()"><i class="fas fa-plus"></i> New PO</button>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 id="tableTitle">All Purchase Orders</h3>
+            <span style="font-size:12px;color:#999;" id="tableCount"></span>
+        </div>
+        <div id="poTableWrap">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     CREATE PO — FULL SCREEN MODAL
+══════════════════════════════════════════════════ -->
+<div class="fs-overlay" id="createOverlay">
+    <div class="fs-modal">
+        <!-- Header -->
+        <div class="fs-header">
+            <h2><i class="fas fa-shopping-cart" style="margin-right:8px;opacity:.8;"></i>Create Purchase Order</h2>
+            <button class="fs-close" onclick="closeCreate()" title="Close">&times;</button>
+        </div>
+
+        <!-- PO Header Fields -->
+        <div class="po-header-strip">
+            <div class="phf" style="flex:1.5;min-width:200px;">
+                <label>Vendor *</label>
+                <select id="poVendor" onchange="onVendorChange()">
+                    <option value="">— Select Vendor —</option>
+                </select>
+                <div id="vendorDiscountNote" style="display:none;font-size:11px;color:#1e8449;margin-top:3px;font-weight:700;"></div>
+            </div>
+            <div class="phf">
+                <label>Expected Delivery</label>
+                <input type="date" id="poDelivery">
+            </div>
+            <div class="phf">
+                <label>Payment Terms</label>
+                <select id="poPaymentTerms">
+                    <option value="">— Select Terms —</option>
+                </select>
+            </div>
+            <div class="phf" style="flex:1.5;">
+                <label>Notes / Remarks</label>
+                <input type="text" id="poNotes" placeholder="Optional notes">
+            </div>
+        </div>
+
+        <!-- Body: PR Reference | PO Line Items -->
+        <div class="fs-body">
+            <!-- LEFT: PR Reference Panel -->
+            <div class="pr-ref-panel">
+                <div class="prp-header">
+                    <h4><i class="fas fa-file-alt" style="color:#27ae60;margin-right:6px;"></i>Link from PR (optional)</h4>
+                    <div class="pr-select-wrap">
+                        <select id="prSelector" onchange="loadPRItems()">
+                            <option value="">— Select Approved PR —</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="prp-list" id="prItemsList">
+                    <div class="no-pr-hint">
+                        <i class="fas fa-file-alt"></i>
+                        Select an approved PR to auto-fill order items
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: PO Line Items -->
+            <div class="po-items-panel">
+                <div class="pip-header">
+                    <h4><i class="fas fa-list-ul" style="color:#27ae60;margin-right:6px;"></i>Order Items <span id="itemCountBadge" style="background:#27ae60;color:#fff;border-radius:12px;padding:1px 8px;font-size:11px;margin-left:4px;">0</span></h4>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-sm btn-info" onclick="addManualItem()"><i class="fas fa-plus"></i> Add Manual</button>
+                        <button class="btn btn-sm btn-secondary" onclick="clearAllItems()"><i class="fas fa-trash"></i> Clear</button>
+                    </div>
+                </div>
+                <div class="pip-body" id="itemsContainer">
+                    <div class="item-empty" id="itemsEmpty">
+                        <i class="fas fa-hand-point-left"></i>
+                        <p style="font-size:13px;color:#bbb;">Select items from a PR on the left, or click "Add Manual"</p>
+                    </div>
+                </div>
+                <div class="pip-footer">
+                    <div class="pip-total">Order Total: <span id="grandTotal">PKR 0.00</span></div>
+                    <div class="pip-actions">
+                        <div id="createAlertInline"></div>
+                        <button class="btn btn-secondary" onclick="closeCreate()">Cancel</button>
+                        <button class="btn btn-success" id="savePOBtn" onclick="savePO()"><i class="fas fa-save"></i> Create PO</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     VIEW PO MODAL
+══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="viewOverlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h4 id="viewTitle">PO Details</h4>
+            <button class="m-close" onclick="closeView()">&times;</button>
+        </div>
+        <div class="modal-body" id="viewBody">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>
+        </div>
+        <div class="modal-footer" id="viewFooter"></div>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     CANCEL PO MODAL
+══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="cancelOverlay">
+    <div class="sm-modal">
+        <div class="sm-header">
+            <h4>Cancel Purchase Order</h4>
+            <button class="m-close" onclick="closeCancelModal()">&times;</button>
+        </div>
+        <div class="sm-body">
+            <div class="form-group">
+                <label>Reason (optional)</label>
+                <textarea id="cancelReason" rows="3" placeholder="Why is this PO being cancelled?"></textarea>
+            </div>
+        </div>
+        <div class="sm-footer">
+            <button class="btn btn-secondary btn-sm" onclick="closeCancelModal()">Back</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmCancel()"><i class="fas fa-ban"></i> Cancel PO</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+/* ── State ─────────────────────────────────────────── */
+let allPOs        = [];
+let allVendors    = [];
+let prItems       = [];   // items from selected PR
+let poLineItems   = [];   // { product_id, product_name, pr_item_id, qty, unit, unit_price, from_pr }
+let currentFilter = '';
+let currentPOId   = null;
+
+/* ── Utility ────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const fmt = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+function showInlineAlert(msg, type='danger') {
+    $('createAlertInline').innerHTML = `<span style="font-size:12px;color:${type==='danger'?'#e74c3c':'#27ae60'};font-weight:600;">${msg}</span>`;
+    setTimeout(() => { $('createAlertInline').innerHTML = ''; }, 4000);
+}
+
+function statusBadge(s) {
+    const map = {
+        draft:'badge-draft', sent:'badge-sent',
+        partially_received:'badge-partially_received',
+        fully_received:'badge-fully_received',
+        cancelled:'badge-cancelled'
+    };
+    const labels = {
+        draft:'Draft', sent:'Sent to Vendor',
+        partially_received:'Partial Received',
+        fully_received:'Fully Received',
+        cancelled:'Cancelled'
+    };
+    return `<span class="badge ${map[s]||'badge-draft'}">${labels[s]||s}</span>`;
+}
+
+/* ── Load PO List ───────────────────────────────────── */
+async function loadPOs() {
+    $('poTableWrap').innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div>';
+    try {
+        const data = await fetch('/api/procurement/po').then(r => r.json());
+        allPOs = data;
+        updateCounts(data);
+        renderTable(data);
+    } catch(e) {
+        $('poTableWrap').innerHTML = '<div class="empty-state" style="color:#e74c3c;"><i class="fas fa-exclamation-circle"></i><p>Failed to load.</p></div>';
+    }
+}
+
+function updateCounts(data) {
+    const count = s => data.filter(d => d.status === s).length;
+    $('cnt-all').textContent      = data.length;
+    $('cnt-draft').textContent    = count('draft');
+    $('cnt-sent').textContent     = count('sent');
+    $('cnt-partial').textContent  = count('partially_received');
+    $('cnt-full').textContent     = count('fully_received');
+    $('cnt-cancelled').textContent= count('cancelled');
+}
+
+function renderTable(data) {
+    if (!data.length) {
+        $('poTableWrap').innerHTML = '<div class="empty-state"><i class="fas fa-shopping-cart"></i><p>No purchase orders found</p></div>';
+        $('tableCount').textContent = '';
+        return;
+    }
+    $('tableCount').textContent = `${data.length} record(s)`;
+    const rows = data.map(po => `<tr>
+        <td><strong style="color:#27ae60;">${po.doc_number||'—'}</strong></td>
+        <td><div style="font-weight:600;">${po.vendor_name||'—'}</div>${po.pr_doc_number?`<div style="font-size:11px;color:#999;">Ref: ${po.pr_doc_number}</div>`:''}</td>
+        <td style="text-align:center;">${(po.items||[]).length}</td>
+        <td><strong>${fmt(po.total_amount)}</strong></td>
+        <td>${statusBadge(po.status||'draft')}</td>
+        <td style="color:#636e72;">${po.expected_delivery||'—'}</td>
+        <td style="color:#636e72;">${(po.created_at||'').slice(0,10)||'—'}</td>
+        <td><button class="btn btn-primary btn-sm" onclick="viewPO('${po._id}')"><i class="fas fa-eye"></i> View</button></td>
+    </tr>`).join('');
+    $('poTableWrap').innerHTML = `<table>
+        <thead><tr>
+            <th>PO No.</th><th>Vendor / PR Ref</th><th style="text-align:center;">Items</th>
+            <th>Total</th><th>Status</th><th>Delivery</th><th>Date</th><th>Action</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function filterStatus(status, el) {
+    currentFilter = status;
+    document.querySelectorAll('.stat-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    const filtered = status ? allPOs.filter(p => p.status === status) : allPOs;
+    $('tableTitle').textContent = status ? status.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) + ' Orders' : 'All Purchase Orders';
+    $('poSearch').value = '';
+    renderTable(filtered);
+}
+
+function filterTable() {
+    const q = $('poSearch').value.toLowerCase();
+    const base = currentFilter ? allPOs.filter(p => p.status === currentFilter) : allPOs;
+    const filtered = q ? base.filter(p =>
+        (p.doc_number||'').toLowerCase().includes(q) ||
+        (p.vendor_name||'').toLowerCase().includes(q)
+    ) : base;
+    renderTable(filtered);
+}
+
+/* ── Create PO ──────────────────────────────────────── */
+async function openCreate(prIdParam) {
+    poLineItems = [];
+    prItems = [];
+    $('poVendor').innerHTML = '<option value="">— Loading vendors… —</option>';
+    $('prSelector').innerHTML = '<option value="">— Loading PRs… —</option>';
+    $('poDelivery').value = '';
+    $('poPaymentTerms').value = '';
+    $('poNotes').value = '';
+    $('prItemsList').innerHTML = '<div class="no-pr-hint"><i class="fas fa-spinner fa-spin"></i><br>Loading…</div>';
+    refreshItemsPanel();
+    $('createAlertInline').innerHTML = '';
+    $('createOverlay').style.display = 'flex';
+    await loadDropdowns(prIdParam);
+}
+
+function closeCreate() { $('createOverlay').style.display = 'none'; }
+
+function onVendorChange() {
+    const sel = $('poVendor');
+    const opt = sel.options[sel.selectedIndex];
+    const disc = parseFloat(opt?.dataset?.discount || 0);
+    const note = $('vendorDiscountNote');
+    if (disc > 0) {
+        note.style.display = 'block';
+        note.innerHTML = `<i class="fas fa-tag"></i> ${disc}% trade discount will be applied to unit prices`;
+        if (poLineItems.length) {
+            if (confirm(`Apply ${disc}% trade discount to all current line item prices?`)) {
+                poLineItems.forEach(item => {
+                    item.unit_price = +(item.unit_price * (1 - disc / 100)).toFixed(2);
+                });
+                refreshItemsPanel();
+                showT(`${disc}% vendor discount applied to all items`, 'success');
+            }
+        }
+    } else {
+        note.style.display = 'none';
+    }
+}
+
+async function loadDropdowns(prIdParam) {
+    // Load vendors
+    try {
+        const vendors = await fetch('/api/vendors').then(r => r.json());
+        allVendors = vendors;
+        $('poVendor').innerHTML = '<option value="">— Select Vendor —</option>' +
+            vendors.map(v => {
+                const disc = parseFloat(v.trade_discount||0);
+                const discLabel = disc > 0 ? ` 🏷 ${disc}% off` : '';
+                return `<option value="${v._id}" data-discount="${disc}">${v.name}${v.city?' · '+v.city:''}${discLabel}</option>`;
+            }).join('');
+        $('vendorDiscountNote').style.display = 'none';
+    } catch(e) {
+        $('poVendor').innerHTML = '<option value="">— Failed to load vendors —</option>';
+    }
+
+    // Load approved + partially_ordered PRs
+    try {
+        const [approved, partial] = await Promise.all([
+            fetch('/api/procurement/pr?status=approved').then(r => r.json()),
+            fetch('/api/procurement/pr?status=partially_ordered').then(r => r.json())
+        ]);
+        const allPrs = [...approved, ...partial];
+        $('prSelector').innerHTML = '<option value="">— Select PR (optional) —</option>' +
+            allPrs.map(pr => `<option value="${pr._id}">${pr.doc_number} — ${pr.title}${pr.status==='partially_ordered'?' (Partial)':''}</option>`).join('');
+
+        if (prIdParam) {
+            $('prSelector').value = prIdParam;
+            await loadPRItems();
+        } else {
+            $('prItemsList').innerHTML = '<div class="no-pr-hint"><i class="fas fa-file-alt"></i>Select an approved PR to auto-fill items</div>';
+        }
+    } catch(e) {
+        $('prSelector').innerHTML = '<option value="">— Failed to load PRs —</option>';
+        $('prItemsList').innerHTML = '<div class="no-pr-hint" style="color:#e74c3c;">Failed to load PRs</div>';
+    }
+}
+
+async function loadPRItems() {
+    const prId = $('prSelector').value;
+    poLineItems = [];
+    refreshItemsPanel();
+    if (!prId) {
+        $('prItemsList').innerHTML = '<div class="no-pr-hint"><i class="fas fa-file-alt"></i>Select an approved PR to auto-fill items</div>';
+        return;
+    }
+    $('prItemsList').innerHTML = '<div class="no-pr-hint"><i class="fas fa-spinner fa-spin"></i><br>Loading PR items…</div>';
+    try {
+        const pr = await fetch(`/api/procurement/pr/${prId}`).then(r => r.json());
+        prItems = (pr.items || []).map(it => ({
+            ...it,
+            remaining: Math.max(0, (it.qty_requested||0) - (it.qty_ordered||0))
+        }));
+        renderPRItems();
+    } catch(e) {
+        $('prItemsList').innerHTML = '<div class="no-pr-hint" style="color:#e74c3c;">Failed to load PR items</div>';
+    }
+}
+
+function renderPRItems() {
+    if (!prItems.length) {
+        $('prItemsList').innerHTML = '<div class="no-pr-hint"><i class="fas fa-inbox"></i>No items in this PR</div>';
+        return;
+    }
+    const addedIds = new Set(poLineItems.filter(l => l.pr_item_id).map(l => l.pr_item_id));
+    $('prItemsList').innerHTML = prItems.map(it => {
+        const isAdded = addedIds.has(it._id || it.product_id);
+        const hasRemaining = it.remaining > 0;
+        return `<div class="pr-ref-item ${isAdded?'added':''}" id="prirow_${it._id||it.product_id}">
+            <button class="add-line-btn ${isAdded?'done':''}" onclick="addFromPR('${it._id||it.product_id}');event.stopPropagation();" ${!hasRemaining||isAdded?'disabled':''}>
+                ${isAdded ? '✓ Added' : (hasRemaining ? '+ Add' : 'Done')}
+            </button>
+            <div class="pri-name">${it.product_name||'—'}</div>
+            <div class="pri-meta">${it.unit||''}</div>
+            <div class="pri-badges">
+                <span class="pri-badge qty">Requested: ${it.qty_requested||0}</span>
+                <span class="pri-badge ordered">Ordered: ${it.qty_ordered||0}</span>
+                <span class="pri-badge remain" style="${!hasRemaining?'background:#fce4e4;color:#c0392b;':''}">Remaining: ${it.remaining}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function addFromPR(prItemKey) {
+    const it = prItems.find(i => (i._id||i.product_id) === prItemKey);
+    if (!it || it.remaining <= 0) return;
+    if (poLineItems.some(l => l.pr_item_id === prItemKey)) return;
+    const vendorOpt = $('poVendor').options[$('poVendor').selectedIndex];
+    const disc = parseFloat(vendorOpt?.dataset?.discount || 0);
+    const basePrice = it.estimated_unit_price || 0;
+    const finalPrice = disc > 0 ? +(basePrice * (1 - disc/100)).toFixed(2) : basePrice;
+    poLineItems.push({
+        product_id: it.product_id || '',
+        product_name: it.product_name,
+        pr_item_id: prItemKey,
+        qty: it.remaining,
+        unit: it.unit || '',
+        unit_price: finalPrice,
+        from_pr: true
+    });
+    refreshItemsPanel();
+    renderPRItems();
+}
+
+function addManualItem() {
+    poLineItems.push({ product_id:'', product_name:'', pr_item_id:'', qty:1, unit:'', unit_price:0, from_pr:false });
+    refreshItemsPanel();
+    // focus the name input of last item
+    setTimeout(() => {
+        const inputs = document.querySelectorAll('.po-item-card .name-input');
+        if (inputs.length) inputs[inputs.length-1].focus();
+    }, 50);
+}
+
+function removeItem(idx) {
+    poLineItems.splice(idx, 1);
+    refreshItemsPanel();
+    renderPRItems();
+}
+
+function clearAllItems() {
+    if (poLineItems.length && !confirm('Remove all order items?')) return;
+    poLineItems = [];
+    refreshItemsPanel();
+    renderPRItems();
+}
+
+function updateLineItem(idx, field, value) {
+    poLineItems[idx][field] = (field === 'product_name' || field === 'unit') ? value : (parseFloat(value) || 0);
+    const total = (poLineItems[idx].qty||0) * (poLineItems[idx].unit_price||0);
+    const lineEl = $('linetotal_' + idx);
+    if (lineEl) lineEl.textContent = fmt(total);
+    calcTotal();
+}
+
+function refreshItemsPanel() {
+    $('itemCountBadge').textContent = poLineItems.length;
+    $('itemsEmpty').style.display = poLineItems.length ? 'none' : 'block';
+    const existing = document.querySelectorAll('#itemsContainer .po-item-card');
+    existing.forEach(e => e.remove());
+    const cards = poLineItems.map((item, idx) => {
+        const total = (item.qty||0) * (item.unit_price||0);
+        return `<div class="po-item-card">
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+                <div style="flex:1;">
+                    <div class="ic-name">${item.from_pr ? item.product_name : `<input class="ic-input wide name-input" placeholder="Product name" value="${item.product_name}" onchange="updateLineItem(${idx},'product_name',this.value)">`}</div>
+                    ${item.from_pr ? `<div class="ic-meta">From PR · ${item.unit}</div>` : ''}
+                    <div class="ic-fields">
+                        <div>
+                            <label>Qty *</label>
+                            <input type="number" class="ic-input" value="${item.qty}" min="0.001" step="any" onchange="updateLineItem(${idx},'qty',this.value)">
+                        </div>
+                        <div>
+                            <label>Unit</label>
+                            <input type="text" class="ic-input" value="${item.unit}" style="width:70px;" ${item.from_pr?'readonly':''} onchange="updateLineItem(${idx},'unit',this.value)">
+                        </div>
+                        <div>
+                            <label>Unit Price *</label>
+                            <input type="number" class="ic-input" value="${item.unit_price}" min="0" step="0.01" onchange="updateLineItem(${idx},'unit_price',this.value)">
+                        </div>
+                        <div style="padding-top:16px;">
+                            <span class="ic-total" id="linetotal_${idx}">${fmt(total)}</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="ic-del" onclick="removeItem(${idx})" title="Remove"><i class="fas fa-times-circle"></i></button>
+            </div>
+        </div>`;
+    }).join('');
+    $('itemsContainer').insertAdjacentHTML('beforeend', cards);
+    calcTotal();
+}
+
+function calcTotal() {
+    const total = poLineItems.reduce((s, i) => s + (i.qty||0)*(i.unit_price||0), 0);
+    $('grandTotal').textContent = fmt(total);
+}
+
+async function savePO() {
+    const vendorSel = $('poVendor');
+    if (!vendorSel.value) { showInlineAlert('Please select a vendor.'); return; }
+    if (!poLineItems.length) { showInlineAlert('Add at least one order item.'); return; }
+
+    // validate names for manual items
+    for (const it of poLineItems) {
+        if (!it.from_pr && !it.product_name.trim()) { showInlineAlert('Fill in product name for all manual items.'); return; }
+        if (!it.qty || it.qty <= 0) { showInlineAlert('All quantities must be greater than 0.'); return; }
+    }
+
+    const prId = $('prSelector').value;
+    const payload = {
+        pr_id: prId || null,
+        vendor_id: vendorSel.value,
+        vendor_name: vendorSel.options[vendorSel.selectedIndex].text.split(' · ')[0],
+        expected_delivery: $('poDelivery').value,
+        payment_terms: $('poPaymentTerms').value.trim(),
+        notes: $('poNotes').value.trim(),
+        items: poLineItems.map(it => ({
+            product_id: it.product_id || '',
+            product_name: it.product_name,
+            pr_item_id: it.pr_item_id || '',
+            qty_ordered: it.qty,
+            unit: it.unit,
+            unit_price: it.unit_price,
+            line_total: it.qty * it.unit_price
+        }))
+    };
+
+    $('savePOBtn').disabled = true;
+    $('savePOBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating…';
+
+    try {
+        const d = await fetch('/api/procurement/po', {
+            method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+        }).then(r => r.json());
+
+        if (d.success) {
+            closeCreate();
+            await loadPOs();
+        } else {
+            showInlineAlert(d.message || 'Failed to create PO');
+        }
+    } catch(e) {
+        showInlineAlert('Connection error.');
+    } finally {
+        $('savePOBtn').disabled = false;
+        $('savePOBtn').innerHTML = '<i class="fas fa-save"></i> Create PO';
+    }
+}
+
+/* ── View PO ────────────────────────────────────────── */
+async function viewPO(id) {
+    currentPOId = id;
+    $('viewBody').innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>';
+    $('viewFooter').innerHTML = '';
+    $('viewOverlay').style.display = 'flex';
+
+    try {
+        const po = await fetch(`/api/procurement/po/${id}`).then(r => r.json());
+        $('viewTitle').textContent = `${po.doc_number} — ${po.vendor_name||''}`;
+
+        const itemRows = (po.items||[]).map((it, idx) => `<tr>
+            <td><span class="item-num">${idx+1}</span></td>
+            <td><strong>${it.product_name||'—'}</strong></td>
+            <td style="text-align:center;">${it.qty_ordered||0}</td>
+            <td style="text-align:center;">${it.qty_received||0}</td>
+            <td>${it.unit||'—'}</td>
+            <td>${fmt(it.unit_price)}</td>
+            <td><strong>${fmt(it.line_total||(it.qty_ordered||0)*(it.unit_price||0))}</strong></td>
+        </tr>`).join('');
+
+        $('viewBody').innerHTML = `
+            <div class="detail-grid">
+                <div class="dg-item"><div class="lbl">Status</div><div class="val">${statusBadge(po.status)}</div></div>
+                <div class="dg-item"><div class="lbl">Vendor</div><div class="val">${po.vendor_name||'—'}</div></div>
+                <div class="dg-item"><div class="lbl">Order Total</div><div class="val" style="color:#27ae60;font-size:16px;">${fmt(po.total_amount)}</div></div>
+                <div class="dg-item"><div class="lbl">Expected Delivery</div><div class="val">${po.expected_delivery||'—'}</div></div>
+                <div class="dg-item"><div class="lbl">Payment Terms</div><div class="val">${po.payment_terms||'—'}</div></div>
+                <div class="dg-item"><div class="lbl">Created</div><div class="val">${(po.created_at||'').slice(0,10)||'—'}</div></div>
+            </div>
+            ${po.pr_id ? `<div style="font-size:13px;color:#636e72;margin-bottom:14px;padding:10px 14px;background:#e8f5e9;border-radius:8px;"><i class="fas fa-link" style="color:#27ae60;margin-right:6px;"></i>Linked PR: <strong>${po.pr_doc_number||po.pr_id}</strong></div>` : ''}
+            ${po.notes ? `<div style="font-size:13px;color:#636e72;margin-bottom:14px;padding:10px 14px;background:#f8f9fa;border-radius:8px;"><i class="fas fa-sticky-note" style="margin-right:6px;color:#27ae60;"></i>${po.notes}</div>` : ''}
+            <div class="sec-title">Order Items</div>
+            <table class="view-items">
+                <thead><tr><th>#</th><th>Product</th><th style="text-align:center;">Qty Ordered</th><th style="text-align:center;">Qty Received</th><th>Unit</th><th>Unit Price</th><th>Line Total</th></tr></thead>
+                <tbody>${itemRows}</tbody>
+                <tfoot><tr>
+                    <td colspan="5"></td>
+                    <td style="font-weight:700;font-size:13px;padding:10px 12px;">TOTAL</td>
+                    <td style="font-weight:800;font-size:14px;color:#27ae60;padding:10px 12px;">${fmt(po.total_amount)}</td>
+                </tr></tfoot>
+            </table>`;
+
+        // Footer buttons
+        let btns = `<button class="btn btn-secondary" onclick="closeView()">Close</button>`;
+        if (po.status === 'draft') {
+            btns += `<button class="btn btn-success" onclick="sendPO('${po._id}')"><i class="fas fa-paper-plane"></i> Send to Vendor</button>`;
+            btns += `<button class="btn btn-danger" onclick="openCancelModal('${po._id}')"><i class="fas fa-ban"></i> Cancel PO</button>`;
+        }
+        if (po.status === 'sent' || po.status === 'partially_received') {
+            btns += `<button class="btn btn-primary" onclick="window.location.href='/procurement/gr?po_id=${po._id}'"><i class="fas fa-truck"></i> Create GR</button>`;
+        }
+        $('viewFooter').innerHTML = btns;
+    } catch(e) {
+        $('viewBody').innerHTML = '<div class="alert alert-danger">Failed to load PO details.</div>';
+    }
+}
+
+function closeView() { $('viewOverlay').style.display = 'none'; }
+
+async function sendPO(id) {
+    if (!confirm('Mark this PO as sent to vendor?')) return;
+    try {
+        const d = await fetch(`/api/procurement/po/${id}/send`, {method:'POST'}).then(r => r.json());
+        if (d.success) { closeView(); await loadPOs(); }
+        else alert(d.message || 'Failed to send PO');
+    } catch(e) { alert('Connection error.'); }
+}
+
+/* ── Cancel PO ──────────────────────────────────────── */
+function openCancelModal(id) {
+    currentPOId = id;
+    $('cancelReason').value = '';
+    closeView();
+    $('cancelOverlay').style.display = 'flex';
+}
+
+function closeCancelModal() { $('cancelOverlay').style.display = 'none'; }
+
+async function confirmCancel() {
+    try {
+        const d = await fetch(`/api/procurement/po/${currentPOId}/cancel`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ reason: $('cancelReason').value.trim() })
+        }).then(r => r.json());
+        if (d.success) { closeCancelModal(); await loadPOs(); }
+        else alert(d.message || 'Failed to cancel PO');
+    } catch(e) { alert('Connection error.'); }
+}
+
+/* ── Payment Terms dropdown ─────────────────────────── */
+async function loadPaymentTerms() {
+    try {
+        const terms = await fetch('/api/payment-terms').then(r => r.json());
+        const sel = $('poPaymentTerms');
+        const current = sel.value;
+        sel.innerHTML = '<option value="">— Select Terms —</option>' +
+            terms.map(t => `<option value="${t.name}">${t.name}${t.description ? ' — ' + t.description : ''}</option>`).join('');
+        if (current) sel.value = current;
+    } catch(e) {}
+}
+
+/* ── Init ───────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadPOs();
+    loadPaymentTerms();
+    // Auto-open create modal if ?pr_id= is in URL
+    const params = new URLSearchParams(window.location.search);
+    const prId = params.get('pr_id');
+    if (prId) openCreate(prId);
+});
+
+// Close overlays on backdrop click
+['createOverlay','viewOverlay','cancelOverlay'].forEach(id => {
+    $(id).addEventListener('click', function(e) {
+        if (e.target === this) {
+            if (id === 'createOverlay') closeCreate();
+            else if (id === 'viewOverlay') closeView();
+            else closeCancelModal();
+        }
+    });
+});
+</script>
+</body>
+</html>

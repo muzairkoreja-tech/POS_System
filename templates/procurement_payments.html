@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Payments - POS System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',sans-serif;background:#f0f2f8;color:#2d3436;min-height:100vh;}
+
+        .topbar{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.25);position:sticky;top:0;z-index:200;}
+        .topbar-left{display:flex;align-items:center;gap:14px;}
+        .topbar-left h1{font-size:17px;font-weight:700;}
+        .topbar-right{display:flex;gap:10px;align-items:center;}
+        .btn{padding:8px 18px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:opacity .2s,transform .15s;white-space:nowrap;}
+        .btn:hover:not(:disabled){opacity:.88;transform:translateY(-1px);}
+        .btn:disabled{opacity:.55;cursor:not-allowed;}
+        .btn-primary{background:#667eea;color:#fff;}
+        .btn-success{background:#27ae60;color:#fff;}
+        .btn-danger{background:#e74c3c;color:#fff;}
+        .btn-secondary{background:#636e72;color:#fff;}
+        .btn-teal{background:#16a085;color:#fff;}
+        .btn-sm{padding:5px 12px;font-size:12px;}
+        .btn-white{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35);}
+        .btn-white:hover{background:rgba(255,255,255,.28);}
+
+        .main{max-width:1320px;margin:0 auto;padding:20px;}
+
+        /* ── KPI Summary Cards ── */
+        .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px;}
+        .kpi-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 12px rgba(0,0,0,.07);border-left:4px solid #16a085;}
+        .kpi-card .kc-label{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.5px;}
+        .kpi-card .kc-value{font-size:26px;font-weight:800;color:#2d3436;margin-top:6px;}
+        .kpi-card .kc-sub{font-size:12px;color:#636e72;margin-top:2px;}
+        .kpi-card.purple{border-color:#8e44ad;}  .kpi-card.purple .kc-value{color:#8e44ad;}
+        .kpi-card.red{border-color:#e74c3c;}     .kpi-card.red .kc-value{color:#e74c3c;}
+        .kpi-card.orange{border-color:#f39c12;}  .kpi-card.orange .kc-value{color:#f39c12;}
+
+        .card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.07);overflow:hidden;}
+        .card-header{padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;}
+        .card-header h3{font-size:14px;font-weight:700;color:#2d3436;}
+        table{width:100%;border-collapse:collapse;font-size:13px;}
+        th{background:#f8f9fa;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#636e72;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #eee;white-space:nowrap;}
+        td{padding:11px 14px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+        tr:last-child td{border-bottom:none;}
+        tbody tr:hover td{background:#f0faf8;}
+
+        .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:capitalize;white-space:nowrap;}
+        .badge-bank_transfer{background:#dbeafe;color:#1d4ed8;}
+        .badge-cash{background:#d1fae5;color:#065f46;}
+        .badge-cheque{background:#fef3c7;color:#92400e;}
+        .badge-online{background:#ede9fe;color:#5b21b6;}
+
+        .empty-state{text-align:center;padding:60px 20px;color:#aaa;}
+        .empty-state i{font-size:52px;margin-bottom:14px;display:block;opacity:.35;}
+        .empty-state p{font-size:14px;}
+
+        /* ══ Modal ══ */
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(30,30,60,.55);z-index:900;align-items:center;justify-content:center;padding:20px;}
+        .modal{display:block;background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:popIn .22s ease;}
+        .modal.wide{max-width:680px;}
+        @keyframes popIn{from{transform:scale(.96) translateY(12px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+        .modal-header{padding:18px 22px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:5;}
+        .modal-header h4{font-size:16px;font-weight:700;}
+        .modal-body{padding:22px;}
+        .modal-footer{padding:14px 22px;border-top:1px solid #eee;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;position:sticky;bottom:0;background:#fff;z-index:5;}
+        .m-close{background:none;border:none;font-size:22px;cursor:pointer;color:#999;line-height:1;}
+        .m-close:hover{color:#333;}
+
+        .form-group{margin-bottom:16px;}
+        .form-group label{display:block;font-size:11px;font-weight:700;color:#636e72;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+        .form-group input,.form-group select{width:100%;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none;font-family:inherit;}
+        .form-group input:focus,.form-group select:focus{border-color:#16a085;box-shadow:0 0 0 3px rgba(22,160,133,.1);}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+        /* Invoice info box */
+        .inv-info-box{background:#e8f8f5;border:1.5px solid #a8dbd4;border-radius:10px;padding:14px 16px;margin-bottom:16px;}
+        .inv-info-title{font-size:13px;font-weight:700;color:#0d6b57;margin-bottom:10px;}
+        .inv-info-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#2d3436;}
+        .inv-info-row .due{color:#e74c3c;font-weight:800;font-size:15px;}
+        .progress-bar-wrap{background:#d0ede8;border-radius:6px;height:7px;overflow:hidden;margin-top:8px;}
+        .progress-bar{height:100%;background:linear-gradient(90deg,#16a085,#1abc9c);border-radius:6px;transition:width .4s;}
+
+        /* Amount input */
+        .amount-input-wrap{position:relative;}
+        .amount-input-wrap .currency{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;font-weight:700;color:#16a085;}
+        .amount-input-wrap input{padding-left:28px;font-size:18px;font-weight:700;color:#2d3436;}
+        .quick-btns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+        .quick-btn{padding:4px 12px;border:1.5px solid #16a085;background:none;color:#16a085;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;}
+        .quick-btn:hover{background:#16a085;color:#fff;}
+
+        /* Payment method grid */
+        .method-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+        .method-option{padding:10px 12px;border:2px solid #e0e0e0;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;text-align:center;color:#636e72;transition:all .15s;}
+        .method-option i{display:block;font-size:18px;margin-bottom:4px;}
+        .method-option:hover{border-color:#16a085;color:#16a085;}
+        .method-option.selected{border-color:#16a085;background:#e8f8f5;color:#0d6b57;}
+
+        .alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:14px;}
+        .alert-danger{background:#fff0f0;border-left:4px solid #e74c3c;color:#c0392b;}
+        .alert-success{background:#eafaf1;border-left:4px solid #27ae60;color:#1e8449;}
+
+        /* View payment detail */
+        .pay-detail-box{background:#f0faf8;border:1.5px solid #a8dbd4;border-radius:12px;padding:20px;}
+        .pay-amount-display{font-size:36px;font-weight:800;color:#16a085;text-align:center;padding:16px 0;}
+        .pay-rows{margin-top:10px;}
+        .pay-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #d0ede8;font-size:13px;}
+        .pay-row:last-child{border-bottom:none;}
+        .pay-row .label{color:#636e72;font-weight:600;}
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="topbar-left">
+        <button class="btn btn-white btn-sm" onclick="window.location.href='/procurement-dashboard'"><i class="fas fa-arrow-left"></i></button>
+        <h1><i class="fas fa-money-bill-wave" style="margin-right:6px;opacity:.85;"></i>Vendor Payments</h1>
+    </div>
+    <div class="topbar-right">
+        <button class="btn btn-white btn-sm" onclick="window.location.href='/procurement/invoices'"><i class="fas fa-file-invoice-dollar"></i> Invoices</button>
+        <button class="btn btn-white" onclick="loadPayments();loadSummary()"><i class="fas fa-sync"></i> Refresh</button>
+        <button class="btn btn-white" onclick="openCreate()"><i class="fas fa-plus"></i> New Payment</button>
+    </div>
+</div>
+
+<div class="main">
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card">
+            <div class="kc-label">Total Payments</div>
+            <div class="kc-value" id="kpiCount">—</div>
+            <div class="kc-sub">Transactions recorded</div>
+        </div>
+        <div class="kpi-card purple">
+            <div class="kc-label">Total Paid</div>
+            <div class="kc-value" id="kpiPaid">—</div>
+            <div class="kc-sub">Amount disbursed</div>
+        </div>
+        <div class="kpi-card red">
+            <div class="kc-label">Outstanding Balance</div>
+            <div class="kc-value" id="kpiDue">—</div>
+            <div class="kc-sub">Across all invoices</div>
+        </div>
+        <div class="kpi-card orange">
+            <div class="kc-label">Pending Invoices</div>
+            <div class="kc-value" id="kpiPending">—</div>
+            <div class="kc-sub">Awaiting payment</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Payment History</h3>
+            <button class="btn btn-teal btn-sm" onclick="loadPayments()"><i class="fas fa-sync"></i> Refresh</button>
+        </div>
+        <div id="payTableWrap">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══ CREATE PAYMENT MODAL ══ -->
+<div class="modal-overlay" id="createOverlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h4><i class="fas fa-money-bill-wave" style="color:#16a085;margin-right:8px;"></i>Record Payment</h4>
+            <button class="m-close" onclick="closeCreate()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="createAlert"></div>
+            <div class="form-group">
+                <label>Invoice to Pay *</label>
+                <select id="payLinkedInv" onchange="loadInvInfo()">
+                    <option value="">— Select Invoice —</option>
+                </select>
+            </div>
+
+            <div id="invInfoSection" style="display:none;">
+                <div class="inv-info-box" id="invInfoBox"></div>
+
+                <div class="form-group">
+                    <label>Payment Amount *</label>
+                    <div class="amount-input-wrap">
+                        <span class="currency">$</span>
+                        <input type="number" id="payAmount" placeholder="0.00" min="0.01" step="0.01">
+                    </div>
+                    <div class="quick-btns">
+                        <button class="quick-btn" onclick="setPayFull()">Pay Full Amount</button>
+                        <button class="quick-btn" onclick="setPayHalf()">Pay 50%</button>
+                        <button class="quick-btn" onclick="setPayQuarter()">Pay 25%</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Payment Method *</label>
+                    <div class="method-grid">
+                        <div class="method-option selected" onclick="selectMethod(this,'bank_transfer')"><i class="fas fa-university"></i> Bank Transfer</div>
+                        <div class="method-option" onclick="selectMethod(this,'cash')"><i class="fas fa-money-bill"></i> Cash</div>
+                        <div class="method-option" onclick="selectMethod(this,'cheque')"><i class="fas fa-file-alt"></i> Cheque</div>
+                        <div class="method-option" onclick="selectMethod(this,'online')"><i class="fas fa-globe"></i> Online</div>
+                    </div>
+                    <input type="hidden" id="payMethod" value="bank_transfer">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Payment Date</label>
+                        <input type="date" id="payDate">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Reference / Cheque No.</label>
+                        <input type="text" id="payRef" placeholder="Transaction reference">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:14px;margin-bottom:0;">
+                    <label>Notes</label>
+                    <input type="text" id="payNotes" placeholder="Optional notes">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeCreate()">Cancel</button>
+            <button class="btn btn-teal" id="savePayBtn" onclick="savePayment()"><i class="fas fa-check-circle"></i> Record Payment</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══ VIEW PAYMENT MODAL ══ -->
+<div class="modal-overlay" id="viewOverlay">
+    <div class="modal wide">
+        <div class="modal-header">
+            <h4 id="viewTitle">Payment Details</h4>
+            <button class="m-close" onclick="closeView()">&times;</button>
+        </div>
+        <div class="modal-body" id="viewBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeView()">Close</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => 'PKR ' + Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+let invDueAmount = 0;
+
+function methodBadge(m) {
+    const map = { bank_transfer:'badge-bank_transfer', cash:'badge-cash', cheque:'badge-cheque', online:'badge-online' };
+    const label = (m||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    return `<span class="badge ${map[m]||'badge-bank_transfer'}">${label}</span>`;
+}
+
+/* ── KPI Summary ── */
+async function loadSummary() {
+    try {
+        const s = await fetch('/api/procurement/summary').then(r=>r.json());
+        $('kpiCount').textContent   = s.payments?.total || 0;
+        $('kpiPaid').textContent    = fmt(s.payments?.total_paid || 0);
+        $('kpiDue').textContent     = fmt(s.invoices?.total_due || 0);
+        $('kpiPending').textContent = s.invoices?.pending || 0;
+    } catch(e) {}
+}
+
+/* ── Payment List ── */
+async function loadPayments() {
+    $('payTableWrap').innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading…</p></div>';
+    try {
+        const data = await fetch('/api/procurement/payments').then(r=>r.json());
+        if (!data.length) {
+            $('payTableWrap').innerHTML = '<div class="empty-state"><i class="fas fa-money-bill-wave"></i><p>No payments recorded yet</p></div>';
+            return;
+        }
+        const rows = data.map(p => `<tr>
+            <td><strong style="color:#16a085;">${p.doc_number||'—'}</strong></td>
+            <td>${p.invoice_number||'—'}</td>
+            <td>${p.vendor_name||'—'}</td>
+            <td style="font-size:16px;font-weight:800;color:#16a085;">${fmt(p.amount)}</td>
+            <td>${methodBadge(p.payment_method)}</td>
+            <td>${p.payment_date||'—'}</td>
+            <td style="color:#636e72;">${p.reference_no||'—'}</td>
+            <td>${p.created_by_name||'—'}</td>
+            <td><button class="btn btn-primary btn-sm" onclick="viewPayment('${p._id}')"><i class="fas fa-eye"></i></button></td>
+        </tr>`).join('');
+        $('payTableWrap').innerHTML = `<table>
+            <thead><tr><th>Pay No.</th><th>Invoice</th><th>Vendor</th><th>Amount</th><th>Method</th><th>Date</th><th>Reference</th><th>By</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+    } catch(e) {
+        $('payTableWrap').innerHTML = '<div class="empty-state" style="color:#e74c3c;"><i class="fas fa-exclamation-circle"></i><p>Failed to load.</p></div>';
+    }
+}
+
+/* ── Create Payment ── */
+async function openCreate(invIdParam) {
+    $('createAlert').innerHTML = '';
+    $('invInfoSection').style.display = 'none';
+    $('payAmount').value = '';
+    $('payRef').value = '';
+    $('payNotes').value = '';
+    $('payDate').value = new Date().toISOString().slice(0,10);
+    $('payMethod').value = 'bank_transfer';
+    document.querySelectorAll('.method-option').forEach((o,i) => o.classList.toggle('selected', i===0));
+    invDueAmount = 0;
+
+    $('payLinkedInv').innerHTML = '<option value="">— Loading invoices… —</option>';
+    $('createOverlay').style.display = 'flex';
+
+    try {
+        const [pending, partial] = await Promise.all([
+            fetch('/api/procurement/invoices?status=pending').then(r=>r.json()),
+            fetch('/api/procurement/invoices?status=partially_paid').then(r=>r.json())
+        ]);
+        const all = [...pending, ...partial];
+        $('payLinkedInv').innerHTML = '<option value="">— Select Invoice —</option>' +
+            all.map(inv => `<option value="${inv._id}">${inv.doc_number} — ${inv.vendor_name||'Unknown'} — Due: ${fmt(inv.amount_due)}</option>`).join('');
+        if (invIdParam) { $('payLinkedInv').value = invIdParam; await loadInvInfo(); }
+    } catch(e) {
+        $('payLinkedInv').innerHTML = '<option value="">— Failed to load invoices —</option>';
+    }
+}
+
+function closeCreate() { $('createOverlay').style.display = 'none'; }
+
+async function loadInvInfo() {
+    const invId = $('payLinkedInv').value;
+    $('invInfoSection').style.display = 'none';
+    invDueAmount = 0;
+    if (!invId) return;
+    try {
+        const inv = await fetch(`/api/procurement/invoices/${invId}`).then(r=>r.json());
+        invDueAmount = Number(inv.amount_due||0);
+        const pct = inv.total_amount>0 ? Math.min(100, ((inv.amount_paid||0)/inv.total_amount)*100) : 0;
+        $('invInfoBox').innerHTML = `
+            <div class="inv-info-title"><i class="fas fa-file-invoice-dollar"></i> ${inv.doc_number} — ${inv.vendor_name||'Unknown'}</div>
+            <div class="inv-info-row"><span class="label">Total Amount</span><span>${fmt(inv.total_amount)}</span></div>
+            <div class="inv-info-row"><span class="label">Already Paid</span><span style="color:#27ae60;font-weight:700;">${fmt(inv.amount_paid)}</span></div>
+            <div class="inv-info-row"><span class="label">Amount Due</span><span class="due">${fmt(invDueAmount)}</span></div>
+            <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct.toFixed(0)}%"></div></div>`;
+        $('payAmount').value = invDueAmount.toFixed(2);
+        $('invInfoSection').style.display = 'block';
+    } catch(e) {}
+}
+
+function setPayFull()    { $('payAmount').value = invDueAmount.toFixed(2); }
+function setPayHalf()    { $('payAmount').value = (invDueAmount/2).toFixed(2); }
+function setPayQuarter() { $('payAmount').value = (invDueAmount/4).toFixed(2); }
+
+function selectMethod(el, val) {
+    document.querySelectorAll('.method-option').forEach(o=>o.classList.remove('selected'));
+    el.classList.add('selected');
+    $('payMethod').value = val;
+}
+
+async function savePayment() {
+    const invId = $('payLinkedInv').value;
+    const amount = parseFloat($('payAmount').value)||0;
+    if (!invId) { $('createAlert').innerHTML = '<div class="alert alert-danger">Please select an invoice.</div>'; return; }
+    if (amount <= 0) { $('createAlert').innerHTML = '<div class="alert alert-danger">Enter a valid payment amount.</div>'; return; }
+    if (amount > invDueAmount + 0.001) { $('createAlert').innerHTML = `<div class="alert alert-danger">Amount exceeds amount due (${fmt(invDueAmount)}).</div>`; return; }
+
+    $('savePayBtn').disabled = true;
+    $('savePayBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing…';
+
+    try {
+        const d = await fetch('/api/procurement/payments', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+                invoice_id: invId,
+                amount: amount,
+                payment_method: $('payMethod').value,
+                payment_date: $('payDate').value,
+                reference_no: $('payRef').value.trim(),
+                notes: $('payNotes').value.trim()
+            })
+        }).then(r=>r.json());
+
+        if (d.success) { closeCreate(); await Promise.all([loadPayments(), loadSummary()]); }
+        else { $('createAlert').innerHTML = `<div class="alert alert-danger">${d.message||'Failed to record payment'}</div>`; }
+    } catch(e) {
+        $('createAlert').innerHTML = '<div class="alert alert-danger">Connection error.</div>';
+    } finally {
+        $('savePayBtn').disabled = false;
+        $('savePayBtn').innerHTML = '<i class="fas fa-check-circle"></i> Record Payment';
+    }
+}
+
+/* ── View Payment ── */
+async function viewPayment(id) {
+    $('viewBody').innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>';
+    $('viewOverlay').style.display = 'flex';
+    try {
+        const p = await fetch(`/api/procurement/payments/${id}`).then(r=>r.json());
+        $('viewTitle').textContent = `${p.doc_number}`;
+        $('viewBody').innerHTML = `
+            <div class="pay-detail-box">
+                <div class="kc-label" style="text-align:center;margin-bottom:4px;">Payment Amount</div>
+                <div class="pay-amount-display">${fmt(p.amount)}</div>
+                <div class="pay-rows">
+                    <div class="pay-row"><span class="label">Invoice</span><span><strong>${p.invoice_number||'—'}</strong></span></div>
+                    <div class="pay-row"><span class="label">Vendor</span><span>${p.vendor_name||'—'}</span></div>
+                    <div class="pay-row"><span class="label">Payment Method</span><span>${methodBadge(p.payment_method)}</span></div>
+                    <div class="pay-row"><span class="label">Payment Date</span><span>${p.payment_date||'—'}</span></div>
+                    <div class="pay-row"><span class="label">Reference No.</span><span>${p.reference_no||'—'}</span></div>
+                    <div class="pay-row"><span class="label">Recorded By</span><span>${p.created_by_name||'—'}</span></div>
+                    ${p.notes?`<div class="pay-row"><span class="label">Notes</span><span>${p.notes}</span></div>`:''}
+                </div>
+            </div>`;
+    } catch(e) {
+        $('viewBody').innerHTML = '<div class="alert alert-danger">Failed to load payment details.</div>';
+    }
+}
+
+function closeView() { $('viewOverlay').style.display = 'none'; }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await Promise.all([loadPayments(), loadSummary()]);
+    const invId = new URLSearchParams(window.location.search).get('invoice_id');
+    if (invId) openCreate(invId);
+});
+
+['createOverlay','viewOverlay'].forEach(id => {
+    $(id).addEventListener('click', function(e) {
+        if (e.target === this) { id==='createOverlay' ? closeCreate() : closeView(); }
+    });
+});
+</script>
+</body>
+</html>

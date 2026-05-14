@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journal Entries - Finance</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0faf8;min-height:100vh}
+.dashboard-nav{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600}
+.nav-brand a{color:#fff;text-decoration:none;display:flex;align-items:center;gap:8px;font-size:13px;opacity:.85}
+.nav-brand a:hover{opacity:1}
+.nav-right{display:flex;align-items:center;gap:20px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:14px}
+.role-badge{background:rgba(255,255,255,.25);padding:4px 10px;border-radius:12px;font-size:11px;text-transform:uppercase}
+.btn-logout{background:rgba(231,76,60,.8);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+.btn-logout:hover{background:#e74c3c}
+.page-container{max-width:1400px;margin:0 auto;padding:24px}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.page-title{font-size:22px;font-weight:700;color:#16a085}
+.btn-new{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.btn-new:hover{opacity:.9}
+.filter-bar{background:#fff;border-radius:10px;padding:14px 20px;box-shadow:0 1px 6px rgba(0,0,0,.07);display:flex;gap:12px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.filter-bar label{font-size:12px;font-weight:600;color:#555;white-space:nowrap}
+.filter-bar input[type="date"],.filter-bar select{padding:8px 12px;border:2px solid #e0e0e0;border-radius:6px;font-size:13px;outline:none}
+.filter-bar input:focus,.filter-bar select:focus{border-color:#16a085}
+.btn-search{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.btn-clear{background:#ecf0f1;color:#2c3e50;border:none;padding:9px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+.table-wrap{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fffe;color:#16a085;font-weight:700;padding:12px 14px;text-align:left;border-bottom:2px solid #e8f8f5;white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+.expand-row td{background:#f8fffe;border-bottom:2px solid #e8f8f5}
+tr.main-row:hover td{background:#f8fffe;cursor:pointer}
+.td-right{text-align:right;font-family:monospace}
+.badge-ref{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600}
+.ref-sale{background:#eafaf1;color:#27ae60}
+.ref-gr{background:#ebf5fb;color:#2980b9}
+.ref-payment{background:#fdedec;color:#e74c3c}
+.ref-manual{background:#f5eef8;color:#8e44ad}
+.ref-other{background:#f5f5f5;color:#7f8c8d}
+.expand-btn{background:none;border:none;cursor:pointer;color:#7f8c8d;font-size:13px;padding:2px 6px;border-radius:4px;transition:color .2s}
+.expand-btn:hover{color:#16a085}
+.lines-table{width:100%;font-size:12px;border-collapse:collapse;margin:4px 0}
+.lines-table th{background:#e8f8f5;color:#16a085;padding:6px 12px;font-size:11px;font-weight:700;text-align:left}
+.lines-table td{padding:7px 12px;border-bottom:1px solid #f0f0f0;color:#555}
+.lines-table tr:last-child td{border-bottom:none}
+.lines-table .dr{color:#2980b9;font-weight:600}
+.lines-table .cr{color:#27ae60;font-weight:600}
+.empty-state{text-align:center;padding:48px;color:#95a5a6}
+.empty-state i{font-size:48px;margin-bottom:12px;display:block;opacity:.4}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:flex-start;justify-content:center;padding-top:40px;overflow-y:auto}
+.modal-overlay.show{display:flex}
+.modal{display:block;background:#fff;border-radius:14px;width:760px;max-width:96vw;box-shadow:0 20px 60px rgba(0,0,0,.25);margin-bottom:40px}
+.modal-header{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-radius:14px 14px 0 0}
+.modal-header h3{font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:.8;line-height:1}
+.modal-close:hover{opacity:1}
+.modal-body{padding:24px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:2px solid #eee;border-radius:6px;font-size:13px;transition:border-color .3s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#16a085}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lines-section{margin-top:16px}
+.lines-section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.lines-section-header h4{font-size:14px;font-weight:700;color:#2c3e50}
+.btn-add-line{background:#e8f8f5;color:#16a085;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
+.btn-add-line:hover{background:#d0f0e8}
+.je-lines-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px}
+.je-lines-table th{background:#f8fffe;color:#16a085;padding:8px 10px;font-size:12px;font-weight:700;text-align:left;border-bottom:2px solid #e8f8f5}
+.je-lines-table td{padding:6px 6px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
+.je-lines-table input,.je-lines-table select{width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px}
+.je-lines-table input:focus,.je-lines-table select:focus{outline:none;border-color:#16a085}
+.btn-remove-line{background:#fdedec;color:#e74c3c;border:none;padding:5px 9px;border-radius:4px;cursor:pointer;font-size:11px}
+.balance-check{background:#f8f9fa;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px}
+.balance-ok{color:#27ae60;font-weight:700}
+.balance-bad{color:#e74c3c;font-weight:700}
+.modal-footer{padding:16px 24px;border-top:1px solid #f0f0f0;display:flex;justify-content:flex-end;gap:10px}
+.btn-primary{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.btn-primary:disabled{background:#b2dfdb;cursor:not-allowed}
+.btn-secondary{background:#ecf0f1;color:#2c3e50;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.toast{position:fixed;bottom:20px;right:20px;background:#2c3e50;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;z-index:3000}
+.toast.show{display:block}
+.toast.success{background:#27ae60}
+.toast.error{background:#e74c3c}
+</style>
+</head>
+<body>
+<nav class="dashboard-nav">
+  <div class="nav-brand">
+    <a href="/finance-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    <span style="opacity:.4">|</span>
+    <i class="fas fa-journal-whills"></i><span>Journal Entries</span>
+  </div>
+  <div class="nav-right">
+    <div class="nav-user">
+      <i class="fas fa-user-circle"></i>
+      <span id="navUserName">Finance</span>
+      <span class="role-badge" id="navRoleBadge">Finance</span>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title"><i class="fas fa-journal-whills"></i> Journal Entries</h1>
+    <button class="btn-new" onclick="openNewJournalModal()"><i class="fas fa-plus"></i> New Manual Entry</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div>
+      <label>Date From</label><br>
+      <input type="date" id="dateFrom">
+    </div>
+    <div>
+      <label>Date To</label><br>
+      <input type="date" id="dateTo">
+    </div>
+    <div>
+      <label>Reference Type</label><br>
+      <select id="refTypeFilter">
+        <option value="">All Types</option>
+        <option value="sale">Sale</option>
+        <option value="gr">Goods Receipt</option>
+        <option value="payment">Payment</option>
+        <option value="manual">Manual</option>
+      </select>
+    </div>
+    <div style="align-self:flex-end">
+      <button class="btn-search" onclick="loadJournalEntries()"><i class="fas fa-search"></i> Search</button>
+    </div>
+    <div style="align-self:flex-end">
+      <button class="btn-clear" onclick="clearFilters()"><i class="fas fa-times"></i> Clear</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table id="jeTable">
+      <thead>
+        <tr>
+          <th style="width:32px"></th>
+          <th>Entry No.</th>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Reference</th>
+          <th class="td-right">Total DR (PKR)</th>
+          <th class="td-right">Total CR (PKR)</th>
+          <th>Posted By</th>
+        </tr>
+      </thead>
+      <tbody id="jeTableBody">
+        <tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- New Journal Entry Modal -->
+<div class="modal-overlay" id="jeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fas fa-plus-circle"></i> New Manual Journal Entry</h3>
+      <button class="modal-close" onclick="closeJeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Description *</label>
+          <input type="text" id="jeDesc" placeholder="e.g. Rent payment for May 2026">
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="jeDate">
+        </div>
+      </div>
+
+      <!-- Lines -->
+      <div class="lines-section">
+        <div class="lines-section-header">
+          <h4><i class="fas fa-list"></i> Journal Lines</h4>
+          <button class="btn-add-line" onclick="addJeLine()"><i class="fas fa-plus"></i> Add Line</button>
+        </div>
+        <table class="je-lines-table">
+          <thead>
+            <tr>
+              <th style="width:30%">Account</th>
+              <th>Line Description</th>
+              <th style="width:130px">Debit (PKR)</th>
+              <th style="width:130px">Credit (PKR)</th>
+              <th style="width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="jeLinesBody"></tbody>
+        </table>
+
+        <!-- Balance Check -->
+        <div class="balance-check">
+          <span>Total Debit: <strong id="totalDrDisplay" style="color:#2980b9">PKR 0.00</strong></span>
+          <span id="balanceStatus" class="balance-bad"><i class="fas fa-exclamation-triangle"></i> Imbalanced</span>
+          <span>Total Credit: <strong id="totalCrDisplay" style="color:#27ae60">PKR 0.00</strong></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeJeModal()">Cancel</button>
+      <button class="btn-primary" id="saveJeBtn" onclick="saveJournalEntry()" disabled><i class="fas fa-save"></i> Post Entry</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+var allAccounts=[];
+var expandedRows={};
+
+function fmt(n){return 'PKR '+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function fmtN(n){return Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'');setTimeout(()=>t.className='toast',3000);}
+function handleLogout(){fetch('/api/auth/logout',{method:'POST'}).then(()=>{sessionStorage.clear();window.location.href='/login';});}
+
+document.addEventListener('DOMContentLoaded',function(){
+  var name=sessionStorage.getItem('full_name')||'Finance Manager';
+  var role=sessionStorage.getItem('role')||'finance_manager';
+  document.getElementById('navUserName').textContent=name;
+  document.getElementById('navRoleBadge').textContent=role.replace(/_/g,' ');
+  // Set default date to today
+  var today=new Date().toISOString().split('T')[0];
+  document.getElementById('jeDate').value=today;
+  loadAccounts();
+  loadJournalEntries();
+});
+
+function loadAccounts(){
+  fetch('/api/gl/accounts')
+    .then(r=>r.json())
+    .then(data=>{allAccounts=data;})
+    .catch(()=>{});
+}
+
+function clearFilters(){
+  document.getElementById('dateFrom').value='';
+  document.getElementById('dateTo').value='';
+  document.getElementById('refTypeFilter').value='';
+  loadJournalEntries();
+}
+
+function refBadge(type){
+  var map={sale:'ref-sale',gr:'ref-gr',payment:'ref-payment',manual:'ref-manual'};
+  var cls=map[type]||'ref-other';
+  var labels={sale:'Sale',gr:'GR',payment:'Payment',manual:'Manual'};
+  return '<span class="badge-ref '+cls+'">'+(labels[type]||type||'—')+'</span>';
+}
+
+function loadJournalEntries(){
+  var from=document.getElementById('dateFrom').value;
+  var to=document.getElementById('dateTo').value;
+  var type=document.getElementById('refTypeFilter').value;
+  var params=new URLSearchParams();
+  if(from) params.append('from',from);
+  if(to)   params.append('to',to);
+  if(type) params.append('type',type);
+  document.getElementById('jeTableBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:#7f8c8d"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  fetch('/api/gl/journal?'+params.toString())
+    .then(r=>r.json())
+    .then(data=>{
+      renderJournalEntries(data);
+    })
+    .catch(()=>showToast('Failed to load journal entries','error'));
+}
+
+function renderJournalEntries(data){
+  var tbody=document.getElementById('jeTableBody');
+  if(!data.length){
+    tbody.innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="fas fa-journal-whills"></i><div>No journal entries found</div></div></td></tr>';
+    return;
+  }
+  var html='';
+  data.forEach(function(e,idx){
+    var rowId='je_'+idx;
+    html+='<tr class="main-row" onclick="toggleExpand(\''+rowId+'\','+idx+')" data-idx="'+idx+'">';
+    html+='<td><button class="expand-btn" id="expandBtn_'+rowId+'"><i class="fas fa-chevron-right"></i></button></td>';
+    html+='<td><strong style="font-family:monospace;font-size:12px">'+(e.entry_number||'—')+'</strong></td>';
+    html+='<td style="white-space:nowrap">'+(e.date||'—')+'</td>';
+    html+='<td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(e.description||'')+'">'+(e.description||'—')+'</td>';
+    html+='<td>'+refBadge(e.reference_type)+' <span style="font-size:11px;color:#95a5a6">'+(e.reference_number||'')+'</span></td>';
+    html+='<td class="td-right" style="color:#2980b9;font-weight:600">'+fmtN(e.total_dr)+'</td>';
+    html+='<td class="td-right" style="color:#27ae60;font-weight:600">'+fmtN(e.total_cr)+'</td>';
+    html+='<td style="font-size:12px;color:#636e72">'+(e.posted_by||'—')+'</td>';
+    html+='</tr>';
+    // Expandable detail row (hidden initially)
+    html+='<tr class="expand-row" id="'+rowId+'" style="display:none"><td colspan="8"><div style="padding:8px 16px 12px 48px">';
+    html+='<table class="lines-table"><thead><tr><th>Account Code</th><th>Account Name</th><th style="text-align:right">Debit (PKR)</th><th style="text-align:right">Credit (PKR)</th></tr></thead><tbody>';
+    (e.lines||[]).forEach(function(l){
+      html+='<tr>';
+      html+='<td style="font-family:monospace">'+l.account_code+'</td>';
+      html+='<td>'+l.account_name+'</td>';
+      html+='<td style="text-align:right">'+(l.dr>0?'<span class="dr">'+fmtN(l.dr)+'</span>':'<span style="color:#ccc">—</span>')+'</td>';
+      html+='<td style="text-align:right">'+(l.cr>0?'<span class="cr">'+fmtN(l.cr)+'</span>':'<span style="color:#ccc">—</span>')+'</td>';
+      html+='</tr>';
+    });
+    html+='</tbody></table>';
+    html+='</div></td></tr>';
+  });
+  tbody.innerHTML=html;
+}
+
+function toggleExpand(rowId,idx){
+  var row=document.getElementById(rowId);
+  var btn=document.getElementById('expandBtn_'+rowId);
+  if(!row) return;
+  var isVisible=row.style.display!=='none';
+  row.style.display=isVisible?'none':'table-row';
+  if(btn) btn.innerHTML=isVisible?'<i class="fas fa-chevron-right"></i>':'<i class="fas fa-chevron-down"></i>';
+}
+
+/* ── New Journal Modal ── */
+var jeLineCount=0;
+
+function openNewJournalModal(){
+  jeLineCount=0;
+  document.getElementById('jeDesc').value='';
+  document.getElementById('jeLinesBody').innerHTML='';
+  addJeLine();
+  addJeLine();
+  updateBalanceCheck();
+  document.getElementById('jeModal').classList.add('show');
+}
+
+function closeJeModal(){
+  document.getElementById('jeModal').classList.remove('show');
+}
+
+function buildAccountOptions(selectedCode){
+  var html='<option value="">— Select Account —</option>';
+  allAccounts.forEach(function(a){
+    html+='<option value="'+a.code+'" data-name="'+a.name+'"'+(a.code===selectedCode?' selected':'')+'>'+a.code+' — '+a.name+'</option>';
+  });
+  return html;
+}
+
+function addJeLine(){
+  var id='jel_'+(++jeLineCount);
+  var tr=document.createElement('tr');
+  tr.id=id;
+  tr.innerHTML=
+    '<td><select class="je-acct-sel" onchange="updateBalanceCheck()">'+buildAccountOptions('')+'</select></td>'+
+    '<td><input type="text" class="je-line-desc" placeholder="Line description"></td>'+
+    '<td><input type="number" class="je-dr" min="0" step="0.01" placeholder="0.00" oninput="updateBalanceCheck()"></td>'+
+    '<td><input type="number" class="je-cr" min="0" step="0.01" placeholder="0.00" oninput="updateBalanceCheck()"></td>'+
+    '<td><button class="btn-remove-line" onclick="removeJeLine(\''+id+'\')" title="Remove"><i class="fas fa-times"></i></button></td>';
+  document.getElementById('jeLinesBody').appendChild(tr);
+}
+
+function removeJeLine(id){
+  var rows=document.querySelectorAll('#jeLinesBody tr');
+  if(rows.length<=2){showToast('At least 2 lines are required','error');return;}
+  var el=document.getElementById(id);
+  if(el) el.remove();
+  updateBalanceCheck();
+}
+
+function updateBalanceCheck(){
+  var drInputs=document.querySelectorAll('#jeLinesBody .je-dr');
+  var crInputs=document.querySelectorAll('#jeLinesBody .je-cr');
+  var totalDr=0,totalCr=0;
+  drInputs.forEach(function(i){totalDr+=parseFloat(i.value)||0;});
+  crInputs.forEach(function(i){totalCr+=parseFloat(i.value)||0;});
+  totalDr=Math.round(totalDr*100)/100;
+  totalCr=Math.round(totalCr*100)/100;
+  document.getElementById('totalDrDisplay').textContent=fmt(totalDr);
+  document.getElementById('totalCrDisplay').textContent=fmt(totalCr);
+  var balanced=Math.abs(totalDr-totalCr)<0.01&&totalDr>0;
+  var statusEl=document.getElementById('balanceStatus');
+  var saveBtn=document.getElementById('saveJeBtn');
+  if(balanced){
+    statusEl.className='balance-ok';
+    statusEl.innerHTML='<i class="fas fa-check-circle"></i> Balanced';
+    saveBtn.disabled=false;
+  } else {
+    statusEl.className='balance-bad';
+    statusEl.innerHTML='<i class="fas fa-exclamation-triangle"></i> Imbalanced';
+    saveBtn.disabled=true;
+  }
+}
+
+function saveJournalEntry(){
+  var desc=document.getElementById('jeDesc').value.trim();
+  var date=document.getElementById('jeDate').value;
+  if(!desc){showToast('Description is required','error');return;}
+  var rows=document.querySelectorAll('#jeLinesBody tr');
+  var lines=[];
+  var valid=true;
+  rows.forEach(function(row){
+    var acctSel=row.querySelector('.je-acct-sel');
+    var code=acctSel?acctSel.value:'';
+    var acctName=acctSel&&acctSel.selectedOptions[0]?acctSel.selectedOptions[0].getAttribute('data-name'):'';
+    var dr=parseFloat(row.querySelector('.je-dr').value)||0;
+    var cr=parseFloat(row.querySelector('.je-cr').value)||0;
+    if(!code){valid=false;return;}
+    lines.push({account_code:code,account_name:acctName,dr:dr,cr:cr});
+  });
+  if(!valid){showToast('All lines must have an account selected','error');return;}
+  if(lines.length<2){showToast('At least 2 journal lines required','error');return;}
+  var saveBtn=document.getElementById('saveJeBtn');
+  saveBtn.disabled=true;
+  saveBtn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Posting...';
+  fetch('/api/gl/journal',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({description:desc,date:date,lines:lines})
+  })
+    .then(r=>r.json())
+    .then(function(d){
+      if(d.error){showToast(d.error,'error');saveBtn.disabled=false;saveBtn.innerHTML='<i class="fas fa-save"></i> Post Entry';return;}
+      showToast('Journal entry posted successfully','success');
+      closeJeModal();
+      loadJournalEntries();
+    })
+    .catch(function(){
+      showToast('Failed to post journal entry','error');
+      saveBtn.disabled=false;
+      saveBtn.innerHTML='<i class="fas fa-save"></i> Post Entry';
+    });
+}
+</script>
+</body>
+</html>

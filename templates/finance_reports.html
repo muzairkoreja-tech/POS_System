@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Reports - Finance</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0faf8;min-height:100vh}
+.dashboard-nav{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600}
+.nav-brand a{color:#fff;text-decoration:none;display:flex;align-items:center;gap:8px;font-size:13px;opacity:.85}
+.nav-brand a:hover{opacity:1}
+.nav-right{display:flex;align-items:center;gap:20px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:14px}
+.role-badge{background:rgba(255,255,255,.25);padding:4px 10px;border-radius:12px;font-size:11px;text-transform:uppercase}
+.btn-logout{background:rgba(231,76,60,.8);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+.btn-logout:hover{background:#e74c3c}
+.page-container{max-width:1100px;margin:0 auto;padding:24px}
+.page-title{font-size:22px;font-weight:700;color:#16a085;margin-bottom:20px}
+.date-bar{background:#fff;border-radius:10px;padding:14px 20px;box-shadow:0 1px 6px rgba(0,0,0,.07);display:flex;gap:14px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.date-bar label{font-size:12px;font-weight:600;color:#555}
+.date-bar input[type="date"]{padding:8px 12px;border:2px solid #e0e0e0;border-radius:6px;font-size:13px;outline:none}
+.date-bar input:focus{border-color:#16a085}
+.btn-generate{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.btn-generate:hover{opacity:.9}
+.btn-print{background:#ecf0f1;color:#2c3e50;border:none;padding:9px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:#fff;padding:6px;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);flex-wrap:wrap}
+.tab-btn{padding:10px 20px;border:none;background:transparent;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:#7f8c8d;transition:all .2s;display:flex;align-items:center;gap:7px}
+.tab-btn.active{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;box-shadow:0 2px 8px rgba(22,160,133,.3)}
+.tab-btn:hover:not(.active){background:#f0faf8;color:#16a085}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+/* Report Cards */
+.report-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden;margin-bottom:20px}
+.report-card-header{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;padding:16px 24px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.report-table{width:100%;border-collapse:collapse;font-size:13px}
+.report-table td{padding:10px 20px;border-bottom:1px solid #f5f5f5}
+.report-table tr:last-child td{border-bottom:none}
+.report-table .section-header td{background:#f8fffe;font-weight:700;color:#16a085;font-size:12px;text-transform:uppercase;letter-spacing:.4px;padding:10px 20px}
+.report-table .amount{text-align:right;font-family:monospace;white-space:nowrap}
+.report-table .subtotal td{background:#f0faf8;font-weight:600;border-top:1px solid #d5f5ef;border-bottom:1px solid #d5f5ef}
+.report-table .grand-total td{background:#16a085;color:#fff;font-weight:700;font-size:14px;border:none}
+.report-table .net-profit-pos td{background:#eafaf1;color:#27ae60;font-weight:700;font-size:14px}
+.report-table .net-profit-neg td{background:#fdedec;color:#e74c3c;font-weight:700;font-size:14px}
+.report-table .highlight td{background:#fef9e7;font-weight:600}
+.report-table .indent{padding-left:40px !important}
+.report-table .indent2{padding-left:56px !important}
+.empty-msg{text-align:center;padding:40px;color:#95a5a6;font-size:13px}
+.empty-msg i{font-size:36px;display:block;margin-bottom:10px;opacity:.4}
+/* Trial Balance */
+.tb-group-header td{background:#e8f8f5;font-weight:700;color:#16a085;font-size:12px;text-transform:uppercase;padding:8px 20px}
+.tb-totals td{background:#16a085;color:#fff;font-weight:700;border:none}
+.tb-balanced{color:#27ae60;font-weight:700}
+.tb-imbalanced{color:#e74c3c;font-weight:700}
+.toast{position:fixed;bottom:20px;right:20px;background:#2c3e50;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;z-index:3000}
+.toast.show{display:block}
+.toast.error{background:#e74c3c}
+.loader{text-align:center;padding:32px;color:#7f8c8d}<br>
+@media print{.dashboard-nav,.date-bar,.tabs,.btn-print{display:none!important}.tab-panel{display:block!important}.page-container{padding:0}}
+</style>
+</head>
+<body>
+<nav class="dashboard-nav">
+  <div class="nav-brand">
+    <a href="/finance-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    <span style="opacity:.4">|</span>
+    <i class="fas fa-chart-bar"></i><span>Financial Reports</span>
+  </div>
+  <div class="nav-right">
+    <div class="nav-user">
+      <i class="fas fa-user-circle"></i>
+      <span id="navUserName">Finance</span>
+      <span class="role-badge" id="navRoleBadge">Finance</span>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+
+<div class="page-container">
+  <h1 class="page-title"><i class="fas fa-chart-bar"></i> Financial Reports</h1>
+
+  <!-- Date Range -->
+  <div class="date-bar">
+    <div><label>From Date</label><br><input type="date" id="dateFrom"></div>
+    <div><label>To Date</label><br><input type="date" id="dateTo"></div>
+    <div style="align-self:flex-end"><button class="btn-generate" onclick="generateAll()"><i class="fas fa-play"></i> Generate</button></div>
+    <div style="align-self:flex-end"><button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('income')" id="tab-income"><i class="fas fa-arrow-trend-up"></i> Income Statement</button>
+    <button class="tab-btn" onclick="switchTab('cashflow')" id="tab-cashflow"><i class="fas fa-water"></i> Cash Flow</button>
+    <button class="tab-btn" onclick="switchTab('equity')" id="tab-equity"><i class="fas fa-landmark"></i> Statement of Equity</button>
+    <button class="tab-btn" onclick="switchTab('trial')" id="tab-trial"><i class="fas fa-balance-scale"></i> Trial Balance</button>
+  </div>
+
+  <!-- Income Statement -->
+  <div class="tab-panel active" id="panel-income">
+    <div class="report-card">
+      <div class="report-card-header"><i class="fas fa-file-invoice-dollar"></i> Income Statement</div>
+      <div id="incomeContent"><div class="empty-msg"><i class="fas fa-play-circle"></i>Click Generate to load the Income Statement</div></div>
+    </div>
+  </div>
+
+  <!-- Cash Flow -->
+  <div class="tab-panel" id="panel-cashflow">
+    <div class="report-card">
+      <div class="report-card-header"><i class="fas fa-water"></i> Statement of Cash Flows (Indirect Method)</div>
+      <div id="cashflowContent"><div class="empty-msg"><i class="fas fa-play-circle"></i>Click Generate to load the Cash Flow Statement</div></div>
+    </div>
+  </div>
+
+  <!-- Equity -->
+  <div class="tab-panel" id="panel-equity">
+    <div class="report-card">
+      <div class="report-card-header"><i class="fas fa-landmark"></i> Statement of Changes in Equity</div>
+      <div id="equityContent"><div class="empty-msg"><i class="fas fa-play-circle"></i>Click Generate to load the Equity Statement</div></div>
+    </div>
+  </div>
+
+  <!-- Trial Balance -->
+  <div class="tab-panel" id="panel-trial" id="trial-balance">
+    <div class="report-card">
+      <div class="report-card-header" style="justify-content:space-between">
+        <span><i class="fas fa-balance-scale"></i> Trial Balance</span>
+        <button class="btn-print" onclick="window.print()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4)"><i class="fas fa-print"></i> Print</button>
+      </div>
+      <div id="trialContent"><div class="empty-msg"><i class="fas fa-play-circle"></i>Click Generate to load the Trial Balance</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+function fmt(n){return 'PKR '+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function fmtN(n){return Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'');setTimeout(()=>t.className='toast',3000);}
+function handleLogout(){fetch('/api/auth/logout',{method:'POST'}).then(()=>{sessionStorage.clear();window.location.href='/login';});}
+
+document.addEventListener('DOMContentLoaded',function(){
+  var name=sessionStorage.getItem('full_name')||'Finance Manager';
+  var role=sessionStorage.getItem('role')||'finance_manager';
+  document.getElementById('navUserName').textContent=name;
+  document.getElementById('navRoleBadge').textContent=role.replace(/_/g,' ');
+  // Check for anchor
+  if(window.location.hash==='#trial-balance') switchTab('trial');
+});
+
+function switchTab(name){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function getDateParams(){
+  var from=document.getElementById('dateFrom').value;
+  var to=document.getElementById('dateTo').value;
+  var p=new URLSearchParams();
+  if(from) p.append('from',from);
+  if(to) p.append('to',to);
+  return p.toString();
+}
+
+function generateAll(){
+  var q=getDateParams();
+  loadIncome(q);
+  loadCashFlow(q);
+  loadEquity(q);
+  loadTrialBalance(q);
+}
+
+/* ── Income Statement ── */
+function loadIncome(q){
+  document.getElementById('incomeContent').innerHTML='<div class="loader"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+  fetch('/api/finance/income-statement?'+q)
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d||d.error){document.getElementById('incomeContent').innerHTML='<div class="empty-msg">No data available</div>';return;}
+      var np=d.net_profit||0;
+      var npClass=np>=0?'net-profit-pos':'net-profit-neg';
+      var html='<table class="report-table">';
+      // Revenue
+      html+='<tr class="section-header"><td>Revenue</td><td class="amount"></td></tr>';
+      html+='<tr><td class="indent">Sales Revenue</td><td class="amount">'+fmtN(d.revenue.sales_revenue)+'</td></tr>';
+      if(d.revenue.other_income) html+='<tr><td class="indent">Other Income</td><td class="amount">'+fmtN(d.revenue.other_income)+'</td></tr>';
+      html+='<tr class="subtotal"><td>Total Revenue</td><td class="amount">'+fmtN(d.revenue.total)+'</td></tr>';
+      // COGS
+      html+='<tr class="section-header"><td>Cost of Goods Sold</td><td class="amount"></td></tr>';
+      html+='<tr><td class="indent">Gross COGS</td><td class="amount">'+fmtN(d.cogs.gross_cogs)+'</td></tr>';
+      if(d.cogs.purchase_returns) html+='<tr><td class="indent">Less: Purchase Returns</td><td class="amount">('+fmtN(d.cogs.purchase_returns)+')</td></tr>';
+      html+='<tr class="subtotal"><td>Net Cost of Goods Sold</td><td class="amount">'+fmtN(d.cogs.net_cogs)+'</td></tr>';
+      // Gross Profit
+      html+='<tr class="highlight"><td><strong>Gross Profit</strong></td><td class="amount"><strong>'+fmtN(d.gross_profit)+'</strong></td></tr>';
+      // Expenses
+      html+='<tr class="section-header"><td>Operating Expenses</td><td class="amount"></td></tr>';
+      (d.expenses.items||[]).forEach(function(e){
+        html+='<tr><td class="indent">'+e.name+'</td><td class="amount">'+fmtN(e.amount)+'</td></tr>';
+      });
+      html+='<tr class="subtotal"><td>Total Expenses</td><td class="amount">'+fmtN(d.expenses.total)+'</td></tr>';
+      // Net Profit
+      html+='<tr class="'+npClass+'"><td><strong>'+(np>=0?'Net Profit':'Net Loss')+'</strong></td><td class="amount"><strong>'+fmtN(np)+'</strong></td></tr>';
+      html+='</table>';
+      document.getElementById('incomeContent').innerHTML=html;
+    })
+    .catch(()=>{document.getElementById('incomeContent').innerHTML='<div class="empty-msg">Failed to load</div>';showToast('Failed to load Income Statement','error');});
+}
+
+/* ── Cash Flow ── */
+function loadCashFlow(q){
+  document.getElementById('cashflowContent').innerHTML='<div class="loader"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+  fetch('/api/finance/cash-flow?'+q)
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d||d.error){document.getElementById('cashflowContent').innerHTML='<div class="empty-msg">No data available</div>';return;}
+      var html='<table class="report-table">';
+      // Operating
+      html+='<tr class="section-header"><td>Operating Activities</td><td class="amount"></td></tr>';
+      html+='<tr><td class="indent">Net Profit</td><td class="amount">'+fmtN(d.operating.net_profit)+'</td></tr>';
+      html+='<tr class="section-header"><td class="indent" style="font-size:11px;color:#95a5a6">Adjustments for working capital changes:</td><td></td></tr>';
+      var adj=d.operating.adjustments;
+      html+='<tr><td class="indent2">Change in Inventory</td><td class="amount">'+fmtN(adj.inventory_change)+'</td></tr>';
+      html+='<tr><td class="indent2">Change in Accounts Receivable</td><td class="amount">'+fmtN(adj.ar_change)+'</td></tr>';
+      html+='<tr><td class="indent2">Change in Accounts Payable</td><td class="amount">'+fmtN(adj.ap_change)+'</td></tr>';
+      html+='<tr><td class="indent2">Change in Accrued Liabilities</td><td class="amount">'+fmtN(adj.accruals_change)+'</td></tr>';
+      html+='<tr class="subtotal"><td>Net Cash from Operating Activities</td><td class="amount">'+fmtN(d.operating.total)+'</td></tr>';
+      // Investing
+      html+='<tr class="section-header"><td>Investing Activities</td><td class="amount"></td></tr>';
+      html+='<tr><td class="indent">Fixed Asset Purchases</td><td class="amount">'+fmtN(d.investing.fixed_asset_purchases)+'</td></tr>';
+      html+='<tr class="subtotal"><td>Net Cash from Investing Activities</td><td class="amount">'+fmtN(d.investing.total)+'</td></tr>';
+      // Financing
+      html+='<tr class="section-header"><td>Financing Activities</td><td class="amount"></td></tr>';
+      html+='<tr><td class="indent">Net Loans</td><td class="amount">'+fmtN(d.financing.loans_net)+'</td></tr>';
+      html+='<tr><td class="indent">Capital Injected</td><td class="amount">'+fmtN(d.financing.capital_injected)+'</td></tr>';
+      html+='<tr><td class="indent">Owner\'s Drawings</td><td class="amount">'+fmtN(d.financing.drawings)+'</td></tr>';
+      html+='<tr class="subtotal"><td>Net Cash from Financing Activities</td><td class="amount">'+fmtN(d.financing.total)+'</td></tr>';
+      // Net change
+      html+='<tr class="highlight"><td><strong>Net Change in Cash</strong></td><td class="amount"><strong>'+fmtN(d.net_change)+'</strong></td></tr>';
+      html+='<tr class="grand-total"><td>Closing Cash Balance</td><td class="amount">'+fmtN(d.closing_cash)+'</td></tr>';
+      html+='</table>';
+      document.getElementById('cashflowContent').innerHTML=html;
+    })
+    .catch(()=>{document.getElementById('cashflowContent').innerHTML='<div class="empty-msg">Failed to load</div>';showToast('Failed to load Cash Flow','error');});
+}
+
+/* ── Equity ── */
+function loadEquity(q){
+  document.getElementById('equityContent').innerHTML='<div class="loader"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+  fetch('/api/finance/equity-statement?'+q)
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d||d.error){document.getElementById('equityContent').innerHTML='<div class="empty-msg">No data available</div>';return;}
+      var html='<table class="report-table">';
+      html+='<tr class="section-header"><td>Opening Position</td><td class="amount"></td></tr>';
+      html+='<tr><td class="indent">Owner\'s Capital</td><td class="amount">'+fmtN(d.opening_capital)+'</td></tr>';
+      html+='<tr><td class="indent">Retained Earnings (b/f)</td><td class="amount">'+fmtN(d.retained_earnings)+'</td></tr>';
+      html+='<tr class="subtotal"><td>Opening Equity</td><td class="amount">'+fmtN(d.opening_equity)+'</td></tr>';
+      html+='<tr class="section-header"><td>Changes During Period</td><td class="amount"></td></tr>';
+      html+='<tr><td class="indent">Add: Net Profit for Period</td><td class="amount">'+fmtN(d.net_profit)+'</td></tr>';
+      html+='<tr><td class="indent">Less: Owner\'s Drawings</td><td class="amount">('+fmtN(d.drawings)+')</td></tr>';
+      html+='<tr class="grand-total"><td>Closing Equity</td><td class="amount">'+fmtN(d.closing_equity)+'</td></tr>';
+      html+='</table>';
+      document.getElementById('equityContent').innerHTML=html;
+    })
+    .catch(()=>{document.getElementById('equityContent').innerHTML='<div class="empty-msg">Failed to load</div>';showToast('Failed to load Equity Statement','error');});
+}
+
+/* ── Trial Balance ── */
+var TYPE_ORDER=['asset','liability','equity','revenue','cogs','expense'];
+var TYPE_LABELS={asset:'Assets',liability:'Liabilities',equity:'Equity',revenue:'Revenue',cogs:'Cost of Goods Sold',expense:'Expenses'};
+
+function loadTrialBalance(q){
+  document.getElementById('trialContent').innerHTML='<div class="loader"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+  fetch('/api/finance/trial-balance?'+q)
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d||d.error||!d.rows){document.getElementById('trialContent').innerHTML='<div class="empty-msg">No data available</div>';return;}
+      var rows=d.rows;
+      if(!rows.length){document.getElementById('trialContent').innerHTML='<div class="empty-msg">No journal entries found for the selected period</div>';return;}
+      // Group by type
+      var groups={};
+      TYPE_ORDER.forEach(t=>groups[t]=[]);
+      rows.forEach(r=>{if(groups[r.type]) groups[r.type].push(r); else groups['expense'].push(r);});
+      var html='<table class="report-table">';
+      html+='<tr style="background:#f8fffe"><th style="padding:10px 20px;text-align:left;color:#16a085">Code</th><th style="padding:10px 20px;text-align:left;color:#16a085">Account Name</th><th style="padding:10px 20px;text-align:right;color:#2980b9">Debit (PKR)</th><th style="padding:10px 20px;text-align:right;color:#27ae60">Credit (PKR)</th></tr>';
+      TYPE_ORDER.forEach(function(t){
+        if(!groups[t].length) return;
+        html+='<tr class="tb-group-header"><td colspan="4">'+TYPE_LABELS[t]+'</td></tr>';
+        groups[t].forEach(function(r){
+          html+='<tr>';
+          html+='<td class="indent" style="font-family:monospace;font-size:12px">'+r.code+'</td>';
+          html+='<td>'+r.name+'</td>';
+          html+='<td style="text-align:right;font-family:monospace">'+(r.dr>0?fmtN(r.dr):'—')+'</td>';
+          html+='<td style="text-align:right;font-family:monospace">'+(r.cr>0?fmtN(r.cr):'—')+'</td>';
+          html+='</tr>';
+        });
+      });
+      var balanced=Math.abs(d.total_dr-d.total_cr)<0.02;
+      var balText=balanced?'<span class="tb-balanced"><i class="fas fa-check-circle"></i> Balanced</span>':'<span class="tb-imbalanced"><i class="fas fa-exclamation-triangle"></i> IMBALANCED</span>';
+      html+='<tr class="tb-totals"><td colspan="2">TOTALS &nbsp;'+balText+'</td><td style="text-align:right;font-family:monospace;padding:10px 20px">'+fmtN(d.total_dr)+'</td><td style="text-align:right;font-family:monospace;padding:10px 20px">'+fmtN(d.total_cr)+'</td></tr>';
+      html+='</table>';
+      document.getElementById('trialContent').innerHTML=html;
+    })
+    .catch(()=>{document.getElementById('trialContent').innerHTML='<div class="empty-msg">Failed to load</div>';showToast('Failed to load Trial Balance','error');});
+}
+</script>
+</body>
+</html>

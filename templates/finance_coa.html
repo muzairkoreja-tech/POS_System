@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chart of Accounts - Finance</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0faf8;min-height:100vh}
+.dashboard-nav{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600}
+.nav-brand a{color:#fff;text-decoration:none;display:flex;align-items:center;gap:8px;font-size:13px;opacity:.85}
+.nav-brand a:hover{opacity:1}
+.nav-right{display:flex;align-items:center;gap:20px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:14px}
+.role-badge{background:rgba(255,255,255,.25);padding:4px 10px;border-radius:12px;font-size:11px;text-transform:uppercase}
+.btn-logout{background:rgba(231,76,60,.8);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+.btn-logout:hover{background:#e74c3c}
+.page-container{max-width:1300px;margin:0 auto;padding:24px}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.page-title{font-size:22px;font-weight:700;color:#16a085}
+.btn-add{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.btn-add:hover{opacity:.9}
+.summary-bar{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.summary-chip{background:#fff;border-radius:8px;padding:10px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08);font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px}
+.filter-bar{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 1px 6px rgba(0,0,0,.07);display:flex;gap:12px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.filter-bar input,.filter-bar select{padding:8px 12px;border:2px solid #e0e0e0;border-radius:6px;font-size:13px;outline:none}
+.filter-bar input:focus,.filter-bar select:focus{border-color:#16a085}
+.filter-bar input{flex:1;min-width:180px}
+.table-wrap{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fffe;color:#16a085;font-weight:700;padding:12px 14px;text-align:left;border-bottom:2px solid #e8f8f5}
+td{padding:11px 14px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fffe}
+.type-group-header td{background:#e8f8f5;font-weight:700;color:#16a085;font-size:12px;text-transform:uppercase;letter-spacing:.5px;padding:8px 14px}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:capitalize}
+.badge-asset{background:#ebf5fb;color:#2980b9}
+.badge-liability{background:#fdedec;color:#e74c3c}
+.badge-equity{background:#f5eef8;color:#8e44ad}
+.badge-revenue{background:#eafaf1;color:#27ae60}
+.badge-cogs{background:#fef9e7;color:#e67e22}
+.badge-expense{background:#fffde7;color:#f39c12}
+.badge-active{background:#eafaf1;color:#27ae60}
+.badge-inactive{background:#fdedec;color:#e74c3c}
+.badge-debit{background:#ebf5fb;color:#2980b9}
+.badge-credit{background:#eafaf1;color:#27ae60}
+.btn-sm{border:none;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;font-weight:600}
+.btn-edit{background:#ebf5fb;color:#2980b9}
+.btn-edit:hover{background:#d6eaf8}
+.btn-deactivate{background:#fdedec;color:#e74c3c}
+.btn-deactivate:hover{background:#fadbd8}
+.btn-activate{background:#eafaf1;color:#27ae60}
+.empty-state{text-align:center;padding:48px;color:#95a5a6}
+.empty-state i{font-size:48px;margin-bottom:12px;display:block}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-header{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-radius:14px 14px 0 0}
+.modal-header h3{font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;opacity:.8}
+.modal-close:hover{opacity:1}
+.modal-body{padding:24px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:2px solid #eee;border-radius:6px;font-size:14px;transition:border-color .3s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#16a085}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-footer{padding:16px 24px;border-top:1px solid #f0f0f0;display:flex;justify-content:flex-end;gap:10px}
+.btn-primary{background:linear-gradient(135deg,#16a085,#1abc9c);color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.btn-secondary{background:#ecf0f1;color:#2c3e50;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.toast{position:fixed;bottom:20px;right:20px;background:#2c3e50;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;z-index:3000}
+.toast.show{display:block}
+.toast.success{background:#27ae60}
+.toast.error{background:#e74c3c}
+</style>
+</head>
+<body>
+<nav class="dashboard-nav">
+  <div class="nav-brand">
+    <a href="/finance-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    <span style="opacity:.4">|</span>
+    <i class="fas fa-list-ol"></i><span>Chart of Accounts</span>
+  </div>
+  <div class="nav-right">
+    <div class="nav-user">
+      <i class="fas fa-user-circle"></i>
+      <span id="navUserName">Finance</span>
+      <span class="role-badge" id="navRoleBadge">Finance</span>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title"><i class="fas fa-list-ol"></i> Chart of Accounts</h1>
+    <button class="btn-add" onclick="openAddModal()"><i class="fas fa-plus"></i> Add Account</button>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-bar" id="summaryBar">
+    <div class="summary-chip"><i class="fas fa-circle" style="color:#2980b9"></i> Assets: <strong id="cntAsset">—</strong></div>
+    <div class="summary-chip"><i class="fas fa-circle" style="color:#e74c3c"></i> Liabilities: <strong id="cntLiability">—</strong></div>
+    <div class="summary-chip"><i class="fas fa-circle" style="color:#8e44ad"></i> Equity: <strong id="cntEquity">—</strong></div>
+    <div class="summary-chip"><i class="fas fa-circle" style="color:#27ae60"></i> Revenue: <strong id="cntRevenue">—</strong></div>
+    <div class="summary-chip"><i class="fas fa-circle" style="color:#e67e22"></i> COGS: <strong id="cntCogs">—</strong></div>
+    <div class="summary-chip"><i class="fas fa-circle" style="color:#f39c12"></i> Expenses: <strong id="cntExpense">—</strong></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="Search by name or code..." oninput="applyFilter()">
+    <select id="typeFilter" onchange="applyFilter()">
+      <option value="">All Types</option>
+      <option value="asset">Asset</option>
+      <option value="liability">Liability</option>
+      <option value="equity">Equity</option>
+      <option value="revenue">Revenue</option>
+      <option value="cogs">COGS</option>
+      <option value="expense">Expense</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th><th>Name</th><th>Type</th><th>Subtype</th><th>Normal Balance</th><th>Description</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="coaTableBody">
+        <tr><td colspan="8" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="acctModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Add Account</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Account Code *</label>
+          <input type="text" id="fCode" placeholder="e.g. 7000">
+        </div>
+        <div class="form-group">
+          <label>Account Type *</label>
+          <select id="fType" onchange="autoNormalBalance()">
+            <option value="asset">Asset</option>
+            <option value="liability">Liability</option>
+            <option value="equity">Equity</option>
+            <option value="revenue">Revenue</option>
+            <option value="cogs">COGS</option>
+            <option value="expense">Expense</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Account Name *</label>
+        <input type="text" id="fName" placeholder="e.g. Petty Cash">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Subtype</label>
+          <input type="text" id="fSubtype" placeholder="e.g. current, operating">
+        </div>
+        <div class="form-group">
+          <label>Normal Balance</label>
+          <select id="fNormal">
+            <option value="debit">Debit</option>
+            <option value="credit">Credit</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="fDesc" rows="2" placeholder="Brief description of this account"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveAccount()"><i class="fas fa-save"></i> Save Account</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+var allAccounts = [];
+
+function fmt(n){return 'PKR '+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'');setTimeout(()=>t.className='toast',3000);}
+function handleLogout(){fetch('/api/auth/logout',{method:'POST'}).then(()=>{sessionStorage.clear();window.location.href='/login';});}
+
+document.addEventListener('DOMContentLoaded',function(){
+  var name=sessionStorage.getItem('full_name')||'Finance Manager';
+  var role=sessionStorage.getItem('role')||'finance_manager';
+  document.getElementById('navUserName').textContent=name;
+  document.getElementById('navRoleBadge').textContent=role.replace(/_/g,' ');
+  loadAccounts();
+});
+
+function loadAccounts(){
+  fetch('/api/gl/accounts')
+    .then(r=>r.json())
+    .then(data=>{
+      allAccounts=data;
+      updateSummary(data);
+      renderTable(data);
+    })
+    .catch(()=>showToast('Failed to load accounts','error'));
+}
+
+function updateSummary(data){
+  var types=['asset','liability','equity','revenue','cogs','expense'];
+  types.forEach(t=>{
+    var cnt=data.filter(a=>a.type===t).length;
+    var el=document.getElementById('cnt'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(el) el.textContent=cnt;
+  });
+}
+
+function applyFilter(){
+  var search=document.getElementById('searchInput').value.toLowerCase();
+  var type=document.getElementById('typeFilter').value;
+  var filtered=allAccounts.filter(a=>{
+    var matchSearch=!search||(a.name||'').toLowerCase().includes(search)||(a.code||'').includes(search);
+    var matchType=!type||a.type===type;
+    return matchSearch&&matchType;
+  });
+  renderTable(filtered);
+}
+
+var TYPE_ORDER=['asset','liability','equity','revenue','cogs','expense'];
+var TYPE_LABELS={'asset':'Assets','liability':'Liabilities','equity':'Equity','revenue':'Revenue','cogs':'Cost of Goods Sold','expense':'Expenses'};
+
+function typeBadge(t){return '<span class="badge badge-'+t+'">'+(TYPE_LABELS[t]||t)+'</span>';}
+function normalBadge(n){return '<span class="badge badge-'+n+'">'+n+'</span>';}
+function activeBadge(a){return a===false?'<span class="badge badge-inactive">Inactive</span>':'<span class="badge badge-active">Active</span>';}
+
+function renderTable(data){
+  var tbody=document.getElementById('coaTableBody');
+  if(!data.length){
+    tbody.innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="fas fa-list-ol"></i><div>No accounts found</div></div></td></tr>';
+    return;
+  }
+  // Group by type
+  var groups={};
+  TYPE_ORDER.forEach(t=>groups[t]=[]);
+  data.forEach(a=>{
+    if(groups[a.type]) groups[a.type].push(a);
+    else groups['expense'].push(a);
+  });
+  var html='';
+  TYPE_ORDER.forEach(t=>{
+    if(!groups[t].length) return;
+    html+='<tr class="type-group-header"><td colspan="8"><i class="fas fa-tag"></i> '+TYPE_LABELS[t]+' ('+groups[t].length+')</td></tr>';
+    groups[t].forEach(a=>{
+      var id=a._id||a.code;
+      var activeBtn=a.is_active===false
+        ?'<button class="btn-sm btn-activate" onclick="toggleActive(\''+id+'\',true)">Activate</button>'
+        :'<button class="btn-sm btn-deactivate" onclick="toggleActive(\''+id+'\',false)">Deactivate</button>';
+      html+='<tr>';
+      html+='<td><strong style="font-family:monospace">'+a.code+'</strong></td>';
+      html+='<td>'+a.name+'</td>';
+      html+='<td>'+typeBadge(a.type)+'</td>';
+      html+='<td><span style="color:#7f8c8d;font-size:12px">'+(a.subtype||'—')+'</span></td>';
+      html+='<td>'+normalBadge(a.normal_balance||'debit')+'</td>';
+      html+='<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#636e72">'+(a.description||'—')+'</td>';
+      html+='<td>'+activeBadge(a.is_active)+'</td>';
+      html+='<td style="white-space:nowrap"><button class="btn-sm btn-edit" onclick="openEditModal(\''+id+'\')">Edit</button> '+activeBtn+'</td>';
+      html+='</tr>';
+    });
+  });
+  tbody.innerHTML=html;
+}
+
+function openAddModal(){
+  document.getElementById('modalTitle').textContent='Add Account';
+  document.getElementById('editId').value='';
+  document.getElementById('fCode').value='';
+  document.getElementById('fName').value='';
+  document.getElementById('fType').value='asset';
+  document.getElementById('fSubtype').value='';
+  document.getElementById('fNormal').value='debit';
+  document.getElementById('fDesc').value='';
+  document.getElementById('fCode').removeAttribute('readonly');
+  document.getElementById('acctModal').classList.add('show');
+}
+
+function openEditModal(id){
+  var a=allAccounts.find(x=>(x._id||x.code)===id);
+  if(!a) return;
+  document.getElementById('modalTitle').textContent='Edit Account';
+  document.getElementById('editId').value=id;
+  document.getElementById('fCode').value=a.code;
+  document.getElementById('fCode').setAttribute('readonly','true');
+  document.getElementById('fName').value=a.name;
+  document.getElementById('fType').value=a.type;
+  document.getElementById('fSubtype').value=a.subtype||'';
+  document.getElementById('fNormal').value=a.normal_balance||'debit';
+  document.getElementById('fDesc').value=a.description||'';
+  document.getElementById('acctModal').classList.add('show');
+}
+
+function closeModal(){document.getElementById('acctModal').classList.remove('show');}
+
+function autoNormalBalance(){
+  var type=document.getElementById('fType').value;
+  var creditTypes=['liability','equity','revenue'];
+  document.getElementById('fNormal').value=creditTypes.includes(type)?'credit':'debit';
+}
+
+function saveAccount(){
+  var editId=document.getElementById('editId').value;
+  var payload={
+    code:document.getElementById('fCode').value.trim(),
+    name:document.getElementById('fName').value.trim(),
+    type:document.getElementById('fType').value,
+    subtype:document.getElementById('fSubtype').value.trim(),
+    normal_balance:document.getElementById('fNormal').value,
+    description:document.getElementById('fDesc').value.trim()
+  };
+  if(!payload.code||!payload.name){showToast('Code and Name are required','error');return;}
+  var url='/api/gl/accounts';
+  var method='POST';
+  if(editId){url='/api/gl/accounts/'+editId;method='PUT';}
+  fetch(url,{method:method,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.error){showToast(d.error,'error');return;}
+      showToast(editId?'Account updated':'Account added','success');
+      closeModal();
+      loadAccounts();
+    })
+    .catch(()=>showToast('Save failed','error'));
+}
+
+function toggleActive(id,active){
+  fetch('/api/gl/accounts/'+id,{method:active?'PUT':'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({is_active:active})})
+    .then(r=>r.json())
+    .then(()=>{showToast(active?'Account activated':'Account deactivated','success');loadAccounts();})
+    .catch(()=>showToast('Action failed','error'));
+}
+</script>
+</body>
+</html>
