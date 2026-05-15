@@ -100,13 +100,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--dark);color:var(--text);
 .qty-btn:hover{background:rgba(255,255,255,.1)}
 .qty-num{font-size:13px;font-weight:700;min-width:22px;text-align:center}
 .item-price{flex:1;text-align:right;font-size:12px;color:var(--green);font-weight:700}
-.item-disc-row{display:flex;align-items:center;gap:6px;margin-top:5px}
-.item-disc-row label{font-size:10px;color:var(--muted);white-space:nowrap}
-.item-disc-input{background:var(--dark);border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:4px;font-size:11px;width:60px;text-align:right;outline:none}
-.item-disc-input:focus{border-color:var(--yellow)}
-.disc-type-toggle{background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--muted);padding:3px 7px;border-radius:4px;font-size:10px;cursor:pointer}
-.disc-type-toggle.pct{color:var(--yellow);border-color:rgba(243,156,18,.4)}
-.item-disc-amt{font-size:10px;color:var(--yellow);min-width:50px;text-align:right}
+.item-disc-badge{font-size:10px;color:var(--yellow);background:rgba(243,156,18,.1);padding:1px 6px;border-radius:4px;margin-top:3px;display:inline-block}
 
 /* ── Cart Footer ── */
 .cart-footer{border-top:1px solid var(--border);flex-shrink:0}
@@ -289,12 +283,6 @@ body{font-family:'Segoe UI',sans-serif;background:var(--dark);color:var(--text);
     <div class="cart-footer">
       <div class="cart-discounts">
         <div class="disc-row">
-          <label>Cart Discount</label>
-          <input type="number" id="cartDiscPct" placeholder="%" min="0" max="100" step="0.5" oninput="calcTotals()" style="width:60px;text-align:right">
-          <span style="font-size:11px;color:var(--muted)">%  or</span>
-          <input type="number" id="cartDiscAmt" placeholder="PKR" min="0" step="1" oninput="calcTotals()" style="width:80px;text-align:right">
-        </div>
-        <div class="disc-row">
           <label>Promo Code</label>
           <input type="text" id="promoInput" placeholder="Enter code" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')applyPromo()">
           <button class="apply-btn green" onclick="applyPromo()">Apply</button>
@@ -363,8 +351,47 @@ body{font-family:'Segoe UI',sans-serif;background:var(--dark);color:var(--text);
 
       <!-- Customer Info -->
       <div style="margin-bottom:14px">
-        <label style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Customer</label>
-        <input type="text" id="chkCustName" placeholder="Customer name (optional)" style="width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none">
+        <label style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px"><i class="fas fa-user" style="margin-right:4px"></i>Customer <span style="font-weight:400;color:var(--muted);font-size:10px">(optional)</span></label>
+
+        <!-- Search field -->
+        <div style="position:relative" id="chkCustWrap">
+          <i class="fas fa-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;pointer-events:none;z-index:1"></i>
+          <input type="text" id="chkCustSearch" placeholder="Search by mobile number or name…" autocomplete="off"
+            style="width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:9px 36px 9px 32px;border-radius:8px;font-size:13px;outline:none;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'"
+            oninput="onChkCustSearch(this.value)">
+          <button id="chkClearBtn" onclick="clearChkCustomer()" title="Clear" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:2px">✕</button>
+          <!-- Dropdown -->
+          <div id="chkCustDrop" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--dark);border:1px solid var(--border);border-radius:8px;z-index:400;max-height:200px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.6)"></div>
+        </div>
+
+        <!-- Attached customer badge -->
+        <div id="chkCustBadge" style="display:none;margin-top:8px;background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);border-radius:8px;padding:10px 14px;align-items:center;gap:10px">
+          <i class="fas fa-user-check" style="color:var(--green);font-size:16px"></i>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:var(--text)" id="chkBadgeName"></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px" id="chkBadgeInfo"></div>
+          </div>
+          <button onclick="clearChkCustomer()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px" title="Remove">✕</button>
+        </div>
+
+        <!-- Register New Customer panel -->
+        <div id="chkRegPanel" style="display:none;margin-top:8px;background:rgba(243,156,18,.07);border:1px solid rgba(243,156,18,.3);border-radius:8px;padding:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--yellow);margin-bottom:10px;display:flex;align-items:center;gap:6px"><i class="fas fa-user-plus"></i> Register New Customer</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input type="tel" id="chkRegPhone" placeholder="Mobile number" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:13px;outline:none">
+            <input type="text" id="chkRegName" placeholder="Full name *" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:13px;outline:none" onkeydown="if(event.key==='Enter') quickRegisterCustomer()">
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="quickRegisterCustomer()" style="background:var(--green);border:none;color:#fff;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="fas fa-user-plus"></i> Register & Attach</button>
+            <button onclick="document.getElementById('chkRegPanel').style.display='none'" style="background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--muted);padding:8px 14px;border-radius:6px;font-size:12px;cursor:pointer">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Register button shown when no customer found -->
+        <div id="chkRegBtnRow" style="display:none;margin-top:8px">
+          <button onclick="showChkRegisterForm()" style="width:100%;background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.3);color:var(--yellow);padding:9px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px"><i class="fas fa-user-plus"></i> Register New Customer</button>
+        </div>
       </div>
 
       <!-- Split Payments -->
@@ -440,6 +467,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('shiftOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeShiftModal(); });
   document.addEventListener('click', e => {
     if(!e.target.closest('.customer-strip')) document.getElementById('custResults').style.display='none';
+    if(!e.target.closest('#chkCustWrap'))   document.getElementById('chkCustDrop').style.display='none';
   });
 });
 
@@ -659,8 +687,10 @@ function setItemDisc(pid, type, val){
 function calcItemDisc(item){
   const p = allProducts.find(x=>x._id===item.product_id);
   if(!p) return;
-  if(item.discount_pct>0) item.discount_amt = +(p.price*item.quantity*item.discount_pct/100).toFixed(2);
-  item.subtotal = +(p.price*item.quantity - item.discount_amt).toFixed(2);
+  const discPct = p.discount_percent || 0;
+  item.discount_pct = discPct;
+  item.discount_amt = +(p.price * item.quantity * discPct / 100).toFixed(2);
+  item.subtotal = +(p.price * item.quantity - item.discount_amt).toFixed(2);
 }
 
 function renderCart(){
@@ -688,17 +718,9 @@ function renderCart(){
           <span class="qty-num">${item.quantity}</span>
           <button class="qty-btn" onclick="updateQty('${p._id}',1)">+</button>
         </div>
-        <div style="font-size:11px;color:var(--muted)">${fmt(p.price)} ea</div>
+        <div style="font-size:11px;color:var(--muted)">${fmt(p.price)} ea${item.discount_pct>0?` <span class="item-disc-badge">-${item.discount_pct}%</span>`:''}
+        </div>
         <div class="item-price">${fmt(subtotal)}</div>
-      </div>
-      <div class="item-disc-row">
-        <label>Disc</label>
-        <input class="item-disc-input" type="number" placeholder="%" min="0" max="100" value="${item.discount_pct||''}" title="Discount %"
-          onchange="setItemDisc('${p._id}','pct',this.value)" style="width:54px">
-        <span style="font-size:10px;color:var(--muted)">%</span>
-        <input class="item-disc-input" type="number" placeholder="PKR" min="0" value="${item.discount_pct?'':item.discount_amt||''}" title="Fixed discount"
-          onchange="setItemDisc('${p._id}','amt',this.value)">
-        ${discAmt>0?`<span class="item-disc-amt">−${fmt(discAmt)}</span>`:''}
       </div>
     </div>`;
   }).join('');
@@ -714,9 +736,7 @@ function calcTotals(){
   let subtotal = 0;
   cart.forEach(item=>{ calcItemDisc(item); subtotal += item.subtotal||0; });
 
-  const cartDiscPct = parseFloat(document.getElementById('cartDiscPct').value)||0;
-  let   cartDiscAmt = parseFloat(document.getElementById('cartDiscAmt').value)||0;
-  if(cartDiscPct>0) cartDiscAmt = +(subtotal*cartDiscPct/100).toFixed(2);
+  const cartDiscAmt = 0;
 
   const promoDisc    = promoData ? promoData.discount : 0;
   const loyaltyPts   = parseInt(document.getElementById('loyaltyPts').value)||0;
@@ -746,6 +766,95 @@ function calcTotals(){
   document.getElementById('totTax').textContent = fmt(taxAmt);
   document.getElementById('totTotal').textContent = fmt(total);
   return {subtotal, cartDiscAmt, promoDisc, loyaltyPts, loyaltyValue, taxRate, taxAmt, total};
+}
+
+// ── Checkout Customer Search ──────────────────────────────────────────────────
+let chkCustTimer;
+function onChkCustSearch(val){
+  clearTimeout(chkCustTimer);
+  const drop    = document.getElementById('chkCustDrop');
+  const regBtn  = document.getElementById('chkRegBtnRow');
+  const regPanel= document.getElementById('chkRegPanel');
+  drop.style.display='none'; regBtn.style.display='none';
+  document.getElementById('chkClearBtn').style.display = val ? '' : 'none';
+  if(!val.trim()){ return; }
+  chkCustTimer = setTimeout(async ()=>{
+    try{
+      const data = await fetch('/api/customers?search='+encodeURIComponent(val)+'&limit=8').then(r=>r.json());
+      if(!data.length){
+        regBtn.style.display='block';
+        // pre-fill register form with the typed value
+        document.getElementById('chkRegPhone').value = /^\d+$/.test(val.trim()) ? val.trim() : '';
+        document.getElementById('chkRegName').value  = /^\d+$/.test(val.trim()) ? '' : val.trim();
+        return;
+      }
+      drop.innerHTML = data.map(c=>`<div class="cust-result-item" onclick="attachChkCustomer(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+        <div class="name"><i class="fas fa-user" style="color:var(--green);margin-right:6px"></i><strong>${c.name}</strong></div>
+        <div class="meta">${c.phone||'—'} &nbsp;·&nbsp; ${c.customer_number||''} &nbsp;·&nbsp; <span style="color:var(--yellow)">${c.loyalty_points||0} pts</span></div>
+      </div>`).join('');
+      drop.style.display='block';
+    }catch(e){}
+  }, 250);
+}
+
+function attachChkCustomer(c){
+  attachedCustomer = c;
+  document.getElementById('chkCustSearch').value = (c.phone||c.name);
+  document.getElementById('chkCustDrop').style.display='none';
+  document.getElementById('chkRegBtnRow').style.display='none';
+  document.getElementById('chkRegPanel').style.display='none';
+  document.getElementById('chkClearBtn').style.display='';
+  // Show green badge
+  const badge = document.getElementById('chkCustBadge');
+  badge.style.display='flex';
+  document.getElementById('chkBadgeName').textContent = c.name + (c.phone ? '  ·  '+c.phone : '');
+  document.getElementById('chkBadgeInfo').textContent = (c.customer_number||'') + '  ·  ' + (c.loyalty_points||0) + ' loyalty points available';
+  // Loyalty row in cart panel
+  document.getElementById('loyaltyRow').style.display='flex';
+  document.getElementById('loyaltyAvail').textContent = '('+( c.loyalty_points||0)+' available)';
+  document.getElementById('loyaltyPts').max = c.loyalty_points||0;
+  calcTotals();
+  setTimeout(()=>{ document.querySelector('.pm-amount').focus(); }, 80);
+}
+
+function clearChkCustomer(){
+  attachedCustomer=null;
+  document.getElementById('chkCustSearch').value='';
+  document.getElementById('chkCustDrop').style.display='none';
+  document.getElementById('chkCustBadge').style.display='none';
+  document.getElementById('chkRegBtnRow').style.display='none';
+  document.getElementById('chkRegPanel').style.display='none';
+  document.getElementById('chkClearBtn').style.display='none';
+  document.getElementById('loyaltyRow').style.display='none';
+  document.getElementById('loyaltyPts').value='';
+  document.getElementById('custBadge').style.display='none';
+  document.getElementById('custSearch').value='';
+  calcTotals();
+  document.getElementById('chkCustSearch').focus();
+}
+
+function showChkRegisterForm(){
+  document.getElementById('chkRegBtnRow').style.display='none';
+  document.getElementById('chkRegPanel').style.display='block';
+  const v = document.getElementById('chkCustSearch').value.trim();
+  if(!document.getElementById('chkRegPhone').value && /^\d/.test(v)) document.getElementById('chkRegPhone').value=v;
+  setTimeout(()=>{
+    const f = document.getElementById('chkRegPhone').value ? document.getElementById('chkRegName') : document.getElementById('chkRegPhone');
+    f.focus();
+  }, 50);
+}
+
+async function quickRegisterCustomer(){
+  const phone = document.getElementById('chkRegPhone').value.trim();
+  const name  = document.getElementById('chkRegName').value.trim();
+  if(!name){ showToast('Customer name is required','error'); document.getElementById('chkRegName').focus(); return; }
+  try{
+    const r = await fetch('/api/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,phone})});
+    const d = await r.json();
+    if(!r.ok){ showToast(d.error||'Registration failed','error'); return; }
+    attachChkCustomer(d.customer);
+    showToast('Customer registered: '+name,'success');
+  }catch(e){ showToast('Failed to register customer','error'); }
 }
 
 // ── Promo Code ────────────────────────────────────────────────────────────────
@@ -860,8 +969,19 @@ function openCheckout(){
   document.getElementById('chkTax').textContent        = fmt(totals.taxAmt);
   document.getElementById('chkTotal').textContent      = fmt(totals.total);
 
-  // Customer name
-  document.getElementById('chkCustName').value = attachedCustomer ? attachedCustomer.name : '';
+  // Customer fields
+  document.getElementById('chkCustSearch').value = attachedCustomer ? (attachedCustomer.phone||attachedCustomer.name) : '';
+  document.getElementById('chkCustDrop').style.display='none';
+  document.getElementById('chkRegBtnRow').style.display='none';
+  document.getElementById('chkRegPanel').style.display='none';
+  document.getElementById('chkClearBtn').style.display = attachedCustomer ? '' : 'none';
+  if(attachedCustomer){
+    document.getElementById('chkCustBadge').style.display='flex';
+    document.getElementById('chkBadgeName').textContent = attachedCustomer.name + (attachedCustomer.phone ? '  ·  '+attachedCustomer.phone : '');
+    document.getElementById('chkBadgeInfo').textContent = (attachedCustomer.customer_number||'') + '  ·  ' + (attachedCustomer.loyalty_points||0) + ' loyalty points available';
+  } else {
+    document.getElementById('chkCustBadge').style.display='none';
+  }
 
   // Payment rows — start with one cash row
   document.getElementById('pmSplits').innerHTML='';
@@ -869,9 +989,15 @@ function openCheckout(){
   updatePaymentBalance(totals.total);
 
   document.getElementById('checkoutOverlay').classList.add('open');
+  setTimeout(()=>{ document.getElementById('chkCustSearch').focus(); }, 150);
 }
 
-function closeCheckout(){ document.getElementById('checkoutOverlay').classList.remove('open'); }
+function closeCheckout(){
+  document.getElementById('checkoutOverlay').classList.remove('open');
+  document.getElementById('chkCustDrop').style.display='none';
+  document.getElementById('chkRegPanel').style.display='none';
+  document.getElementById('chkRegBtnRow').style.display='none';
+}
 
 function addPaymentRow(method='cash', amount=''){
   const row = document.createElement('div');
@@ -931,15 +1057,15 @@ async function completeSale(){
       product_id:item.product_id, quantity:item.quantity,
       discount_pct:item.discount_pct||0, discount_amt:item.discount_amt||0
     })),
-    cart_discount_pct: parseFloat(document.getElementById('cartDiscPct').value)||0,
-    cart_discount_amt: parseFloat(document.getElementById('cartDiscAmt').value)||0,
+    cart_discount_pct: 0,
+    cart_discount_amt: 0,
     promo_code:    promoData ? promoData.code : '',
     promo_discount: promoData ? promoData.discount : 0,
     loyalty_points_used: totals.loyaltyPts||0,
     tax_rate: storeCfg.tax_rate||0,
     payments,
     customer_id:   attachedCustomer ? attachedCustomer._id : '',
-    customer_name: document.getElementById('chkCustName').value.trim() || (attachedCustomer?attachedCustomer.name:''),
+    customer_name: attachedCustomer ? attachedCustomer.name : '',
     shift_id: activeShift ? activeShift._id : '',
   };
 
@@ -950,14 +1076,14 @@ async function completeSale(){
     closeCheckout();
     showReceipt(d.sale, d.receipt_number, changeGiven, totals);
     cart=[]; promoData=null; attachedCustomer=null;
-    document.getElementById('cartDiscPct').value='';
-    document.getElementById('cartDiscAmt').value='';
     document.getElementById('promoInput').value='';
     document.getElementById('promoOk').style.display='none';
     document.getElementById('loyaltyPts').value='';
     document.getElementById('custBadge').style.display='none';
+    document.getElementById('custSearch').value='';
     document.getElementById('loyaltyRow').style.display='none';
     renderCart(); calcTotals();
+    loadProducts();
     if(activeShift){ activeShift.sales_count=(activeShift.sales_count||0)+1; activeShift.sales_total=(activeShift.sales_total||0)+d.sale.total; }
   }catch(e){ showToast('Connection error','error'); }
   btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Complete Sale (Enter)';
