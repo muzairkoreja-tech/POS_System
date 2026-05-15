@@ -3,7 +3,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file, send_from_directory
 from flask_cors import CORS
 from pymongo import MongoClient
 from bson import ObjectId
@@ -594,6 +594,12 @@ def logout():
     if request.is_json:
         return jsonify({'success': True})
     return jsonify({'success': True})
+
+
+@app.route('/logout')
+def logout_get():
+    session.clear()
+    return redirect(url_for('login_page'))
 
 
 @app.route('/forgot-password')
@@ -8059,14 +8065,16 @@ def predictive_vendors_page():
 def doc_user_guide():
     if session.get('role') not in ['admin', 'manual_viewer']:
         return redirect(url_for('login_page'))
-    return send_file(os.path.join(os.path.dirname(__file__), 'docs', 'user_guide.html'))
+    docs_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'docs')
+    return send_from_directory(docs_dir, 'user_guide.html')
 
 
 @app.route('/docs/use-cases')
 def doc_use_cases():
     if session.get('role') not in ['admin', 'manual_viewer']:
         return redirect(url_for('login_page'))
-    return send_file(os.path.join(os.path.dirname(__file__), 'docs', 'use_cases.html'))
+    docs_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'docs')
+    return send_from_directory(docs_dir, 'use_cases.html')
 
 
 @app.route('/docs')
