@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predictive Analysis - Sales</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f8;min-height:100vh}
+.nav{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.nav-brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700}
+.nav-brand i{color:#a78bfa;font-size:22px}
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:13px}
+.role-badge{background:rgba(167,139,250,.25);padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.btn-logout{background:rgba(239,68,68,.8);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px}
+.pred-tabs{background:#fff;border-bottom:2px solid #e5e7eb;display:flex;gap:0;padding:0 24px;overflow-x:auto}
+.pred-tab{padding:14px 20px;font-size:13px;font-weight:600;color:#6b7280;text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px;transition:all .2s}
+.pred-tab:hover{color:#10b981;background:#f0fdf4}
+.pred-tab.active{color:#10b981;border-bottom-color:#10b981}
+.container{max-width:1300px;margin:0 auto;padding:24px}
+.page-title{font-size:22px;font-weight:800;color:#064e3b;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.page-title i{color:#10b981}
+.page-sub{color:#6b7280;font-size:13px;margin-bottom:24px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;align-items:center;gap:14px}
+.kpi-icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;flex-shrink:0}
+.kpi-val{font-size:19px;font-weight:800;color:#064e3b;line-height:1.1}
+.kpi-lbl{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+.kpi-sub{font-size:11px;margin-top:3px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.chart-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:13px;font-weight:700;color:#064e3b;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.chart-title i{color:#10b981}
+.chart-sub{font-size:11px;color:#9ca3af;margin-left:auto}
+canvas{max-height:280px}
+.legend-item{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#6b7280;margin-right:12px}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+.legend-dash{width:16px;height:3px;border-top:2px dashed}
+.forecast-note{font-size:11px;color:#9ca3af;font-style:italic;margin-top:6px}
+/* Product table */
+.prod-table{width:100%;border-collapse:collapse;font-size:13px}
+.prod-table th{background:#f8fafc;padding:9px 14px;text-align:left;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e5e7eb}
+.prod-table td{padding:10px 14px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+.prod-table tr:hover td{background:#f8fafc}
+.prod-bar-wrap{background:#f0f0f0;border-radius:4px;height:6px;width:100px;display:inline-block;vertical-align:middle;margin-left:8px}
+.prod-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,#10b981,#34d399)}
+.rank-badge{background:#f0fdf4;color:#065f46;font-weight:700;padding:2px 8px;border-radius:6px;font-size:11px}
+.insights-title{font-size:16px;font-weight:800;color:#064e3b;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.insights-title i{color:#10b981}
+.insight-card{border-radius:10px;padding:16px 20px;display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;border-left:4px solid}
+.insight-card.success{background:#f0fdf4;border-color:#10b981}
+.insight-card.warning{background:#fffbeb;border-color:#f59e0b}
+.insight-card.danger{background:#fef2f2;border-color:#ef4444}
+.insight-card.info{background:#eff6ff;border-color:#3b82f6}
+.insight-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.insight-card.success .insight-icon{background:#d1fae5;color:#065f46}
+.insight-card.warning .insight-icon{background:#fef3c7;color:#92400e}
+.insight-card.danger .insight-icon{background:#fee2e2;color:#991b1b}
+.insight-card.info .insight-icon{background:#dbeafe;color:#1e40af}
+.insight-title{font-size:13px;font-weight:700;color:#1e1b4b;margin-bottom:3px}
+.insight-msg{font-size:12px;color:#4b5563;line-height:1.5}
+.trend-up{color:#10b981;font-weight:700}
+.trend-down{color:#ef4444;font-weight:700}
+.trend-stable{color:#f59e0b;font-weight:700}
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr}.kpi-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-brand"><i class="fas fa-brain"></i><span>POS System — Predictive Analysis</span></div>
+  <div class="nav-right">
+    <div class="nav-user"><i class="fas fa-user-circle" style="font-size:20px"></i><span>Admin</span><span class="role-badge">Admin</span></div>
+    <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+<div class="pred-tabs">
+  <a href="/admin/predictive" class="pred-tab"><i class="fas fa-globe"></i> Overview</a>
+  <a href="/admin/predictive/sales" class="pred-tab active"><i class="fas fa-chart-line"></i> Sales</a>
+  <a href="/admin/predictive/procurement" class="pred-tab"><i class="fas fa-truck-loading"></i> Procurement</a>
+  <a href="/admin/predictive/finance" class="pred-tab"><i class="fas fa-coins"></i> Finance</a>
+  <a href="/admin/predictive/vendors" class="pred-tab"><i class="fas fa-handshake"></i> Vendors</a>
+</div>
+<div class="container">
+  <div class="page-title"><i class="fas fa-chart-line"></i> Sales Predictive Analysis</div>
+  <div class="page-sub">Revenue trends, product performance, and 6-month AI sales forecast</div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#10b981,#34d399)"><i class="fas fa-coins"></i></div>
+      <div><div class="kpi-val" id="kpiRevenue">—</div><div class="kpi-lbl">12-Month Revenue</div><div class="kpi-sub" id="kpiTrend">—</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#3b82f6,#60a5fa)"><i class="fas fa-shopping-cart"></i></div>
+      <div><div class="kpi-val" id="kpiTx">—</div><div class="kpi-lbl">Total Transactions</div><div class="kpi-sub" id="kpiAvgTx">—</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)"><i class="fas fa-rocket"></i></div>
+      <div><div class="kpi-val" id="kpiProj">—</div><div class="kpi-lbl">6-Month Forecast</div><div class="kpi-sub" style="color:#f59e0b">AI Projection</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)"><i class="fas fa-chart-bar"></i></div>
+      <div><div class="kpi-val" id="kpiAvgMonthly">—</div><div class="kpi-lbl">Avg Monthly Revenue</div><div class="kpi-sub" id="kpiGrowth">—</div></div>
+    </div>
+  </div>
+
+  <!-- Revenue Forecast Chart -->
+  <div class="charts-grid">
+    <div class="chart-card full">
+      <div class="chart-title">
+        <i class="fas fa-chart-area"></i> Monthly Revenue + 6-Month AI Forecast
+        <span class="chart-sub">
+          <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Actual Revenue</span>
+          <span class="legend-item"><span class="legend-dash" style="border-color:#10b981"></span>Forecast</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span>Transactions</span>
+        </span>
+      </div>
+      <canvas id="revenueChart"></canvas>
+      <div class="forecast-note">Dashed line = AI projection using linear regression on last 12 months of sales data</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><i class="fas fa-hand-holding-usd"></i> Average Transaction Value Trend</div>
+      <canvas id="avgTxChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><i class="fas fa-credit-card"></i> Payment Method Distribution</div>
+      <canvas id="pmChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Top Products -->
+  <div class="chart-card" style="margin-bottom:24px">
+    <div class="chart-title"><i class="fas fa-star"></i> Top 10 Products by Revenue <span class="chart-sub">(last 12 months)</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <canvas id="productChart" style="max-height:300px"></canvas>
+      <div style="overflow-x:auto">
+        <table class="prod-table">
+          <thead><tr><th>#</th><th>Product</th><th>Revenue</th><th>Share</th></tr></thead>
+          <tbody id="productTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Insights -->
+  <div>
+    <div class="insights-title"><i class="fas fa-robot"></i> AI Sales Insights & Action Plan</div>
+    <div id="insightsContainer"></div>
+  </div>
+</div>
+
+<script>
+const fmt  = v => 'PKR ' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fmtK = v => { v=parseFloat(v||0); if(v>=1000000) return 'PKR '+(v/1000000).toFixed(1)+'M'; if(v>=1000) return 'PKR '+(v/1000).toFixed(1)+'K'; return 'PKR '+v.toFixed(0); };
+let revenueChart, avgTxChart, pmChart, productChart;
+
+async function handleLogout() {
+  await fetch('/api/auth/logout', {method:'POST'});
+  window.location.href = '/login';
+}
+
+function buildInsights(recs) {
+  document.getElementById('insightsContainer').innerHTML = recs.map(r => `
+    <div class="insight-card ${r.level}">
+      <div class="insight-icon"><i class="fas ${r.icon}"></i></div>
+      <div><div class="insight-title">${r.title}</div><div class="insight-msg">${r.message}</div></div>
+    </div>`).join('');
+}
+
+async function loadData() {
+  try {
+    const d = await fetch('/api/predictive/sales').then(r => r.json());
+    if(d.error) { window.location.href='/login'; return; }
+    const k = d.kpis;
+
+    document.getElementById('kpiRevenue').textContent    = fmtK(k.total_revenue);
+    document.getElementById('kpiTrend').innerHTML        = k.trend==='growing'?'<span class="trend-up">▲ Growing</span>':k.trend==='declining'?'<span class="trend-down">▼ Declining</span>':'<span class="trend-stable">→ Stable</span>';
+    document.getElementById('kpiTx').textContent         = k.transactions_total.toLocaleString();
+    document.getElementById('kpiAvgTx').textContent      = 'Avg: ' + fmtK(k.total_revenue / (k.transactions_total||1));
+    document.getElementById('kpiProj').textContent       = fmtK(k.six_month_proj);
+    document.getElementById('kpiAvgMonthly').textContent = fmtK(k.avg_monthly);
+    document.getElementById('kpiGrowth').innerHTML       = `MoM: <span class="${k.growth_rate>0?'trend-up':k.growth_rate<0?'trend-down':'trend-stable'}">${k.growth_rate>0?'+':''}${k.growth_rate}%</span>`;
+
+    buildInsights(d.recommendations);
+
+    // Revenue + forecast chart
+    const allLabels = [...d.hist_labels, ...d.fcast_labels];
+    const revHist   = [...d.revenue, ...new Array(6).fill(null)];
+    const revFc     = [...new Array(11).fill(null), d.revenue[11], ...d.rev_forecast];
+    const txHist    = [...d.transactions, ...new Array(6).fill(null)];
+
+    if(revenueChart) revenueChart.destroy();
+    revenueChart = new Chart(document.getElementById('revenueChart'), {
+      type:'line',
+      data:{labels:allLabels, datasets:[
+        {label:'Revenue',data:revHist,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.09)',fill:true,tension:.4,pointRadius:3,yAxisID:'y'},
+        {label:'Forecast',data:revFc,borderColor:'#10b981',borderDash:[6,4],backgroundColor:'rgba(16,185,129,.04)',fill:true,tension:.4,pointRadius:0,yAxisID:'y'},
+        {label:'Transactions',data:txHist,borderColor:'#3b82f6',backgroundColor:'transparent',tension:.4,pointRadius:2,yAxisID:'y1'},
+      ]},
+      options:{responsive:true,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===2?`Transactions: ${Math.round(ctx.parsed.y)}`:`${ctx.dataset.label}: ${fmt(ctx.parsed.y||0)}`}}},
+        scales:{
+          y:{ticks:{callback:v=>fmtK(v)},grid:{color:'#f3f4f6'},position:'left'},
+          y1:{ticks:{callback:v=>Math.round(v)},grid:{display:false},position:'right'},
+          x:{grid:{display:false}}
+        }
+      }
+    });
+
+    // Avg transaction chart
+    if(avgTxChart) avgTxChart.destroy();
+    avgTxChart = new Chart(document.getElementById('avgTxChart'), {
+      type:'line',
+      data:{labels:d.hist_labels, datasets:[{label:'Avg Txn Value',data:d.avg_transaction,borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.08)',fill:true,tension:.4,pointRadius:3}]},
+      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Avg: ${fmt(ctx.parsed.y||0)}`}}},
+        scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'#f3f4f6'}},x:{grid:{display:false}}}
+      }
+    });
+
+    // Payment method doughnut
+    const pmLabels = Object.keys(d.payment_methods);
+    const pmData   = Object.values(d.payment_methods);
+    const pmColors = ['#10b981','#3b82f6','#f59e0b','#8b5cf6','#ef4444'];
+    if(pmChart) pmChart.destroy();
+    pmChart = new Chart(document.getElementById('pmChart'), {
+      type:'doughnut',
+      data:{labels:pmLabels, datasets:[{data:pmData,backgroundColor:pmColors.slice(0,pmLabels.length),borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,cutout:'65%',plugins:{legend:{position:'right',labels:{font:{size:11}}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed} txns`}}}}
+    });
+
+    // Top products bar chart
+    const topRev   = d.top_products.map(p=>p.revenue);
+    const maxRev   = Math.max(...topRev,1);
+    if(productChart) productChart.destroy();
+    productChart = new Chart(document.getElementById('productChart'), {
+      type:'bar',
+      data:{labels:d.top_products.map(p=>p.name.length>15?p.name.slice(0,15)+'…':p.name),
+            datasets:[{label:'Revenue',data:topRev,backgroundColor:'rgba(16,185,129,.8)',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Revenue: ${fmt(ctx.parsed.x)}`}}},
+        scales:{x:{ticks:{callback:v=>fmtK(v)},grid:{color:'#f3f4f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}
+      }
+    });
+
+    // Product table
+    const tbody = document.getElementById('productTable');
+    tbody.innerHTML = d.top_products.map((p,i) => {
+      const share = (p.revenue/d.kpis.total_revenue*100).toFixed(1);
+      const w = Math.round(p.revenue/maxRev*100);
+      return `<tr><td><span class="rank-badge">#${i+1}</span></td><td style="font-weight:600">${p.name}</td>
+        <td>${fmt(p.revenue)}</td>
+        <td>${share}%<span class="prod-bar-wrap"><span class="prod-bar" style="width:${w}%"></span></span></td></tr>`;
+    }).join('');
+
+  } catch(e) { console.error(e); }
+}
+loadData();
+</script>
+</body>
+</html>

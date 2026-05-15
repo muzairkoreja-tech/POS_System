@@ -1,499 +1,727 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report Viewer - POS System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .reports-nav {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
-            padding: 0 24px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .reports-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-        .reports-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-        .reports-header h1 {
-            font-size: 26px;
-            color: #2c3e50;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .reports-header h1 i {
-            color: #3498db;
-        }
-        .filter-bar {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 24px;
-        }
-        .filter-bar h3 {
-            font-size: 16px;
-            margin-bottom: 16px;
-            color: #2c3e50;
-        }
-        .filter-row {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            align-items: flex-end;
-        }
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            min-width: 180px;
-        }
-        .filter-group label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #7f8c8d;
-        }
-        .filter-group select,
-        .filter-group input {
-            padding: 10px 12px;
-            border: 2px solid #eee;
-            border-radius: 6px;
-            font-size: 14px;
-            min-width: 160px;
-        }
-        .filter-group select:focus,
-        .filter-group input:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-        .btn-filter {
-            padding: 10px 24px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            height: 40px;
-        }
-        .btn-filter:hover {
-            background: #2980b9;
-        }
-        .btn-secondary {
-            background: #ecf0f1;
-            color: #2c3e50;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .btn-secondary:hover {
-            background: #d5dbdb;
-        }
-        .btn-download {
-            background: #27ae60;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 12px 24px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-download:hover {
-            background: #229954;
-        }
-        .btn-back {
-            background: #95a5a6;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-back:hover {
-            background: #7f8c8d;
-        }
-        .report-actions {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        .report-table-wrapper {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            overflow: hidden;
-        }
-        .report-table-wrapper table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        .report-table-wrapper th {
-            background: #f8f9fa;
-            padding: 14px 16px;
-            text-align: left;
-            font-weight: 600;
-            color: #7f8c8d;
-            border-bottom: 2px solid #eee;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .report-table-wrapper td {
-            padding: 12px 16px;
-            border-bottom: 1px solid #eee;
-            color: #333;
-        }
-        .report-table-wrapper tr:hover {
-            background: #f8f9fa;
-        }
-        .report-table-wrapper tfoot tr {
-            background: #f8f9fa;
-            font-weight: 700;
-        }
-        .report-table-wrapper tfoot td {
-            border-bottom: none;
-            border-top: 2px solid #eee;
-        }
-        .report-title {
-            margin-bottom: 0;
-        }
-        .report-subtitle {
-            font-size: 13px;
-            color: #7f8c8d;
-            font-weight: normal;
-        }
-        .export-options {
-            display: flex;
-            gap: 12px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Viewer — POS System</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f8;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#1e3a5f,#2d6a9f);color:#fff;padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.topbar-left{display:flex;align-items:center;gap:12px;font-size:16px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:opacity .18s,transform .15s}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn-back{background:rgba(255,255,255,.15);color:#fff}
+.btn-print{background:rgba(255,255,255,.12);color:#fff}
+.btn-xl{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff}
+.container{max-width:1400px;margin:0 auto;padding:24px}
+.report-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.report-title-row h1{font-size:20px;font-weight:800;color:#1e3a5f;display:flex;align-items:center;gap:10px}
+.report-title-row h1 i{color:#2d6a9f}
+.record-count{font-size:13px;color:#6b7a99;font-weight:600;background:#fff;padding:6px 14px;border-radius:20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* KPI Cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.kpi-card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:4px solid;display:flex;flex-direction:column;gap:4px}
+.kpi-label{font-size:11px;font-weight:700;color:#8899aa;text-transform:uppercase;letter-spacing:.6px}
+.kpi-value{font-size:22px;font-weight:800;color:#1e3a5f}
+.kpi-sub{font-size:11px;color:#aabbcc}
+
+/* Filter bar */
+.filter-bar{background:#fff;padding:16px 20px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:18px}
+.filter-bar-inner{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:11.5px;font-weight:700;color:#6b7a99;text-transform:uppercase;letter-spacing:.4px}
+.fg input,.fg select{padding:9px 12px;border:1.5px solid #e0e6f0;border-radius:8px;font-size:13px;min-width:150px;outline:none;transition:border-color .2s}
+.fg input:focus,.fg select:focus{border-color:#2d6a9f}
+.btn-apply{background:#2d6a9f;color:#fff;padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .2s}
+.btn-apply:hover{opacity:.88}
+.btn-reset{background:#f0f2f8;color:#6b7a99;padding:9px 14px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-reset:hover{background:#e0e6f0}
+
+/* Search bar */
+.search-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.search-box{position:relative;flex:1;max-width:380px}
+.search-box input{width:100%;padding:10px 12px 10px 38px;border:1.5px solid #e0e6f0;border-radius:8px;font-size:13px;outline:none;background:#fff}
+.search-box input:focus{border-color:#2d6a9f}
+.search-box i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#aab;font-size:13px}
+.search-count{font-size:12px;color:#6b7a99}
+
+/* Table */
+.table-wrap{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.07);overflow:hidden}
+.table-wrap table{width:100%;border-collapse:collapse;font-size:13px}
+.table-wrap thead{position:sticky;top:62px;z-index:10}
+.table-wrap th{background:#1e3a5f;color:#fff;padding:12px 14px;text-align:left;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.table-wrap td{padding:11px 14px;border-bottom:1px solid #eef1f8;color:#2c3e50;vertical-align:middle}
+.table-wrap tr:last-child td{border-bottom:none}
+.table-wrap tr:hover td{background:#f5f8ff}
+.table-wrap tr.alt td{background:#fafbff}
+.tfoot-row td{background:#f0f4ff;font-weight:800;color:#1e3a5f;border-top:2px solid #d0daf0;font-size:13px}
+.no-data{padding:48px 20px;text-align:center;color:#aab;font-size:14px}
+.loading-cell{padding:48px 20px;text-align:center;color:#6b7a99;font-size:14px}
+
+/* Badges */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.badge-success{background:#e8f8ef;color:#1e7d46}
+.badge-danger{background:#fde8e8;color:#c0392b}
+.badge-warning{background:#fef3e2;color:#d68910}
+.badge-info{background:#e8f0fd;color:#2563eb}
+.badge-secondary{background:#f0f2f8;color:#6b7a99}
+
+@media print{
+  .topbar,.filter-bar,.search-row,.btn,.btn-apply,.btn-reset{display:none!important}
+  body{background:#fff}
+  .container{padding:0}
+  .table-wrap{box-shadow:none;border:1px solid #ccc}
+  .kpi-row{display:flex;flex-wrap:wrap}
+  .kpi-card{border:1px solid #ccc;box-shadow:none}
+}
+</style>
 </head>
-<body style="background:#f5f6fa;min-height:100vh;">
-    <nav class="reports-nav">
-        <div style="display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600;">
-            <i class="fas fa-chart-bar"></i>
-            <span>Report Viewer</span>
-        </div>
-        <button class="btn-back" onclick="window.history.back()">
-            <i class="fas fa-arrow-left"></i> Back
-        </button>
-    </nav>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <i class="fas fa-chart-bar"></i>
+    <span id="topbarTitle">Loading...</span>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    <button class="btn btn-xl" id="btnExcel" onclick="downloadExcel()"><i class="fas fa-file-excel"></i> Download Excel</button>
+    <button class="btn btn-back" onclick="window.location.href='/reports'"><i class="fas fa-arrow-left"></i> Back</button>
+  </div>
+</div>
 
-    <div class="reports-container">
-        <div class="reports-header">
-            <h1>
-                <i class="fas fa-file-alt"></i>
-                <span id="reportTitle">Loading...</span>
-            </h1>
-            <div class="export-options">
-                <button class="btn-download" onclick="downloadExcel()">
-                    <i class="fas fa-file-excel"></i> Download Excel
-                </button>
-            </div>
-        </div>
+<div class="container">
+  <div class="report-title-row">
+    <h1><i class="fas fa-file-alt" id="titleIcon"></i><span id="reportTitle">Loading...</span></h1>
+    <div class="record-count" id="recordCount" style="display:none"><i class="fas fa-list-ul" style="margin-right:5px"></i><span id="countText">0 records</span></div>
+  </div>
 
-        <div class="filter-bar">
-            <h3><i class="fas fa-sliders-h"></i> Filters</h3>
-            <div class="filter-row" id="filterRow">
-                <!-- Filters will be injected by JavaScript -->
-            </div>
-        </div>
+  <!-- KPI Cards -->
+  <div class="kpi-row" id="kpiRow" style="display:none"></div>
 
-        <div class="report-table-wrapper">
-            <table>
-                <thead id="reportHead">
-                    <tr>
-                        <th colspan="4" style="text-align:center;padding:30px;color:#7f8c8d;">
-                            <i class="fas fa-spinner fa-spin"></i> Loading report data...
-                        </th>
-                    </tr>
-                </thead>
-                <tbody id="reportBody">
-                </tbody>
-                <tfoot id="reportFoot">
-                </tfoot>
-            </table>
-        </div>
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="filter-bar-inner" id="filterRow">
+      <div style="color:#aab;font-size:13px"><i class="fas fa-spinner fa-spin"></i> Loading filters...</div>
     </div>
+  </div>
 
-    <script>
-        const REPORT_CONFIG = {
-            'stock-report': {
-                title: 'Stock Report',
-                columns: ['Product', 'Category', 'Supplier', 'Stock', 'Unit', 'Price'],
-                fields: ['name', 'category', 'supplier', 'stock', 'unit', 'price'],
-                api: '/api/reports/stock-report'
-            },
-            'expiry-report': {
-                title: 'Expiry Report',
-                columns: ['Product', 'Batch No', 'Expiry Date', 'Stock', 'Days Remaining'],
-                fields: ['name', 'batch_no', 'expiry_date', 'stock', 'days_remaining'],
-                api: '/api/reports/expiry-report'
-            },
-            'price-list': {
-                title: 'Price List',
-                columns: ['Product', 'Barcode', 'Category', 'Supplier', 'Selling Price', 'Cost Price', 'MRP', 'Discount %'],
-                fields: ['name', 'barcode', 'category', 'supplier', 'selling_price', 'cost_price', 'mrp', 'discount_percent'],
-                api: '/api/reports/price-list'
-            },
-            'slow-moving': {
-                title: 'Slow Moving Items',
-                columns: ['Product', 'Category', 'Stock', 'Last Sold', 'Days Since'],
-                fields: ['name', 'category', 'stock', 'last_sold', 'days_since'],
-                api: '/api/reports/slow-moving'
-            },
-            'vendor-payment': {
-                title: 'Vendor Payments',
-                columns: ['Order ID', 'Vendor', 'Order Date', 'Total', 'Paid', 'Pending', 'Status'],
-                fields: ['_id', 'vendor_name', 'order_date', 'total_amount', 'paid_amount', 'pending_amount', 'payment_status'],
-                api: '/api/reports/vendor-payment'
-            },
-            'daily-products': {
-                title: 'Daily Products Added',
-                columns: ['Product', 'Category', 'Supplier', 'Stock'],
-                fields: ['name', 'category', 'supplier', 'stock'],
-                api: '/api/reports/daily-products'
-            }
-        };
+  <!-- Search -->
+  <div class="search-row">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" id="searchInput" placeholder="Search within results..." oninput="applySearch()">
+    </div>
+    <div class="search-count" id="searchCount"></div>
+  </div>
 
-        let currentReport = null;
-        let reportData = [];
-        let filters = {};
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead id="tHead"><tr><td colspan="5" class="loading-cell"><i class="fas fa-spinner fa-spin"></i> Loading report data...</td></tr></thead>
+      <tbody id="tBody"></tbody>
+      <tfoot id="tFoot"></tfoot>
+    </table>
+  </div>
+</div>
 
-        // Parse report type from server-side variable
-        const reportType = '{{ report_type }}';
-        currentReport = REPORT_CONFIG[reportType];
+<script>
+// ─── Report Configuration ────────────────────────────────────────────────────
+const REPORT_CONFIG = {
+  'stock-report': {
+    title: 'Stock Report', icon: 'fa-cubes', color: '#3498db',
+    columns: ['#','Product','Category','Supplier','Stock','Unit','Price (PKR)'],
+    fields:  ['_idx','name','category','supplier','stock','unit','price'],
+    api: '/api/reports/stock-report',
+    excel: '/api/reports/stock-report/excel',
+    kpi: (d) => [
+      {label:'Total Products', value: d.length, sub:'SKUs', color:'#3498db'},
+      {label:'Total Stock Units', value: d.reduce((a,r)=>a+Number(r.stock||0),0).toLocaleString(), sub:'units', color:'#27ae60'},
+      {label:'Zero Stock Items', value: d.filter(r=>!r.stock||r.stock==0).length, sub:'stockouts', color:'#e74c3c'},
+    ],
+    filters: [
+      {type:'text',key:'vendor',label:'Vendor / Supplier',placeholder:'Filter by vendor...'},
+      {type:'text',key:'product',label:'Product ID',placeholder:'Product ID...'},
+    ],
+    format: (row) => ({
+      name: row.name,
+      category: row.category||'-',
+      supplier: row.supplier||'-',
+      stock: {val: row.stock, cls: Number(row.stock)<=0?'badge badge-danger':Number(row.stock)<10?'badge badge-warning':''},
+      unit: row.unit||'pcs',
+      price: 'PKR '+Number(row.price||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+    }),
+  },
+  'expiry-report': {
+    title: 'Expiry Report', icon: 'fa-calendar-times', color: '#e67e22',
+    columns: ['#','Product','Batch No','Expiry Date','Stock','Days Remaining'],
+    fields:  ['_idx','name','batch_no','expiry_date','stock','days_remaining'],
+    api: '/api/reports/expiry-report',
+    excel: '/api/reports/expiry-report/excel',
+    kpi: (d) => [
+      {label:'Total Items', value: d.length, sub:'expiring products', color:'#e67e22'},
+      {label:'Expired', value: d.filter(r=>r.days_remaining<=0).length, sub:'past date', color:'#e74c3c'},
+      {label:'Expiring < 30 days', value: d.filter(r=>r.days_remaining>0&&r.days_remaining<=30).length, sub:'urgent', color:'#f39c12'},
+    ],
+    filters: [
+      {type:'text',key:'vendor',label:'Vendor',placeholder:'Filter by vendor...'},
+      {type:'date',key:'from',label:'From Date'},
+      {type:'date',key:'to',label:'To Date'},
+    ],
+    format: (row) => {
+      const days = row.days_remaining;
+      let badge = days<=0?'badge badge-danger':days<=30?'badge badge-warning':'badge badge-success';
+      return {
+        name: row.name||'-',
+        batch_no: row.batch_no||'-',
+        expiry_date: row.expiry_date||'-',
+        stock: row.stock,
+        days_remaining: {val: days<=0?'EXPIRED':days+' days', cls: badge},
+      };
+    },
+  },
+  'price-list': {
+    title: 'Price List (PKR)', icon: 'fa-tag', color: '#27ae60',
+    columns: ['#','Product','Barcode','Category','Supplier','Sell Price','Cost Price','MRP','Discount %'],
+    fields:  ['_idx','name','barcode','category','supplier','selling_price','cost_price','mrp','discount_percent'],
+    api: '/api/reports/price-list',
+    excel: '/api/reports/price-list/excel',
+    kpi: (d) => [
+      {label:'Total Products', value: d.length, sub:'in catalogue', color:'#27ae60'},
+      {label:'Avg Selling Price', value: 'PKR '+(d.reduce((a,r)=>a+Number(r.selling_price||0),0)/Math.max(d.length,1)).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'average', color:'#3498db'},
+      {label:'With Discount', value: d.filter(r=>Number(r.discount_percent)>0).length, sub:'discounted items', color:'#f39c12'},
+    ],
+    filters: [
+      {type:'text',key:'vendor',label:'Vendor / Supplier',placeholder:'Filter by vendor...'},
+    ],
+    format: (row) => ({
+      name: row.name,
+      barcode: row.barcode||'-',
+      category: row.category||'-',
+      supplier: row.supplier||'-',
+      selling_price: 'PKR '+Number(row.selling_price||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      cost_price: 'PKR '+Number(row.cost_price||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      mrp: 'PKR '+Number(row.mrp||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      discount_percent: row.discount_percent ? row.discount_percent+'%' : '-',
+    }),
+  },
+  'slow-moving': {
+    title: 'Slow Moving Items', icon: 'fa-tachometer-alt', color: '#9b59b6',
+    columns: ['#','Product','Category','Stock','Last Sold','Days Since Sale'],
+    fields:  ['_idx','name','category','stock','last_sold','days_since'],
+    api: '/api/reports/slow-moving',
+    excel: '/api/reports/slow-moving/excel',
+    kpi: (d) => [
+      {label:'Slow Items', value: d.length, sub:'products', color:'#9b59b6'},
+      {label:'Never Sold', value: d.filter(r=>!r.last_sold||r.last_sold==='Never').length, sub:'items', color:'#e74c3c'},
+    ],
+    filters: [
+      {type:'number',key:'days',label:'Days Threshold',value:30,min:1,max:365},
+    ],
+    format: (row) => ({
+      name: row.name,
+      category: row.category||'-',
+      stock: row.stock,
+      last_sold: row.last_sold||'Never',
+      days_since: {val: row.days_since||'—', cls: Number(row.days_since)>90?'badge badge-danger':Number(row.days_since)>30?'badge badge-warning':'badge badge-secondary'},
+    }),
+  },
+  'vendor-payment': {
+    title: 'Vendor Payments', icon: 'fa-file-invoice-dollar', color: '#9b59b6',
+    columns: ['#','Order ID','Vendor','Order Date','Total (PKR)','Paid (PKR)','Pending (PKR)','Status'],
+    fields:  ['_idx','_id','vendor_name','order_date','total_amount','paid_amount','pending_amount','payment_status'],
+    api: '/api/reports/vendor-payment',
+    excel: '/api/reports/vendor-payment/excel',
+    kpi: (d) => [
+      {label:'Total Orders', value: d.length, sub:'POs', color:'#9b59b6'},
+      {label:'Total Value', value: 'PKR '+d.reduce((a,r)=>a+Number(r.total_amount||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#1e3a5f'},
+      {label:'Outstanding', value: 'PKR '+d.reduce((a,r)=>a+Number(r.pending_amount||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'unpaid', color:'#e74c3c'},
+    ],
+    filters: [
+      {type:'text',key:'vendor_id',label:'Vendor ID',placeholder:'Vendor ID...'},
+      {type:'date',key:'from',label:'From Date'},
+      {type:'date',key:'to',label:'To Date'},
+    ],
+    format: (row) => ({
+      _id: String(row._id||'').slice(0,8),
+      vendor_name: row.vendor_name||'-',
+      order_date: row.order_date||'-',
+      total_amount: 'PKR '+Number(row.total_amount||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      paid_amount: 'PKR '+Number(row.paid_amount||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      pending_amount: 'PKR '+Number(row.pending_amount||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      payment_status: {val:row.payment_status||'-', cls: row.payment_status==='paid'?'badge badge-success':row.payment_status==='partial'?'badge badge-warning':'badge badge-danger'},
+    }),
+  },
+  'daily-products': {
+    title: 'Daily Products Added', icon: 'fa-calendar-day', color: '#1abc9c',
+    columns: ['#','Product','Category','Supplier','Stock'],
+    fields:  ['_idx','name','category','supplier','stock'],
+    api: '/api/reports/daily-products',
+    excel: '/api/reports/daily-products/excel',
+    kpi: (d) => [
+      {label:'Products Added', value: d.length, sub:'today', color:'#1abc9c'},
+    ],
+    filters: [
+      {type:'date',key:'date',label:'Date'},
+      {type:'text',key:'vendor',label:'Vendor',placeholder:'Filter by vendor...'},
+      {type:'text',key:'category',label:'Category',placeholder:'Filter by category...'},
+    ],
+    format: (row) => ({
+      name: row.name,
+      category: row.category||'-',
+      supplier: row.supplier||'-',
+      stock: row.stock,
+    }),
+  },
+  'sales-report': {
+    title: 'Sales Report', icon: 'fa-receipt', color: '#27ae60',
+    columns: ['#','Receipt No','Date','Time','Cashier','Customer','Items','Payment','Tax (PKR)','Discount (PKR)','Total (PKR)'],
+    fields:  ['_idx','receipt_no','date','time','cashier','customer','items_count','payment_method','tax','discount','total'],
+    api: '/api/reports/sales-report',
+    excel: '/api/reports/sales-report/excel',
+    kpi: (d) => [
+      {label:'Total Sales', value: d.length, sub:'transactions', color:'#27ae60'},
+      {label:'Total Revenue', value: 'PKR '+d.reduce((a,r)=>a+Number(r.total||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#1e3a5f'},
+      {label:'Total Tax Collected', value: 'PKR '+d.reduce((a,r)=>a+Number(r.tax||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#9b59b6'},
+      {label:'Total Discounts', value: 'PKR '+d.reduce((a,r)=>a+Number(r.discount||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'given', color:'#e74c3c'},
+    ],
+    filters: [
+      {type:'date',key:'from',label:'From Date'},
+      {type:'date',key:'to',label:'To Date'},
+      {type:'text',key:'method',label:'Payment Method',placeholder:'e.g. cash, card...'},
+    ],
+    format: (row) => ({
+      receipt_no: {val: row.receipt_no, cls:'', style:'font-family:monospace;font-size:12px;color:#5c7aad'},
+      date: row.date,
+      time: row.time,
+      cashier: row.cashier||'-',
+      customer: row.customer||'Walk-in',
+      items_count: row.items_count,
+      payment_method: {val: row.payment_method||'-', cls:'badge badge-info'},
+      tax: 'PKR '+Number(row.tax||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      discount: 'PKR '+Number(row.discount||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      total: {val: 'PKR '+Number(row.total||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style:'font-weight:700;color:#1e3a5f'},
+    }),
+    totals: ['total','tax','discount'],
+  },
+  'sales-by-product': {
+    title: 'Sales by Product', icon: 'fa-box-open', color: '#2ecc71',
+    columns: ['#','Product','Qty Sold','Revenue (PKR)','Cost (PKR)','Profit (PKR)','Margin %'],
+    fields:  ['_idx','product','qty_sold','revenue','cost','profit','margin_pct'],
+    api: '/api/reports/sales-by-product',
+    excel: '/api/reports/sales-by-product/excel',
+    kpi: (d) => [
+      {label:'Total Products', value: d.length, sub:'sold', color:'#2ecc71'},
+      {label:'Total Revenue', value: 'PKR '+d.reduce((a,r)=>a+Number(r.revenue||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#1e3a5f'},
+      {label:'Total Profit', value: 'PKR '+d.reduce((a,r)=>a+Number(r.profit||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#27ae60'},
+      {label:'Avg Margin', value: (d.reduce((a,r)=>a+Number(r.margin_pct||0),0)/Math.max(d.length,1)).toFixed(1)+'%', sub:'', color:'#9b59b6'},
+    ],
+    filters: [
+      {type:'date',key:'from',label:'From Date'},
+      {type:'date',key:'to',label:'To Date'},
+    ],
+    format: (row) => ({
+      product: row.product||'-',
+      qty_sold: row.qty_sold,
+      revenue: 'PKR '+Number(row.revenue||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      cost: 'PKR '+Number(row.cost||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      profit: {val: 'PKR '+Number(row.profit||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style: Number(row.profit)>=0?'color:#1e7d46;font-weight:700':'color:#c0392b;font-weight:700'},
+      margin_pct: {val: Number(row.margin_pct||0).toFixed(1)+'%', cls: Number(row.margin_pct)>=20?'badge badge-success':Number(row.margin_pct)>=0?'badge badge-warning':'badge badge-danger'},
+    }),
+    totals: ['revenue','cost','profit'],
+  },
+  'stock-valuation': {
+    title: 'Stock Valuation', icon: 'fa-coins', color: '#1abc9c',
+    columns: ['#','Product','Barcode','Category','Supplier','Stock','Unit','Cost Price (PKR)','Sell Price (PKR)','Stock Value (PKR)','Retail Value (PKR)'],
+    fields:  ['_idx','product','barcode','category','supplier','stock','unit','cost_price','selling_price','stock_value','retail_value'],
+    api: '/api/reports/stock-valuation',
+    excel: '/api/reports/stock-valuation/excel',
+    kpi: (d) => [
+      {label:'Total SKUs', value: d.length, sub:'products', color:'#1abc9c'},
+      {label:'Total Stock Value', value: 'PKR '+d.reduce((a,r)=>a+Number(r.stock_value||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'at cost', color:'#1e3a5f'},
+      {label:'Total Retail Value', value: 'PKR '+d.reduce((a,r)=>a+Number(r.retail_value||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'at sell price', color:'#27ae60'},
+    ],
+    filters: [
+      {type:'text',key:'category',label:'Category',placeholder:'Filter by category...'},
+    ],
+    format: (row) => ({
+      product: row.product,
+      barcode: row.barcode||'-',
+      category: row.category||'-',
+      supplier: row.supplier||'-',
+      stock: row.stock,
+      unit: row.unit||'pcs',
+      cost_price: 'PKR '+Number(row.cost_price||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      selling_price: 'PKR '+Number(row.selling_price||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      stock_value: {val:'PKR '+Number(row.stock_value||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style:'font-weight:700;color:#1e3a5f'},
+      retail_value: {val:'PKR '+Number(row.retail_value||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style:'font-weight:700;color:#16a085'},
+    }),
+    totals: ['stock_value','retail_value'],
+  },
+  'reorder-alert': {
+    title: 'Reorder Alert', icon: 'fa-exclamation-triangle', color: '#e74c3c',
+    columns: ['#','Product','Barcode','Category','Supplier','Current Stock','Reorder Level','Shortage','Status'],
+    fields:  ['_idx','product','barcode','category','supplier','current_stock','reorder_level','shortage','status'],
+    api: '/api/reports/reorder-alert',
+    excel: '/api/reports/reorder-alert/excel',
+    kpi: (d) => [
+      {label:'Items to Reorder', value: d.length, sub:'products', color:'#e74c3c'},
+      {label:'Out of Stock', value: d.filter(r=>r.status==='Out of Stock').length, sub:'critical', color:'#c0392b'},
+      {label:'Critical Level', value: d.filter(r=>r.status==='Critical').length, sub:'< 50% reorder', color:'#e67e22'},
+    ],
+    filters: [],
+    format: (row) => ({
+      product: row.product,
+      barcode: row.barcode||'-',
+      category: row.category||'-',
+      supplier: row.supplier||'-',
+      current_stock: {val:row.current_stock, cls:'', style: row.current_stock==0?'color:#c0392b;font-weight:700':''},
+      reorder_level: row.reorder_level,
+      shortage: {val:row.shortage, cls:'', style:'color:#e67e22;font-weight:700'},
+      status: {val:row.status, cls: row.status==='Out of Stock'?'badge badge-danger':row.status==='Critical'?'badge badge-warning':'badge badge-info'},
+    }),
+  },
+  'purchase-orders-report': {
+    title: 'Purchase Orders', icon: 'fa-file-invoice', color: '#5c6bc0',
+    columns: ['#','PO Number','Vendor','Created','Expected Delivery','Items','Total (PKR)','Status'],
+    fields:  ['_idx','po_number','vendor','created_at','expected_delivery','items_count','total_amount','status'],
+    api: '/api/reports/purchase-orders-report',
+    excel: '/api/reports/purchase-orders-report/excel',
+    kpi: (d) => [
+      {label:'Total POs', value: d.length, sub:'orders', color:'#5c6bc0'},
+      {label:'Total Value', value: 'PKR '+d.reduce((a,r)=>a+Number(r.total_amount||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#1e3a5f'},
+      {label:'Approved', value: d.filter(r=>(r.status||'').toLowerCase()==='approved').length, sub:'POs', color:'#27ae60'},
+      {label:'Pending', value: d.filter(r=>(r.status||'').toLowerCase()==='draft'||(r.status||'').toLowerCase()==='pending').length, sub:'POs', color:'#f39c12'},
+    ],
+    filters: [
+      {type:'date',key:'from',label:'From Date'},
+      {type:'date',key:'to',label:'To Date'},
+      {type:'text',key:'status',label:'Status',placeholder:'draft, approved...'},
+    ],
+    format: (row) => ({
+      po_number: {val:row.po_number||'-', cls:'', style:'font-family:monospace;font-size:12px;color:#5c7aad'},
+      vendor: row.vendor||'-',
+      created_at: row.created_at||'-',
+      expected_delivery: row.expected_delivery||'-',
+      items_count: row.items_count,
+      total_amount: {val:'PKR '+Number(row.total_amount||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style:'font-weight:700'},
+      status: {val:row.status||'-', cls: (row.status||'').toLowerCase()==='approved'?'badge badge-success':(row.status||'').toLowerCase()==='cancelled'?'badge badge-danger':'badge badge-warning'},
+    }),
+  },
+  'invoice-aging': {
+    title: 'Invoice Aging', icon: 'fa-clock', color: '#e74c3c',
+    columns: ['#','Invoice No','Vendor','Invoice Date','Due Date','Amount (PKR)','Paid (PKR)','Outstanding (PKR)','Status','Age (Days)','Bucket'],
+    fields:  ['_idx','invoice_no','vendor','invoice_date','due_date','amount','paid','outstanding','status','age_days','age_bucket'],
+    api: '/api/reports/invoice-aging',
+    excel: '/api/reports/invoice-aging/excel',
+    kpi: (d) => [
+      {label:'Total Invoices', value: d.length, sub:'', color:'#e74c3c'},
+      {label:'Total Outstanding', value: 'PKR '+d.reduce((a,r)=>a+Number(r.outstanding||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'unpaid', color:'#c0392b'},
+      {label:'Overdue 90+ Days', value: d.filter(r=>r.age_bucket==='90+ days').length, sub:'invoices', color:'#e67e22'},
+    ],
+    filters: [],
+    format: (row) => ({
+      invoice_no: {val:row.invoice_no||'-', cls:'', style:'font-family:monospace;font-size:12px'},
+      vendor: row.vendor||'-',
+      invoice_date: row.invoice_date||'-',
+      due_date: row.due_date||'-',
+      amount: 'PKR '+Number(row.amount||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      paid: 'PKR '+Number(row.paid||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      outstanding: {val:'PKR '+Number(row.outstanding||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style: Number(row.outstanding)>0?'color:#c0392b;font-weight:700':'color:#1e7d46;font-weight:700'},
+      status: {val:row.status||'-', cls: row.status==='paid'?'badge badge-success':row.status==='partial'?'badge badge-warning':'badge badge-danger'},
+      age_days: row.age_days,
+      age_bucket: {val:row.age_bucket, cls: row.age_bucket==='0-30 days'?'badge badge-success':row.age_bucket==='31-60 days'?'badge badge-info':row.age_bucket==='61-90 days'?'badge badge-warning':'badge badge-danger'},
+    }),
+  },
+  'profit-loss': {
+    title: 'Profit & Loss', icon: 'fa-balance-scale', color: '#f39c12',
+    columns: ['#','Month','Revenue (PKR)','Purchases (PKR)','Payroll (PKR)','Total Expenses (PKR)','Net Profit (PKR)','Margin %'],
+    fields:  ['_idx','month','revenue','purchases','payroll','total_expenses','net_profit','margin_pct'],
+    api: '/api/reports/profit-loss',
+    excel: '/api/reports/profit-loss/excel',
+    kpi: (d) => {
+      const rev = d.reduce((a,r)=>a+Number(r.revenue||0),0);
+      const exp = d.reduce((a,r)=>a+Number(r.total_expenses||0),0);
+      const profit = d.reduce((a,r)=>a+Number(r.net_profit||0),0);
+      return [
+        {label:'Total Revenue', value:'PKR '+rev.toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#27ae60'},
+        {label:'Total Expenses', value:'PKR '+exp.toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#e74c3c'},
+        {label:'Net Profit', value:'PKR '+profit.toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color: profit>=0?'#1e3a5f':'#c0392b'},
+        {label:'Avg Margin', value:(d.reduce((a,r)=>a+Number(r.margin_pct||0),0)/Math.max(d.length,1)).toFixed(1)+'%', sub:'', color:'#9b59b6'},
+      ];
+    },
+    filters: [],
+    format: (row) => ({
+      month: {val:row.month, cls:'', style:'font-weight:700'},
+      revenue: 'PKR '+Number(row.revenue||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      purchases: 'PKR '+Number(row.purchases||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      payroll: 'PKR '+Number(row.payroll||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      total_expenses: 'PKR '+Number(row.total_expenses||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      net_profit: {val:'PKR '+Number(row.net_profit||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style:Number(row.net_profit)>=0?'color:#1e7d46;font-weight:800':'color:#c0392b;font-weight:800'},
+      margin_pct: {val:Number(row.margin_pct||0).toFixed(1)+'%', cls:Number(row.margin_pct)>=15?'badge badge-success':Number(row.margin_pct)>=0?'badge badge-warning':'badge badge-danger'},
+    }),
+  },
+  'sales-returns': {
+    title: 'Sales Returns', icon: 'fa-undo-alt', color: '#e74c3c',
+    columns: ['#','Return ID','Original Sale','Date','Cashier','Customer','Reason','Items','Refund (PKR)'],
+    fields:  ['_idx','return_id','original_sale','date','cashier','customer','reason','items_count','refund_amount'],
+    api: '/api/reports/sales-returns',
+    excel: '/api/reports/sales-returns/excel',
+    kpi: (d) => [
+      {label:'Total Returns', value: d.length, sub:'transactions', color:'#e74c3c'},
+      {label:'Total Refunded', value: 'PKR '+d.reduce((a,r)=>a+Number(r.refund_amount||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#c0392b'},
+    ],
+    filters: [
+      {type:'date',key:'from',label:'From Date'},
+      {type:'date',key:'to',label:'To Date'},
+    ],
+    format: (row) => ({
+      return_id: {val:row.return_id, cls:'', style:'font-family:monospace;font-size:12px;color:#c0392b'},
+      original_sale: {val:row.original_sale||'-', cls:'', style:'font-family:monospace;font-size:12px'},
+      date: row.date,
+      cashier: row.cashier||'-',
+      customer: row.customer||'Walk-in',
+      reason: row.reason||'-',
+      items_count: row.items_count,
+      refund_amount: {val:'PKR '+Number(row.refund_amount||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style:'font-weight:700;color:#c0392b'},
+    }),
+  },
+  'payroll-summary': {
+    title: 'Payroll Summary', icon: 'fa-money-check-alt', color: '#16a085',
+    columns: ['#','Payroll ID','Employee','Department','Month','Basic (PKR)','Allowances (PKR)','Deductions (PKR)','Net Salary (PKR)','Status'],
+    fields:  ['_idx','payroll_id','employee','department','month','basic_salary','allowances','deductions','net_salary','status'],
+    api: '/api/reports/payroll-summary',
+    excel: '/api/reports/payroll-summary/excel',
+    kpi: (d) => [
+      {label:'Total Records', value: d.length, sub:'employees', color:'#16a085'},
+      {label:'Total Net Salaries', value: 'PKR '+d.reduce((a,r)=>a+Number(r.net_salary||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'paid out', color:'#1e3a5f'},
+      {label:'Total Deductions', value: 'PKR '+d.reduce((a,r)=>a+Number(r.deductions||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#e74c3c'},
+    ],
+    filters: [
+      {type:'month',key:'month',label:'Month'},
+    ],
+    format: (row) => ({
+      payroll_id: {val:row.payroll_id||'-', cls:'', style:'font-family:monospace;font-size:12px'},
+      employee: {val:row.employee||'-', cls:'', style:'font-weight:600'},
+      department: row.department||'-',
+      month: row.month||'-',
+      basic_salary: 'PKR '+Number(row.basic_salary||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      allowances: 'PKR '+Number(row.allowances||0).toLocaleString(undefined,{minimumFractionDigits:2}),
+      deductions: {val:'PKR '+Number(row.deductions||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style:'color:#c0392b'},
+      net_salary: {val:'PKR '+Number(row.net_salary||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style:'font-weight:800;color:#1e3a5f'},
+      status: {val:row.status||'-', cls: row.status==='paid'?'badge badge-success':row.status==='processed'?'badge badge-info':'badge badge-warning'},
+    }),
+    totals: ['net_salary','basic_salary','deductions'],
+  },
+  'credit-sales': {
+    title: 'Credit Sales (AR)', icon: 'fa-credit-card', color: '#f39c12',
+    columns: ['#','Receipt No','Date','Customer','Cashier','Items','Payment Method','Total (PKR)'],
+    fields:  ['_idx','receipt_no','date','customer','cashier','items_count','payment_method','total'],
+    api: '/api/reports/credit-sales',
+    excel: '/api/reports/credit-sales/excel',
+    kpi: (d) => [
+      {label:'Credit Transactions', value: d.length, sub:'', color:'#f39c12'},
+      {label:'Total Credit Extended', value: 'PKR '+d.reduce((a,r)=>a+Number(r.total||0),0).toLocaleString(undefined,{minimumFractionDigits:0}), sub:'', color:'#e67e22'},
+    ],
+    filters: [
+      {type:'date',key:'from',label:'From Date'},
+      {type:'date',key:'to',label:'To Date'},
+    ],
+    format: (row) => ({
+      receipt_no: {val:row.receipt_no, cls:'', style:'font-family:monospace;font-size:12px;color:#5c7aad'},
+      date: row.date,
+      customer: row.customer||'Walk-in',
+      cashier: row.cashier||'-',
+      items_count: row.items_count,
+      payment_method: {val:row.payment_method||'-', cls:'badge badge-warning'},
+      total: {val:'PKR '+Number(row.total||0).toLocaleString(undefined,{minimumFractionDigits:2}), cls:'', style:'font-weight:700;color:#1e3a5f'},
+    }),
+    totals: ['total'],
+  },
+};
 
-        if (!currentReport) {
-            document.getElementById('reportTitle').textContent = 'Invalid Report';
-            document.getElementById('reportBody').innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;color:#e74c3c;">Report not found</td></tr>';
-        } else {
-            document.getElementById('reportTitle').textContent = currentReport.title;
-            loadReportData();
-        }
+// ─── State ───────────────────────────────────────────────────────────────────
+const reportType = '{{ report_type }}';
+const cfg = REPORT_CONFIG[reportType];
+let allData = [];
+let filteredData = [];
+let filters = {};
 
-        async function loadReportData() {
-            const params = new URLSearchParams();
-            for (const key in filters) {
-                if (filters[key]) params.append(key, filters[key]);
-            }
+// ─── Init ────────────────────────────────────────────────────────────────────
+if (!cfg) {
+  document.getElementById('reportTitle').textContent = 'Invalid Report';
+  document.getElementById('topbarTitle').textContent = 'Invalid Report';
+  document.getElementById('tBody').innerHTML = '<tr><td colspan="5" class="no-data"><i class="fas fa-exclamation-circle"></i> Report not found.</td></tr>';
+} else {
+  document.getElementById('reportTitle').textContent = cfg.title;
+  document.getElementById('topbarTitle').textContent = cfg.title;
+  document.getElementById('titleIcon').className = 'fas '+cfg.icon;
+  buildFilters();
+  loadData();
+}
 
-            try {
-                const response = await fetch(`${currentReport.api}?${params.toString()}`);
-                const data = await response.json();
-                
-                // Compute derived fields for specific reports
-                if (reportType === 'expiry-report') {
-                    data.forEach(p => {
-                        if (p.expiry_date) {
-                            const exp = new Date(p.expiry_date);
-                            const now = new Date();
-                            const diffTime = exp - now;
-                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                            p.days_remaining = diffDays >= 0 ? diffDays : 0;
-                        } else {
-                            p.days_remaining = '-';
-                        }
-                    });
-                }
-                
-                reportData = data;
-                renderTable(data);
-            } catch (error) {
-                console.error('Failed to load report:', error);
-                document.getElementById('reportBody').innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;color:#e74c3c;">Failed to load report data</td></tr>';
-            }
-        }
+// ─── Filters ─────────────────────────────────────────────────────────────────
+function buildFilters() {
+  const row = document.getElementById('filterRow');
+  if (!cfg.filters || cfg.filters.length === 0) {
+    row.innerHTML = '<span style="color:#aab;font-size:13px"><i class="fas fa-info-circle"></i> No filters for this report</span>';
+    return;
+  }
+  let html = '';
+  cfg.filters.forEach(f => {
+    let inp;
+    if (f.type === 'text') {
+      inp = `<input type="text" id="f_${f.key}" placeholder="${f.placeholder||''}" oninput="filters['${f.key}']=this.value">`;
+    } else if (f.type === 'date') {
+      inp = `<input type="date" id="f_${f.key}" onchange="filters['${f.key}']=this.value">`;
+    } else if (f.type === 'month') {
+      inp = `<input type="month" id="f_${f.key}" onchange="filters['${f.key}']=this.value">`;
+    } else if (f.type === 'number') {
+      inp = `<input type="number" id="f_${f.key}" value="${f.value||''}" min="${f.min||''}" max="${f.max||''}" style="max-width:120px" onchange="filters['${f.key}']=this.value">`;
+    } else if (f.type === 'select') {
+      const opts = (f.options||[]).map(o=>`<option value="${o}">${o}</option>`).join('');
+      inp = `<select id="f_${f.key}" onchange="filters['${f.key}']=this.value"><option value="">All</option>${opts}</select>`;
+    }
+    html += `<div class="fg"><label>${f.label}</label>${inp}</div>`;
+  });
+  html += `<div class="fg" style="flex-direction:row;gap:8px">
+    <button class="btn-apply" onclick="applyFilters()"><i class="fas fa-filter"></i> Apply</button>
+    <button class="btn-reset" onclick="resetFilters()"><i class="fas fa-times"></i> Reset</button>
+  </div>`;
+  row.innerHTML = html;
+}
 
-        function renderTable(data) {
-            const thead = document.getElementById('reportHead');
-            const tbody = document.getElementById('reportBody');
-            const tfoot = document.getElementById('reportFoot');
+function applyFilters() { filters = {}; cfg.filters.forEach(f=>{ const el=document.getElementById('f_'+f.key); if(el&&el.value) filters[f.key]=el.value; }); loadData(); }
+function resetFilters() { filters={}; cfg.filters.forEach(f=>{ const el=document.getElementById('f_'+f.key); if(el) el.value=''; }); document.getElementById('searchInput').value=''; loadData(); }
 
-            // Build header row
-            const headerRow = currentReport.columns.map(col => `<th>${col}</th>`).join('');
-            thead.innerHTML = `<tr>${headerRow}</tr>`;
+// ─── Data Loading ─────────────────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('tHead').innerHTML = `<tr><td colspan="${cfg.columns.length}" class="loading-cell"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>`;
+  document.getElementById('tBody').innerHTML = '';
+  document.getElementById('tFoot').innerHTML = '';
+  document.getElementById('kpiRow').style.display = 'none';
+  document.getElementById('recordCount').style.display = 'none';
+  const params = new URLSearchParams(filters);
+  try {
+    const res = await fetch(`${cfg.api}?${params}`);
+    allData = await res.json();
+    // Compute expiry days_remaining client-side
+    if (reportType === 'expiry-report') {
+      const now = new Date();
+      allData.forEach(p => {
+        if (p.expiry_date) {
+          const exp = new Date(p.expiry_date);
+          p.days_remaining = Math.ceil((exp - now) / 86400000);
+        } else { p.days_remaining = -9999; }
+      });
+    }
+    filteredData = allData;
+    renderAll();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('tBody').innerHTML = `<tr><td colspan="${cfg.columns.length}" class="no-data" style="color:#e74c3c"><i class="fas fa-exclamation-circle"></i> Failed to load data. Check server connection.</td></tr>`;
+  }
+}
 
-            // Build body rows
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="' + currentReport.columns.length + '" style="padding:30px;text-align:center;color:#999;">No data found</td></tr>';
-                tfoot.innerHTML = '';
-                return;
-            }
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderKPIs(filteredData);
+  renderTable(filteredData);
+  document.getElementById('countText').textContent = filteredData.length.toLocaleString() + ' records';
+  document.getElementById('recordCount').style.display = '';
+  applySearch();
+}
 
-            tbody.innerHTML = data.map(row => {
-                const cells = currentReport.fields.map(field => {
-                    let val = row[field];
-                    if (val === null || val === undefined) return '<td>-</td>';
-                    // Format numbers
-                    if (typeof val === 'number') {
-                        return `<td style="text-align:right;">${val.toLocaleString()}</td>`;
-                    }
-                    // Format dates
-                    if (field.includes('date') && typeof val === 'string') {
-                        const date = new Date(val);
-                        return `<td>${date.toLocaleDateString()}</td>`;
-                    }
-                    return `<td>${val}</td>`;
-                }).join('');
-                return `<tr>${cells}</tr>`;
-            }).join('');
+function renderKPIs(data) {
+  const row = document.getElementById('kpiRow');
+  if (!cfg.kpi || !data.length) { row.style.display = 'none'; return; }
+  const kpis = cfg.kpi(data);
+  row.innerHTML = kpis.map(k => `
+    <div class="kpi-card" style="border-left-color:${k.color}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" style="color:${k.color}">${k.value}</div>
+      ${k.sub?`<div class="kpi-sub">${k.sub}</div>`:''}
+    </div>`).join('');
+  row.style.display = 'grid';
+}
 
-            // Totals row if applicable
-            if (data.some(row => row.total || row.subtotal)) {
-                const totalColIndex = currentReport.columns.length - 1;
-                let totalHtml = '<tr>';
-                for (let i = 0; i < currentReport.columns.length; i++) {
-                    if (i === totalColIndex) {
-                        const sum = data.reduce((acc, row) => acc + (parseFloat(row.total || row.subtotal || 0)), 0);
-                        totalHtml += `<td style="text-align:right;font-weight:700;color:#27ae60;">PKR ${sum.toLocaleString(undefined,{minimumFractionDigits:2})}</td>`;
-                    } else {
-                        totalHtml += '<td></td>';
-                    }
-                }
-                totalHtml += '</tr>';
-                tfoot.innerHTML = totalHtml;
-            } else {
-                tfoot.innerHTML = '';
-            }
-        }
+function renderTable(data) {
+  const thead = document.getElementById('tHead');
+  const tbody = document.getElementById('tBody');
+  const tfoot = document.getElementById('tFoot');
+  thead.innerHTML = '<tr>'+cfg.columns.map(c=>`<th>${c}</th>`).join('')+'</tr>';
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="${cfg.columns.length}" class="no-data"><i class="fas fa-inbox"></i> No records found</td></tr>`;
+    tfoot.innerHTML = '';
+    return;
+  }
+  tbody.innerHTML = data.map((raw, ri) => {
+    raw._idx = ri + 1;
+    const row = cfg.format ? cfg.format(raw) : raw;
+    const cells = cfg.fields.map(f => {
+      if (f === '_idx') return `<td style="color:#aab;font-size:12px">${ri+1}</td>`;
+      const v = row[f];
+      if (v === null || v === undefined) return '<td>-</td>';
+      if (typeof v === 'object' && 'val' in v) {
+        const style = v.style ? ` style="${v.style}"` : '';
+        return v.cls ? `<td><span class="${v.cls}"${style}>${v.val}</span></td>` : `<td${style}>${v.val}</td>`;
+      }
+      if (typeof v === 'number') return `<td style="text-align:right">${v.toLocaleString()}</td>`;
+      return `<td>${v}</td>`;
+    }).join('');
+    return `<tr class="${ri%2===1?'alt':''}">${cells}</tr>`;
+  }).join('');
 
-        function downloadExcel() {
-            if (!reportData.length) {
-                alert('No data to export');
-                return;
-            }
+  // Totals row
+  if (cfg.totals && cfg.totals.length) {
+    const totals = {};
+    cfg.totals.forEach(f => {
+      totals[f] = data.reduce((a,r) => a + Number(r[f]||0), 0);
+    });
+    const cells = cfg.fields.map(f => {
+      if (f === '_idx') return '<td><strong>TOTAL</strong></td>';
+      if (cfg.totals.includes(f)) {
+        return `<td style="font-weight:800;color:#1e3a5f;text-align:right">PKR ${totals[f].toLocaleString(undefined,{minimumFractionDigits:2})}</td>`;
+      }
+      return '<td></td>';
+    }).join('');
+    tfoot.innerHTML = `<tr class="tfoot-row">${cells}</tr>`;
+  } else {
+    tfoot.innerHTML = '';
+  }
+}
 
-            // Simple CSV export (can be enhanced with proper Excel)
-            const headers = currentReport.columns.join(',');
-            const rows = reportData.map(row => {
-                return currentReport.fields.map(field => {
-                    const val = row[field];
-                    // Escape quotes and wrap in quotes if contains comma
-                    const str = (val === null || val === undefined) ? '' : String(val);
-                    return str.includes(',') ? `"${str.replace(/"/g, '""')}"` : str;
-                }).join(',');
-            });
+// ─── Search ───────────────────────────────────────────────────────────────────
+function applySearch() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  if (!q) {
+    filteredData = allData;
+  } else {
+    filteredData = allData.filter(row =>
+      cfg.fields.some(f => {
+        const v = row[f];
+        if (v === null || v === undefined) return false;
+        return String(v).toLowerCase().includes(q);
+      })
+    );
+  }
+  renderTable(filteredData);
+  renderKPIs(filteredData);
+  const sc = document.getElementById('searchCount');
+  sc.textContent = q ? `${filteredData.length} of ${allData.length} records` : '';
+  document.getElementById('countText').textContent = filteredData.length.toLocaleString() + ' records';
+}
 
-            const csv = [headers, ...rows].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `${currentReport.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // Filter configuration per report type
-        const FILTER_CONFIG = {
-            'stock-report': [
-                { type: 'text', key: 'vendor', label: 'Vendor / Supplier', placeholder: 'Filter by vendor name...' },
-                { type: 'text', key: 'product', label: 'Product ID', placeholder: 'Specific product ID' }
-            ],
-            'expiry-report': [
-                { type: 'text', key: 'vendor', label: 'Vendor / Supplier', placeholder: 'Filter by vendor name...' },
-                { type: 'date', key: 'from', label: 'From Date' },
-                { type: 'date', key: 'to', label: 'To Date' }
-            ],
-            'price-list': [
-                { type: 'text', key: 'vendor', label: 'Vendor / Supplier', placeholder: 'Filter by vendor name...' }
-            ],
-            'slow-moving': [
-                { type: 'number', key: 'days', label: 'Days Threshold', value: 30, min: 1, max: 365 }
-            ],
-            'vendor-payment': [
-                { type: 'text', key: 'vendor_id', label: 'Vendor ID', placeholder: 'Vendor ID...' },
-                { type: 'date', key: 'from', label: 'From Date' },
-                { type: 'date', key: 'to', label: 'To Date' }
-            ],
-            'daily-products': [
-                { type: 'date', key: 'date', label: 'Date' },
-                { type: 'text', key: 'vendor', label: 'Vendor / Supplier', placeholder: 'Filter by vendor name...' },
-                { type: 'text', key: 'category', label: 'Category', placeholder: 'Filter by category...' }
-            ]
-        };
-
-        function buildFilters() {
-            const filterRow = document.getElementById('filterRow');
-            const config = FILTER_CONFIG[reportType] || [];
-            
-            if (config.length === 0) {
-                filterRow.innerHTML = '<span style="color:#7f8c8d;font-size:13px">No filters available for this report</span>';
-                return;
-            }
-
-            let html = '';
-            config.forEach(f => {
-                let input;
-                if (f.type === 'text' || f.type === 'number') {
-                    const extra = f.type === 'number' ? `min="${f.min||''}" max="${f.max||''}"` : '';
-                    const val = f.value ? `value="${f.value}"` : '';
-                    input = `<input type="${f.type}" id="filter_${f.key}" ${extra} ${val} placeholder="${f.placeholder||''}" onchange="updateFilter('${f.key}', this.value)">`;
-                } else if (f.type === 'date') {
-                    input = `<input type="date" id="filter_${f.key}" onchange="updateFilter('${f.key}', this.value)">`;
-                }
-                html += `<div class="filter-group"><label>${f.label}</label>${input}</div>`;
-            });
-
-            html += `<div class="filter-group" style="display:flex;align-items:flex-end"><button class="btn-filter" onclick="applyFilters()"><i class="fas fa-filter"></i> Apply</button></div>`;
-
-            filterRow.innerHTML = html;
-        }
-
-        // Optional: keep updateFilter for compatibility
-        function updateFilter(key, value) {
-            filters[key] = value;
-        }
-
-        function applyFilters() {
-            filters = {};
-            const filterConfig = FILTER_CONFIG[reportType] || [];
-            filterConfig.forEach(f => {
-                const el = document.getElementById('filter_' + f.key);
-                if (el) {
-                    filters[f.key] = el.value;
-                }
-            });
-            loadReportData();
-        }
-
-        buildFilters();
-    </script>
+// ─── Excel Download ───────────────────────────────────────────────────────────
+function downloadExcel() {
+  if (cfg.excel) {
+    const params = new URLSearchParams(filters);
+    window.location.href = cfg.excel + (params.toString() ? '?' + params : '');
+  }
+}
+</script>
 </body>
 </html>

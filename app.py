@@ -822,6 +822,8 @@ def redirect_to_dashboard(role):
         return redirect(url_for('pos'))
     elif role == 'finance_manager':
         return redirect(url_for('finance_dashboard'))
+    elif role == 'manual_viewer':
+        return redirect(url_for('doc_user_guide'))
     else:
         return redirect(url_for('login_page'))
 
@@ -1951,6 +1953,337 @@ def vendor_payment_report():
 
 
 # =============================================================================
+# EXTENDED REPORTS API
+# =============================================================================
+
+@app.route('/api/reports/sales-report', methods=['GET'])
+def sales_report_api():
+    date_from = request.args.get('from')
+    date_to   = request.args.get('to')
+    method    = request.args.get('method')
+    query = {}
+    if date_from:
+        try: query.setdefault('timestamp', {})['$gte'] = datetime.fromisoformat(date_from)
+        except: pass
+    if date_to:
+        try: query.setdefault('timestamp', {})['$lte'] = datetime.fromisoformat(date_to + 'T23:59:59')
+        except: pass
+    if method:
+        query['payment_method'] = {'$regex': method, '$options': 'i'}
+    sales = list(db.sales.find(query).sort('timestamp', -1).limit(500))
+    result = []
+    for s in sales:
+        ts = s.get('timestamp')
+        date_str = ts.strftime('%Y-%m-%d') if isinstance(ts, datetime) else str(ts or '')[:10]
+        time_str = ts.strftime('%H:%M') if isinstance(ts, datetime) else ''
+        result.append({
+            'receipt_no': str(s['_id'])[:8].upper(),
+            'date': date_str,
+            'time': time_str,
+            'cashier': s.get('cashier_name', ''),
+            'customer': s.get('customer_name', '') or 'Walk-in',
+            'items_count': len(s.get('items', [])),
+            'payment_method': s.get('payment_method', ''),
+            'tax': round(float(s.get('tax_amount', 0)), 2),
+            'discount': round(float(s.get('cart_discount_amt', 0)) + float(s.get('promo_discount', 0)), 2),
+            'total': round(float(s.get('total', 0)), 2),
+        })
+    return jsonify(result)
+
+
+@app.route('/api/reports/sales-by-product', methods=['GET'])
+def sales_by_product_api():
+    date_from = request.args.get('from')
+    date_to   = request.args.get('to')
+    match = {}
+    if date_from:
+        try: match.setdefault('timestamp', {})['$gte'] = datetime.fromisoformat(date_from)
+        except: pass
+    if date_to:
+        try: match.setdefault('timestamp', {})['$lte'] = datetime.fromisoformat(date_to + 'T23:59:59')
+        except: pass
+    pipeline = [
+        {'$match': match},
+        {'$unwind': '$items'},
+        {'$group': {
+            '_id': '$items.name',
+            'qty_sold': {'$sum': '$items.quantity'},
+            'revenue': {'$sum': {'$ifNull': ['$items.subtotal', {'$multiply': ['$items.price', '$items.quantity']}]}},
+            'cost': {'$sum': {'$multiply': [{'$ifNull': ['$items.cost_price', 0]}, '$items.quantity']}}
+        }},
+        {'$project': {
+            'product': '$_id',
+            'qty_sold': 1,
+            'revenue': 1,
+            'cost': 1,
+            'profit': {'$subtract': ['$revenue', '$cost']}
+        }},
+        {'$sort': {'revenue': -1}}
+    ]
+    rows = list(db.sales.aggregate(pipeline))
+    result = []
+    for r in rows:
+        rev = float(r.get('revenue') or 0)
+        cost = float(r.get('cost') or 0)
+        result.append({
+            'product': r.get('product', ''),
+            'qty_sold': r.get('qty_sold', 0),
+            'revenue': round(rev, 2),
+            'cost': round(cost, 2),
+            'profit': round(rev - cost, 2),
+            'margin_pct': round((rev - cost) / rev * 100, 1) if rev > 0 else 0,
+        })
+    return jsonify(result)
+
+
+@app.route('/api/reports/stock-valuation', methods=['GET'])
+def stock_valuation_api():
+    category = request.args.get('category')
+    query = {}
+    if category:
+        query['category'] = category
+    products = list(db.products.find(query).sort('name', 1))
+    result = []
+    for p in products:
+        stock = float(p.get('stock', 0))
+        cost  = float(p.get('cost_price', 0))
+        price = float(p.get('price', 0))
+        result.append({
+            'product': p.get('name', ''),
+            'barcode': p.get('barcode', ''),
+            'category': p.get('category', ''),
+            'supplier': p.get('supplier', ''),
+            'stock': stock,
+            'unit': p.get('unit', 'pcs'),
+            'cost_price': round(cost, 2),
+            'selling_price': round(price, 2),
+            'stock_value': round(stock * cost, 2),
+            'retail_value': round(stock * price, 2),
+        })
+    return jsonify(result)
+
+
+@app.route('/api/reports/reorder-alert', methods=['GET'])
+def reorder_alert_api():
+    products = list(db.products.find().sort('stock', 1))
+    result = []
+    for p in products:
+        stock   = float(p.get('stock', 0))
+        reorder = float(p.get('reorder_level', 0))
+        if stock <= max(reorder, 1):
+            shortage = max(0, reorder - stock)
+            if stock == 0:
+                status = 'Out of Stock'
+            elif reorder > 0 and stock <= reorder * 0.5:
+                status = 'Critical'
+            else:
+                status = 'Low'
+            result.append({
+                'product': p.get('name', ''),
+                'barcode': p.get('barcode', ''),
+                'category': p.get('category', ''),
+                'supplier': p.get('supplier', ''),
+                'current_stock': stock,
+                'reorder_level': reorder,
+                'shortage': shortage,
+                'status': status,
+            })
+    return jsonify(result)
+
+
+@app.route('/api/reports/purchase-orders-report', methods=['GET'])
+def purchase_orders_report_api():
+    date_from = request.args.get('from')
+    date_to   = request.args.get('to')
+    status    = request.args.get('status')
+    query = {}
+    if date_from:
+        query.setdefault('created_at', {})['$gte'] = date_from
+    if date_to:
+        query.setdefault('created_at', {})['$lte'] = date_to + 'T23:59:59'
+    if status:
+        query['status'] = status
+    pos = list(db.purchase_orders_v2.find(query).sort('created_at', -1).limit(500))
+    result = []
+    for po in pos:
+        result.append({
+            'po_number': po.get('po_number', str(po['_id'])[:8]),
+            'vendor': po.get('vendor_name', ''),
+            'created_at': str(po.get('created_at', ''))[:10],
+            'expected_delivery': str(po.get('expected_delivery', ''))[:10],
+            'items_count': len(po.get('items', [])),
+            'total_amount': round(float(po.get('total_amount', 0)), 2),
+            'status': po.get('status', ''),
+        })
+    return jsonify(result)
+
+
+@app.route('/api/reports/invoice-aging', methods=['GET'])
+def invoice_aging_api():
+    invoices = list(db.vendor_invoices.find().sort('created_at', -1))
+    today = datetime.utcnow()
+    result = []
+    for inv in invoices:
+        created = inv.get('created_at')
+        if isinstance(created, str):
+            try: created = datetime.fromisoformat(created[:10])
+            except: created = today
+        elif not isinstance(created, datetime):
+            created = today
+        age = (today - created).days
+        if age <= 30:
+            bucket = '0-30 days'
+        elif age <= 60:
+            bucket = '31-60 days'
+        elif age <= 90:
+            bucket = '61-90 days'
+        else:
+            bucket = '90+ days'
+        amount = float(inv.get('amount', 0))
+        paid   = float(inv.get('paid_amount', 0))
+        result.append({
+            'invoice_no': inv.get('invoice_number', str(inv['_id'])[:8]),
+            'vendor': inv.get('vendor_name', ''),
+            'invoice_date': str(inv.get('created_at', ''))[:10],
+            'due_date': str(inv.get('due_date', ''))[:10],
+            'amount': round(amount, 2),
+            'paid': round(paid, 2),
+            'outstanding': round(amount - paid, 2),
+            'status': inv.get('status', ''),
+            'age_days': age,
+            'age_bucket': bucket,
+        })
+    return jsonify(result)
+
+
+@app.route('/api/reports/profit-loss', methods=['GET'])
+def profit_loss_report_api():
+    try:
+        rev_data = {r['_id']: float(r.get('revenue', 0))
+                    for r in db.sales.aggregate([
+                        {'$group': {'_id': {'$dateToString': {'format': '%Y-%m', 'date': '$timestamp'}},
+                                    'revenue': {'$sum': '$total'}}},
+                        {'$sort': {'_id': 1}}
+                    ])}
+    except:
+        rev_data = {}
+    try:
+        cost_data = {r['_id']: float(r.get('purchases', 0))
+                     for r in db.purchase_orders_v2.aggregate([
+                         {'$group': {'_id': {'$substr': ['$created_at', 0, 7]},
+                                     'purchases': {'$sum': '$total_amount'}}},
+                         {'$sort': {'_id': 1}}
+                     ])}
+    except:
+        cost_data = {}
+    try:
+        payroll_data = {r['_id']: float(r.get('payroll', 0))
+                        for r in db.payroll.aggregate([
+                            {'$group': {'_id': '$month', 'payroll': {'$sum': '$net_salary'}}},
+                            {'$sort': {'_id': 1}}
+                        ])}
+    except:
+        payroll_data = {}
+    all_months = sorted(set(list(rev_data.keys()) + list(cost_data.keys()) + list(payroll_data.keys())))
+    result = []
+    for month in all_months[-24:]:
+        revenue  = round(rev_data.get(month, 0), 2)
+        purchases = round(cost_data.get(month, 0), 2)
+        payroll  = round(payroll_data.get(month, 0), 2)
+        expenses = round(purchases + payroll, 2)
+        profit   = round(revenue - expenses, 2)
+        margin   = round(profit / revenue * 100, 1) if revenue > 0 else 0.0
+        result.append({
+            'month': month,
+            'revenue': revenue,
+            'purchases': purchases,
+            'payroll': payroll,
+            'total_expenses': expenses,
+            'net_profit': profit,
+            'margin_pct': margin,
+        })
+    return jsonify(result)
+
+
+@app.route('/api/reports/sales-returns', methods=['GET'])
+def sales_returns_report_api():
+    date_from = request.args.get('from')
+    date_to   = request.args.get('to')
+    query = {}
+    if date_from:
+        try: query.setdefault('timestamp', {})['$gte'] = datetime.fromisoformat(date_from)
+        except: pass
+    if date_to:
+        try: query.setdefault('timestamp', {})['$lte'] = datetime.fromisoformat(date_to + 'T23:59:59')
+        except: pass
+    returns = list(db.sales_returns.find(query).sort('timestamp', -1).limit(500))
+    result = []
+    for r in returns:
+        ts = r.get('timestamp')
+        result.append({
+            'return_id': str(r['_id'])[:8].upper(),
+            'original_sale': str(r.get('original_sale_id', ''))[:8],
+            'date': ts.strftime('%Y-%m-%d') if isinstance(ts, datetime) else str(ts or '')[:10],
+            'cashier': r.get('cashier_name', ''),
+            'customer': r.get('customer_name', '') or 'Walk-in',
+            'reason': r.get('reason', ''),
+            'items_count': len(r.get('items', [])),
+            'refund_amount': round(float(r.get('refund_amount', 0)), 2),
+        })
+    return jsonify(result)
+
+
+@app.route('/api/reports/payroll-summary', methods=['GET'])
+def payroll_summary_report_api():
+    month_filter = request.args.get('month')
+    query = {}
+    if month_filter:
+        query['month'] = month_filter
+    recs = list(db.payroll.find(query).sort('month', -1).limit(500))
+    result = []
+    for r in recs:
+        result.append({
+            'payroll_id': r.get('payroll_id', str(r['_id'])[:8]),
+            'employee': r.get('employee_name', ''),
+            'department': r.get('department', ''),
+            'month': r.get('month', ''),
+            'basic_salary': round(float(r.get('basic_salary', 0)), 2),
+            'allowances': round(float(r.get('allowances', 0)), 2),
+            'deductions': round(float(r.get('deductions', 0)), 2),
+            'net_salary': round(float(r.get('net_salary', 0)), 2),
+            'status': r.get('status', ''),
+        })
+    return jsonify(result)
+
+
+@app.route('/api/reports/credit-sales', methods=['GET'])
+def credit_sales_report_api():
+    date_from = request.args.get('from')
+    date_to   = request.args.get('to')
+    query = {'payment_method': {'$regex': 'credit|account', '$options': 'i'}}
+    if date_from:
+        try: query.setdefault('timestamp', {})['$gte'] = datetime.fromisoformat(date_from)
+        except: pass
+    if date_to:
+        try: query.setdefault('timestamp', {})['$lte'] = datetime.fromisoformat(date_to + 'T23:59:59')
+        except: pass
+    sales = list(db.sales.find(query).sort('timestamp', -1).limit(500))
+    result = []
+    for s in sales:
+        ts = s.get('timestamp')
+        result.append({
+            'receipt_no': str(s['_id'])[:8].upper(),
+            'date': ts.strftime('%Y-%m-%d') if isinstance(ts, datetime) else str(ts or '')[:10],
+            'customer': s.get('customer_name', '') or 'Walk-in',
+            'cashier': s.get('cashier_name', ''),
+            'items_count': len(s.get('items', [])),
+            'payment_method': s.get('payment_method', ''),
+            'total': round(float(s.get('total', 0)), 2),
+        })
+    return jsonify(result)
+
+
+# =============================================================================
 # QR CODE ENDPOINT
 # =============================================================================
 
@@ -2682,7 +3015,10 @@ def report_viewer(report_type):
         return redirect(url_for('z_report_page'))
     valid_reports = [
         'stock-report', 'expiry-report', 'price-list',
-        'slow-moving', 'vendor-payment', 'daily-products'
+        'slow-moving', 'vendor-payment', 'daily-products',
+        'sales-report', 'sales-by-product', 'stock-valuation',
+        'reorder-alert', 'purchase-orders-report', 'invoice-aging',
+        'profit-loss', 'sales-returns', 'payroll-summary', 'credit-sales',
     ]
     if report_type not in valid_reports:
         return "Invalid report type", 404
@@ -2747,6 +3083,302 @@ def daily_products_excel():
     headers = ['name', 'category', 'supplier', 'stock']
     csv_data = dicts_to_csv(data, headers)
     return excel_response(csv_data, 'daily_products')
+
+
+def _xlsx_response(rows, col_headers, sheet_name, filename):
+    """Generate a real .xlsx file using openpyxl and return as download."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from io import BytesIO
+    wb = Workbook()
+    ws = wb.active
+    ws.title = sheet_name[:31]
+    header_fill = PatternFill('solid', fgColor='1e3a5f')
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    border = Border(
+        left=Side(style='thin', color='CCCCCC'),
+        right=Side(style='thin', color='CCCCCC'),
+        top=Side(style='thin', color='CCCCCC'),
+        bottom=Side(style='thin', color='CCCCCC'),
+    )
+    alt_fill = PatternFill('solid', fgColor='F2F6FC')
+    # Header row
+    for ci, hdr in enumerate(col_headers, 1):
+        cell = ws.cell(row=1, column=ci, value=hdr)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+    ws.row_dimensions[1].height = 22
+    # Data rows
+    for ri, row in enumerate(rows, 2):
+        fill = alt_fill if ri % 2 == 0 else PatternFill()
+        for ci, key in enumerate(row.keys(), 1):
+            cell = ws.cell(row=ri, column=ci, value=row[key])
+            cell.border = border
+            cell.fill = fill
+            cell.alignment = Alignment(vertical='center')
+            if isinstance(row[key], float):
+                cell.number_format = '#,##0.00'
+    # Auto column width
+    for col in ws.columns:
+        max_len = max((len(str(c.value or '')) for c in col), default=8)
+        ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 40)
+    bio = BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+    from flask import send_file
+    return send_file(
+        bio,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'{filename}_{datetime.utcnow().strftime("%Y-%m-%d")}.xlsx'
+    )
+
+
+@app.route('/api/reports/sales-report/excel')
+def sales_report_excel():
+    with app.test_request_context(request.url):
+        pass
+    sales = list(db.sales.find().sort('timestamp', -1).limit(1000))
+    rows = []
+    for s in sales:
+        ts = s.get('timestamp')
+        rows.append({
+            'Receipt No': str(s['_id'])[:8].upper(),
+            'Date': ts.strftime('%Y-%m-%d') if isinstance(ts, datetime) else str(ts or '')[:10],
+            'Time': ts.strftime('%H:%M') if isinstance(ts, datetime) else '',
+            'Cashier': s.get('cashier_name', ''),
+            'Customer': s.get('customer_name', '') or 'Walk-in',
+            'Items': len(s.get('items', [])),
+            'Payment Method': s.get('payment_method', ''),
+            'Tax (PKR)': round(float(s.get('tax_amount', 0)), 2),
+            'Discount (PKR)': round(float(s.get('cart_discount_amt', 0)) + float(s.get('promo_discount', 0)), 2),
+            'Total (PKR)': round(float(s.get('total', 0)), 2),
+        })
+    return _xlsx_response(rows, list(rows[0].keys()) if rows else [], 'Sales Report', 'sales_report')
+
+
+@app.route('/api/reports/sales-by-product/excel')
+def sales_by_product_excel():
+    pipeline = [
+        {'$unwind': '$items'},
+        {'$group': {
+            '_id': '$items.name',
+            'qty_sold': {'$sum': '$items.quantity'},
+            'revenue': {'$sum': {'$ifNull': ['$items.subtotal', {'$multiply': ['$items.price', '$items.quantity']}]}},
+            'cost': {'$sum': {'$multiply': [{'$ifNull': ['$items.cost_price', 0]}, '$items.quantity']}}
+        }},
+        {'$sort': {'revenue': -1}}
+    ]
+    data = list(db.sales.aggregate(pipeline))
+    rows = []
+    for r in data:
+        rev = float(r.get('revenue') or 0)
+        cost = float(r.get('cost') or 0)
+        rows.append({
+            'Product': r.get('_id', ''),
+            'Qty Sold': r.get('qty_sold', 0),
+            'Revenue (PKR)': round(rev, 2),
+            'Cost (PKR)': round(cost, 2),
+            'Profit (PKR)': round(rev - cost, 2),
+            'Margin %': round((rev - cost) / rev * 100, 1) if rev > 0 else 0,
+        })
+    return _xlsx_response(rows, list(rows[0].keys()) if rows else [], 'Sales by Product', 'sales_by_product')
+
+
+@app.route('/api/reports/stock-valuation/excel')
+def stock_valuation_excel():
+    products = list(db.products.find().sort('name', 1))
+    rows = []
+    for p in products:
+        stock = float(p.get('stock', 0))
+        cost  = float(p.get('cost_price', 0))
+        price = float(p.get('price', 0))
+        rows.append({
+            'Product': p.get('name', ''),
+            'Barcode': p.get('barcode', ''),
+            'Category': p.get('category', ''),
+            'Supplier': p.get('supplier', ''),
+            'Stock': stock,
+            'Unit': p.get('unit', 'pcs'),
+            'Cost Price (PKR)': round(cost, 2),
+            'Selling Price (PKR)': round(price, 2),
+            'Stock Value (PKR)': round(stock * cost, 2),
+            'Retail Value (PKR)': round(stock * price, 2),
+        })
+    return _xlsx_response(rows, list(rows[0].keys()) if rows else [], 'Stock Valuation', 'stock_valuation')
+
+
+@app.route('/api/reports/reorder-alert/excel')
+def reorder_alert_excel():
+    products = list(db.products.find().sort('stock', 1))
+    rows = []
+    for p in products:
+        stock   = float(p.get('stock', 0))
+        reorder = float(p.get('reorder_level', 0))
+        if stock <= max(reorder, 1):
+            if stock == 0: status = 'Out of Stock'
+            elif reorder > 0 and stock <= reorder * 0.5: status = 'Critical'
+            else: status = 'Low'
+            rows.append({
+                'Product': p.get('name', ''),
+                'Barcode': p.get('barcode', ''),
+                'Category': p.get('category', ''),
+                'Supplier': p.get('supplier', ''),
+                'Current Stock': stock,
+                'Reorder Level': reorder,
+                'Shortage': max(0, reorder - stock),
+                'Status': status,
+            })
+    return _xlsx_response(rows, list(rows[0].keys()) if rows else [], 'Reorder Alert', 'reorder_alert')
+
+
+@app.route('/api/reports/purchase-orders-report/excel')
+def purchase_orders_report_excel():
+    pos = list(db.purchase_orders_v2.find().sort('created_at', -1).limit(500))
+    rows = []
+    for po in pos:
+        rows.append({
+            'PO Number': po.get('po_number', str(po['_id'])[:8]),
+            'Vendor': po.get('vendor_name', ''),
+            'Created': str(po.get('created_at', ''))[:10],
+            'Expected Delivery': str(po.get('expected_delivery', ''))[:10],
+            'Items': len(po.get('items', [])),
+            'Total (PKR)': round(float(po.get('total_amount', 0)), 2),
+            'Status': po.get('status', ''),
+        })
+    return _xlsx_response(rows, list(rows[0].keys()) if rows else [], 'Purchase Orders', 'purchase_orders')
+
+
+@app.route('/api/reports/invoice-aging/excel')
+def invoice_aging_excel():
+    invoices = list(db.vendor_invoices.find().sort('created_at', -1))
+    today = datetime.utcnow()
+    rows = []
+    for inv in invoices:
+        created = inv.get('created_at')
+        if isinstance(created, str):
+            try: created = datetime.fromisoformat(created[:10])
+            except: created = today
+        elif not isinstance(created, datetime):
+            created = today
+        age = (today - created).days
+        if age <= 30: bucket = '0-30 days'
+        elif age <= 60: bucket = '31-60 days'
+        elif age <= 90: bucket = '61-90 days'
+        else: bucket = '90+ days'
+        amount = float(inv.get('amount', 0))
+        paid   = float(inv.get('paid_amount', 0))
+        rows.append({
+            'Invoice No': inv.get('invoice_number', str(inv['_id'])[:8]),
+            'Vendor': inv.get('vendor_name', ''),
+            'Invoice Date': str(inv.get('created_at', ''))[:10],
+            'Due Date': str(inv.get('due_date', ''))[:10],
+            'Amount (PKR)': round(amount, 2),
+            'Paid (PKR)': round(paid, 2),
+            'Outstanding (PKR)': round(amount - paid, 2),
+            'Status': inv.get('status', ''),
+            'Age (Days)': age,
+            'Age Bucket': bucket,
+        })
+    return _xlsx_response(rows, list(rows[0].keys()) if rows else [], 'Invoice Aging', 'invoice_aging')
+
+
+@app.route('/api/reports/profit-loss/excel')
+def profit_loss_excel():
+    try:
+        rev_data = {r['_id']: float(r.get('revenue', 0)) for r in db.sales.aggregate([
+            {'$group': {'_id': {'$dateToString': {'format': '%Y-%m', 'date': '$timestamp'}}, 'revenue': {'$sum': '$total'}}},
+            {'$sort': {'_id': 1}}
+        ])}
+    except: rev_data = {}
+    try:
+        cost_data = {r['_id']: float(r.get('purchases', 0)) for r in db.purchase_orders_v2.aggregate([
+            {'$group': {'_id': {'$substr': ['$created_at', 0, 7]}, 'purchases': {'$sum': '$total_amount'}}},
+            {'$sort': {'_id': 1}}
+        ])}
+    except: cost_data = {}
+    try:
+        payroll_data = {r['_id']: float(r.get('payroll', 0)) for r in db.payroll.aggregate([
+            {'$group': {'_id': '$month', 'payroll': {'$sum': '$net_salary'}}},
+            {'$sort': {'_id': 1}}
+        ])}
+    except: payroll_data = {}
+    all_months = sorted(set(list(rev_data.keys()) + list(cost_data.keys()) + list(payroll_data.keys())))
+    rows = []
+    for month in all_months[-24:]:
+        revenue   = round(rev_data.get(month, 0), 2)
+        purchases = round(cost_data.get(month, 0), 2)
+        payroll   = round(payroll_data.get(month, 0), 2)
+        expenses  = round(purchases + payroll, 2)
+        profit    = round(revenue - expenses, 2)
+        rows.append({
+            'Month': month,
+            'Revenue (PKR)': revenue,
+            'Purchases (PKR)': purchases,
+            'Payroll (PKR)': payroll,
+            'Total Expenses (PKR)': expenses,
+            'Net Profit (PKR)': profit,
+            'Margin %': round(profit / revenue * 100, 1) if revenue > 0 else 0,
+        })
+    return _xlsx_response(rows, list(rows[0].keys()) if rows else [], 'Profit & Loss', 'profit_loss')
+
+
+@app.route('/api/reports/sales-returns/excel')
+def sales_returns_excel():
+    returns = list(db.sales_returns.find().sort('timestamp', -1).limit(500))
+    rows = []
+    for r in returns:
+        ts = r.get('timestamp')
+        rows.append({
+            'Return ID': str(r['_id'])[:8].upper(),
+            'Original Sale': str(r.get('original_sale_id', ''))[:8],
+            'Date': ts.strftime('%Y-%m-%d') if isinstance(ts, datetime) else str(ts or '')[:10],
+            'Cashier': r.get('cashier_name', ''),
+            'Customer': r.get('customer_name', '') or 'Walk-in',
+            'Reason': r.get('reason', ''),
+            'Items': len(r.get('items', [])),
+            'Refund (PKR)': round(float(r.get('refund_amount', 0)), 2),
+        })
+    return _xlsx_response(rows, list(rows[0].keys()) if rows else [], 'Sales Returns', 'sales_returns')
+
+
+@app.route('/api/reports/payroll-summary/excel')
+def payroll_summary_excel():
+    recs = list(db.payroll.find().sort('month', -1).limit(500))
+    rows = []
+    for r in recs:
+        rows.append({
+            'Payroll ID': r.get('payroll_id', str(r['_id'])[:8]),
+            'Employee': r.get('employee_name', ''),
+            'Department': r.get('department', ''),
+            'Month': r.get('month', ''),
+            'Basic Salary (PKR)': round(float(r.get('basic_salary', 0)), 2),
+            'Allowances (PKR)': round(float(r.get('allowances', 0)), 2),
+            'Deductions (PKR)': round(float(r.get('deductions', 0)), 2),
+            'Net Salary (PKR)': round(float(r.get('net_salary', 0)), 2),
+            'Status': r.get('status', ''),
+        })
+    return _xlsx_response(rows, list(rows[0].keys()) if rows else [], 'Payroll Summary', 'payroll_summary')
+
+
+@app.route('/api/reports/credit-sales/excel')
+def credit_sales_excel():
+    sales = list(db.sales.find({'payment_method': {'$regex': 'credit|account', '$options': 'i'}}).sort('timestamp', -1).limit(500))
+    rows = []
+    for s in sales:
+        ts = s.get('timestamp')
+        rows.append({
+            'Receipt No': str(s['_id'])[:8].upper(),
+            'Date': ts.strftime('%Y-%m-%d') if isinstance(ts, datetime) else str(ts or '')[:10],
+            'Customer': s.get('customer_name', '') or 'Walk-in',
+            'Cashier': s.get('cashier_name', ''),
+            'Items': len(s.get('items', [])),
+            'Payment Method': s.get('payment_method', ''),
+            'Total (PKR)': round(float(s.get('total', 0)), 2),
+        })
+    return _xlsx_response(rows, list(rows[0].keys()) if rows else [], 'Credit Sales', 'credit_sales')
 
 
 def excel_response(csv_content, filename):
@@ -6952,6 +7584,537 @@ def export_csv(module):
     filename = f'{module}_{datetime.utcnow().strftime("%Y%m%d_%H%M%S")}.csv'
     return send_file(output, mimetype='text/csv',
                      as_attachment=True, download_name=filename)
+
+
+# =============================================================================
+# PREDICTIVE ANALYSIS — ADMIN KPI DASHBOARD
+# =============================================================================
+
+def _month_add(year, month, delta):
+    month += delta
+    while month > 12: month -= 12; year += 1
+    while month < 1:  month += 12; year -= 1
+    return year, month
+
+def _prev_months(n=12):
+    now = datetime.utcnow()
+    out = []
+    for i in range(n - 1, -1, -1):
+        y, m = _month_add(now.year, now.month, -i)
+        out.append((f'{y}-{m:02d}', datetime(y, m, 1).strftime('%b %Y')))
+    return out
+
+def _next_months(n=6):
+    now = datetime.utcnow()
+    out = []
+    for i in range(1, n + 1):
+        y, m = _month_add(now.year, now.month, i)
+        out.append((f'{y}-{m:02d}', datetime(y, m, 1).strftime('%b %Y')))
+    return out
+
+def _lr(values):
+    n = len(values)
+    if n < 2: return 0, (values[0] if values else 0)
+    x_mean = (n - 1) / 2
+    y_mean = sum(values) / n
+    denom = sum((i - x_mean)**2 for i in range(n))
+    if denom == 0: return 0, y_mean
+    slope = sum((i - x_mean) * (v - y_mean) for i, v in enumerate(values)) / denom
+    return slope, y_mean - slope * x_mean
+
+def _forecast(values, periods=6):
+    slope, intercept = _lr(values)
+    n = len(values)
+    return [max(0, round(intercept + slope * (n + i), 2)) for i in range(periods)]
+
+def _growth_pct(values):
+    non_zero = [v for v in values if v > 0]
+    if len(non_zero) < 2: return 0.0
+    return round((non_zero[-1] - non_zero[-2]) / non_zero[-2] * 100, 1)
+
+def _trend_label(slope):
+    if slope > 0.05: return 'growing'
+    if slope < -0.05: return 'declining'
+    return 'stable'
+
+
+@app.route('/api/predictive/sales')
+def api_predictive_sales():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if session.get('role') != 'admin': return jsonify({'error': 'Forbidden'}), 403
+    hist  = _prev_months(12)
+    fcast = _next_months(6)
+    rev   = {k: 0.0 for k, _ in hist}
+    tx    = {k: 0   for k, _ in hist}
+    disc  = {k: 0.0 for k, _ in hist}
+    product_rev = {}
+    pm_counts   = {}
+    cutoff = hist[0][0] + '-01'
+    if USE_MEMORY_DB:
+        sales_list = [s for s in getattr(db,'sales',[]) if s.get('created_at','') >= cutoff]
+    else:
+        sales_list = list(db.sales.find({'created_at': {'$gte': cutoff}}))
+    for s in sales_list:
+        k = s.get('created_at','')[:7]
+        if k in rev:
+            rev[k]  += float(s.get('total', 0))
+            tx[k]   += 1
+            disc[k] += float(s.get('discount_amount', 0))
+        for it in s.get('items', []):
+            pname = it.get('name', 'Unknown')
+            product_rev[pname] = product_rev.get(pname, 0) + float(it.get('subtotal', 0))
+        pm = s.get('payment_method', 'other')
+        pm_counts[pm] = pm_counts.get(pm, 0) + 1
+    rev_v  = [round(rev[k], 2) for k, _ in hist]
+    tx_v   = [tx[k] for k, _ in hist]
+    avg_v  = [round(rev[k]/tx[k], 2) if tx[k] else 0 for k, _ in hist]
+    rev_fc = _forecast(rev_v, 6)
+    tx_fc  = _forecast(tx_v, 6)
+    slope, _ = _lr(rev_v)
+    growth   = _growth_pct(rev_v)
+    total_rev = sum(rev_v)
+    top_products = sorted(product_rev.items(), key=lambda x: x[1], reverse=True)[:10]
+    six_proj = round(sum(rev_fc), 2)
+    total_disc = sum(disc[k] for k, _ in hist)
+    total_pm   = sum(pm_counts.values()) or 1
+    recs = []
+    if growth < -5:
+        recs.append({'level':'danger','icon':'fa-arrow-trend-down','title':'Revenue Declining',
+                     'message':f'Revenue dropped {abs(growth):.1f}% vs last month. Review pricing, run promotions, and check peak hour coverage.'})
+    elif growth >= 10:
+        recs.append({'level':'success','icon':'fa-arrow-trend-up','title':'Strong Revenue Growth',
+                     'message':f'Revenue grew {growth:.1f}% vs last month. Scale inventory of top products and replicate what\'s working.'})
+    else:
+        recs.append({'level':'info','icon':'fa-chart-line','title':'Revenue Stable',
+                     'message':f'Revenue changed {growth:+.1f}%. Introduce new product categories or bundles to accelerate growth.'})
+    if top_products and total_rev:
+        top_share = top_products[0][1] / total_rev * 100
+        if top_share > 40:
+            recs.append({'level':'warning','icon':'fa-exclamation-triangle','title':'Revenue Concentration Risk',
+                         'message':f'"{top_products[0][0]}" drives {top_share:.0f}% of revenue. Diversify your product mix to reduce dependency.'})
+    if total_rev and total_disc / total_rev > 0.15:
+        recs.append({'level':'warning','icon':'fa-tags','title':'High Discount Rate',
+                     'message':f'Discounts are {total_disc/total_rev*100:.1f}% of gross revenue. Tighten discount rules to protect margins.'})
+    if pm_counts.get('cash', 0) / total_pm > 0.75:
+        recs.append({'level':'info','icon':'fa-credit-card','title':'Low Digital Payment Adoption',
+                     'message':'75%+ transactions are cash. Enable card/digital payments to improve checkout speed and reduce cash risk.'})
+    recs.append({'level':'info','icon':'fa-robot','title':'6-Month AI Projection',
+                 'message':f'Linear trend projects PKR {six_proj:,.0f} revenue over next 6 months. {"Invest in growth." if slope > 0 else "Take corrective action now."}'})
+    return jsonify({
+        'hist_labels': [l for _, l in hist], 'fcast_labels': [l for _, l in fcast],
+        'revenue': rev_v, 'rev_forecast': rev_fc,
+        'transactions': tx_v, 'tx_forecast': tx_fc, 'avg_transaction': avg_v,
+        'top_products': [{'name': k, 'revenue': round(v, 2)} for k, v in top_products],
+        'payment_methods': pm_counts,
+        'kpis': {'total_revenue': round(total_rev, 2), 'avg_monthly': round(total_rev/12, 2),
+                 'growth_rate': growth, 'transactions_total': sum(tx_v),
+                 'six_month_proj': six_proj, 'trend': _trend_label(slope)},
+        'recommendations': recs,
+    })
+
+
+@app.route('/api/predictive/procurement')
+def api_predictive_procurement():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if session.get('role') != 'admin': return jsonify({'error': 'Forbidden'}), 403
+    hist  = _prev_months(12)
+    fcast = _next_months(6)
+    po_val = {k: 0.0 for k, _ in hist}
+    po_cnt = {k: 0   for k, _ in hist}
+    gr_cnt = {k: 0   for k, _ in hist}
+    pr_cnt = {k: 0   for k, _ in hist}
+    vendor_spend = {}
+    cutoff = hist[0][0] + '-01'
+    if USE_MEMORY_DB:
+        pos  = [p for p in getattr(db,'purchase_orders_v2',[]) if p.get('created_at','') >= cutoff]
+        grs  = [g for g in getattr(db,'goods_receipts',[]) if g.get('created_at','') >= cutoff and g.get('status') == 'confirmed']
+        prs  = [p for p in getattr(db,'purchase_requisitions',[]) if p.get('created_at','') >= cutoff]
+    else:
+        pos  = list(db.purchase_orders_v2.find({'created_at': {'$gte': cutoff}}))
+        grs  = list(db.goods_receipts.find({'created_at': {'$gte': cutoff}, 'status': 'confirmed'}))
+        prs  = list(db.purchase_requisitions.find({'created_at': {'$gte': cutoff}}))
+    for po in pos:
+        k = po.get('created_at','')[:7]
+        if k in po_val:
+            po_val[k] += float(po.get('total', 0))
+            po_cnt[k] += 1
+        vn = po.get('vendor_name', 'Unknown')
+        vendor_spend[vn] = vendor_spend.get(vn, 0) + float(po.get('total', 0))
+    for gr in grs:
+        k = gr.get('created_at','')[:7]
+        if k in gr_cnt: gr_cnt[k] += 1
+    for pr in prs:
+        k = pr.get('created_at','')[:7]
+        if k in pr_cnt: pr_cnt[k] += 1
+    po_v = [round(po_val[k], 2) for k, _ in hist]
+    po_c = [po_cnt[k] for k, _ in hist]
+    gr_v = [gr_cnt[k] for k, _ in hist]
+    pr_v = [pr_cnt[k] for k, _ in hist]
+    po_fc = _forecast(po_v, 6)
+    slope, _ = _lr(po_v)
+    growth = _growth_pct(po_v)
+    total_spend = sum(po_v)
+    top_vendors = sorted(vendor_spend.items(), key=lambda x: x[1], reverse=True)[:8]
+    total_pr = sum(pr_v); total_po = sum(po_c)
+    conversion = round(total_po / total_pr * 100, 1) if total_pr else 0
+    six_proj = round(sum(po_fc), 2)
+    recs = []
+    if growth > 15:
+        recs.append({'level':'warning','icon':'fa-arrow-up','title':'Procurement Spend Increasing Fast',
+                     'message':f'PO value grew {growth:.1f}% last month. Check if driven by price inflation or volume — negotiate better vendor rates.'})
+    elif growth < -10:
+        recs.append({'level':'info','icon':'fa-arrow-down','title':'Procurement Spend Decreasing',
+                     'message':f'PO value dropped {abs(growth):.1f}%. Verify stock levels to avoid stockouts from reduced ordering.'})
+    else:
+        recs.append({'level':'success','icon':'fa-check-circle','title':'Procurement Spend Stable',
+                     'message':f'Procurement spend changed {growth:+.1f}%. Good control. Monitor vendor price trends proactively.'})
+    if conversion < 60:
+        recs.append({'level':'warning','icon':'fa-exchange-alt','title':'Low PR-to-PO Conversion',
+                     'message':f'Only {conversion:.0f}% of PRs convert to POs. Review approval bottlenecks and pending requisitions.'})
+    if top_vendors and total_spend:
+        top_share = top_vendors[0][1] / total_spend * 100
+        if top_share > 50:
+            recs.append({'level':'warning','icon':'fa-building','title':'Vendor Concentration Risk',
+                         'message':f'"{top_vendors[0][0]}" accounts for {top_share:.0f}% of spend. Diversify suppliers to reduce risk.'})
+    recs.append({'level':'info','icon':'fa-robot','title':'6-Month Spend Projection',
+                 'message':f'Projected procurement spend: PKR {six_proj:,.0f}. {"Plan budget for growth." if slope > 0 else "Declining trend — review stock adequacy."}'})
+    return jsonify({
+        'hist_labels': [l for _, l in hist], 'fcast_labels': [l for _, l in fcast],
+        'po_values': po_v, 'po_forecast': po_fc, 'po_counts': po_c, 'gr_counts': gr_v, 'pr_counts': pr_v,
+        'top_vendors': [{'name': k, 'spend': round(v, 2)} for k, v in top_vendors],
+        'kpis': {'total_spend': round(total_spend, 2), 'avg_monthly': round(total_spend/12, 2),
+                 'growth_rate': growth, 'total_pos': total_po, 'total_grs': sum(gr_v),
+                 'conversion_rate': conversion, 'six_month_proj': six_proj, 'trend': _trend_label(slope)},
+        'recommendations': recs,
+    })
+
+
+@app.route('/api/predictive/finance')
+def api_predictive_finance():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if session.get('role') != 'admin': return jsonify({'error': 'Forbidden'}), 403
+    hist  = _prev_months(12)
+    fcast = _next_months(6)
+    revenue  = {k: 0.0 for k, _ in hist}
+    expenses = {k: 0.0 for k, _ in hist}
+    cutoff = hist[0][0] + '-01'
+    if USE_MEMORY_DB:
+        sales_list = [s for s in getattr(db,'sales',[]) if s.get('created_at','') >= cutoff]
+        inv_list   = [i for i in getattr(db,'vendor_invoices',[]) if i.get('created_at','') >= cutoff]
+        pay_list   = [p for p in getattr(db,'payroll',[]) if p.get('created_at','') >= cutoff]
+    else:
+        sales_list = list(db.sales.find({'created_at': {'$gte': cutoff}}))
+        inv_list   = list(db.vendor_invoices.find({'created_at': {'$gte': cutoff}}))
+        pay_list   = list(db.payroll.find({'created_at': {'$gte': cutoff}}))
+    for s in sales_list:
+        k = s.get('created_at','')[:7]
+        if k in revenue: revenue[k] += float(s.get('total', 0))
+    for inv in inv_list:
+        k = inv.get('created_at','')[:7]
+        if k in expenses: expenses[k] += float(inv.get('total', 0))
+    for p in pay_list:
+        k = p.get('created_at','')[:7]
+        if k in expenses: expenses[k] += float(p.get('net_salary', 0))
+    rev_v    = [round(revenue[k], 2) for k, _ in hist]
+    exp_v    = [round(expenses[k], 2) for k, _ in hist]
+    profit_v = [round(rev_v[i] - exp_v[i], 2) for i in range(12)]
+    rev_fc     = _forecast(rev_v, 6)
+    exp_fc     = _forecast(exp_v, 6)
+    profit_fc  = [round(rev_fc[i] - exp_fc[i], 2) for i in range(6)]
+    slope_r, _ = _lr(rev_v)
+    slope_e, _ = _lr(exp_v)
+    total_rev    = sum(rev_v)
+    total_exp    = sum(exp_v)
+    total_profit = sum(profit_v)
+    margin       = round(total_profit / total_rev * 100, 1) if total_rev else 0
+    if USE_MEMORY_DB:
+        pending_inv = [i for i in getattr(db,'vendor_invoices',[]) if i.get('status') not in ['paid']]
+    else:
+        pending_inv = list(db.vendor_invoices.find({'status': {'$ne': 'paid'}}))
+    outstanding = sum(float(i.get('amount_due', i.get('total', 0))) for i in pending_inv)
+    recs = []
+    if margin < 10:
+        recs.append({'level':'danger','icon':'fa-exclamation-circle','title':'Critical: Low Profit Margin',
+                     'message':f'Margin is {margin:.1f}%. Target 20%+. Reduce procurement costs and eliminate low-margin products immediately.'})
+    elif margin < 20:
+        recs.append({'level':'warning','icon':'fa-chart-pie','title':'Margin Below Target',
+                     'message':f'Margin is {margin:.1f}%. Aim for 20%+. Focus on higher-margin products and negotiate better vendor pricing.'})
+    else:
+        recs.append({'level':'success','icon':'fa-chart-pie','title':'Healthy Profit Margin',
+                     'message':f'Margin is {margin:.1f}%. Strong performance. Reinvest profits in inventory expansion and new categories.'})
+    if slope_e > slope_r and slope_e > 0:
+        recs.append({'level':'warning','icon':'fa-balance-scale','title':'Expenses Growing Faster Than Revenue',
+                     'message':'Cost growth is outpacing revenue. Audit vendor contracts and payroll costs immediately.'})
+    if outstanding > total_rev * 0.1:
+        recs.append({'level':'warning','icon':'fa-file-invoice','title':'High Outstanding Payables',
+                     'message':f'PKR {outstanding:,.0f} in unpaid vendor invoices. Prioritize cash flow management and overdue payments.'})
+    six_proj_profit = round(sum(profit_fc), 2)
+    recs.append({'level':'info','icon':'fa-robot','title':'6-Month Profit Projection',
+                 'message':f'Projected profit: PKR {six_proj_profit:,.0f}. {"Maintain current trajectory." if six_proj_profit > 0 else "Losses projected — take immediate cost reduction action."}'})
+    return jsonify({
+        'hist_labels': [l for _, l in hist], 'fcast_labels': [l for _, l in fcast],
+        'revenue': rev_v, 'rev_forecast': rev_fc,
+        'expenses': exp_v, 'exp_forecast': exp_fc,
+        'profit': profit_v, 'profit_forecast': profit_fc,
+        'kpis': {'total_revenue': round(total_rev, 2), 'total_expenses': round(total_exp, 2),
+                 'total_profit': round(total_profit, 2), 'profit_margin': margin,
+                 'outstanding_payables': round(outstanding, 2),
+                 'six_month_proj_profit': six_proj_profit,
+                 'trend_revenue': _trend_label(slope_r), 'trend_expenses': _trend_label(slope_e)},
+        'recommendations': recs,
+    })
+
+
+@app.route('/api/predictive/vendors')
+def api_predictive_vendors():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if session.get('role') != 'admin': return jsonify({'error': 'Forbidden'}), 403
+    hist   = _prev_months(12)
+    cutoff = hist[0][0] + '-01'
+    today  = datetime.utcnow().strftime('%Y-%m-%d')
+    if USE_MEMORY_DB:
+        pos      = [p for p in getattr(db,'purchase_orders_v2',[]) if p.get('created_at','') >= cutoff]
+        invoices = [i for i in getattr(db,'vendor_invoices',[]) if i.get('created_at','') >= cutoff]
+        payments = [p for p in getattr(db,'vendor_payments_v2',[]) if p.get('created_at','') >= cutoff]
+    else:
+        pos      = list(db.purchase_orders_v2.find({'created_at': {'$gte': cutoff}}))
+        invoices = list(db.vendor_invoices.find({'created_at': {'$gte': cutoff}}))
+        payments = list(db.vendor_payments_v2.find({'created_at': {'$gte': cutoff}}))
+    vendor_data = {}
+    for po in pos:
+        vn = po.get('vendor_name', 'Unknown')
+        if vn not in vendor_data:
+            vendor_data[vn] = {'spend': 0.0, 'invoices': 0, 'paid': 0.0, 'overdue': 0, 'pos': 0}
+        vendor_data[vn]['spend'] += float(po.get('total', 0))
+        vendor_data[vn]['pos']   += 1
+    for inv in invoices:
+        vn = inv.get('vendor_name', 'Unknown')
+        if vn not in vendor_data:
+            vendor_data[vn] = {'spend': 0.0, 'invoices': 0, 'paid': 0.0, 'overdue': 0, 'pos': 0}
+        vendor_data[vn]['invoices'] += 1
+        due = inv.get('due_date', '')
+        if inv.get('status') != 'paid' and due and due < today:
+            vendor_data[vn]['overdue'] += 1
+    for pmt in payments:
+        vn = pmt.get('vendor_name', 'Unknown')
+        if vn not in vendor_data:
+            vendor_data[vn] = {'spend': 0.0, 'invoices': 0, 'paid': 0.0, 'overdue': 0, 'pos': 0}
+        vendor_data[vn]['paid'] += float(pmt.get('amount', 0))
+    def _vscore(vd):
+        base = 70
+        if vd['invoices']:
+            base -= min(30, vd['overdue'] / vd['invoices'] * 100)
+        if vd['spend'] > 0 and vd['paid'] / vd['spend'] > 0.8:
+            base = min(100, base + 10)
+        return round(base)
+    top_vendors = sorted(vendor_data.items(), key=lambda x: x[1]['spend'], reverse=True)[:10]
+    total_spend = sum(v['spend'] for v in vendor_data.values())
+    overdue_count = sum(1 for v in vendor_data.values() if v['overdue'] > 0)
+    avg_score = round(sum(_vscore(v) for v in vendor_data.values()) / len(vendor_data), 1) if vendor_data else 0
+    vendors_out = [{'name': n, 'spend': round(vd['spend'], 2), 'invoices': vd['invoices'],
+                    'paid': round(vd['paid'], 2), 'overdue': vd['overdue'],
+                    'pos': vd['pos'], 'score': _vscore(vd)} for n, vd in top_vendors]
+    recs = []
+    if top_vendors and total_spend:
+        top_share = top_vendors[0][1]['spend'] / total_spend * 100
+        if top_share > 50:
+            recs.append({'level':'danger','icon':'fa-building','title':'High Vendor Dependency',
+                         'message':f'"{top_vendors[0][0]}" drives {top_share:.0f}% of spend. Onboard alternative vendors to reduce supply risk.'})
+    if overdue_count:
+        recs.append({'level':'warning','icon':'fa-clock','title':f'{overdue_count} Vendors Have Overdue Invoices',
+                     'message':'Settle overdue invoices to protect vendor relationships and maintain credit terms.'})
+    low_score = [n for n, vd in top_vendors if _vscore(vd) < 70]
+    if low_score:
+        recs.append({'level':'warning','icon':'fa-star-half-alt','title':'Low-Reliability Vendors Detected',
+                     'message':f'{", ".join(low_score[:3])} scored below 70. Renegotiate terms or find alternatives.'})
+    if len(vendor_data) < 3:
+        recs.append({'level':'danger','icon':'fa-exclamation-triangle','title':'Too Few Active Vendors',
+                     'message':'Fewer than 3 active vendors detected. Onboard additional suppliers immediately to ensure supply continuity.'})
+    recs.append({'level':'success','icon':'fa-handshake','title':'Vendor Expansion Opportunity',
+                 'message':'Add 2-3 new vendors per product category to improve price competition and reduce single-source risk.'})
+    return jsonify({
+        'vendors': vendors_out, 'hist_labels': [l for _, l in hist],
+        'kpis': {'total_vendors': len(vendor_data), 'total_spend': round(total_spend, 2),
+                 'avg_score': avg_score, 'overdue_count': overdue_count},
+        'recommendations': recs,
+    })
+
+
+@app.route('/api/predictive/overview')
+def api_predictive_overview():
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    if session.get('role') != 'admin': return jsonify({'error': 'Forbidden'}), 403
+    hist  = _prev_months(12)
+    fcast = _next_months(12)
+    cutoff = hist[0][0] + '-01'
+    revenue  = {k: 0.0 for k, _ in hist}
+    expenses = {k: 0.0 for k, _ in hist}
+    if USE_MEMORY_DB:
+        sales_list = [s for s in getattr(db,'sales',[]) if s.get('created_at','') >= cutoff]
+        inv_list   = [i for i in getattr(db,'vendor_invoices',[]) if i.get('created_at','') >= cutoff]
+    else:
+        sales_list = list(db.sales.find({'created_at': {'$gte': cutoff}}))
+        inv_list   = list(db.vendor_invoices.find({'created_at': {'$gte': cutoff}}))
+    for s in sales_list:
+        k = s.get('created_at','')[:7]
+        if k in revenue: revenue[k] += float(s.get('total', 0))
+    for inv in inv_list:
+        k = inv.get('created_at','')[:7]
+        if k in expenses: expenses[k] += float(inv.get('total', 0))
+    rev_v    = [round(revenue[k], 2) for k, _ in hist]
+    exp_v    = [round(expenses[k], 2) for k, _ in hist]
+    profit_v = [round(rev_v[i] - exp_v[i], 2) for i in range(12)]
+    rev_fc   = _forecast(rev_v, 12)
+    exp_fc   = _forecast(exp_v, 12)
+    profit_fc = [round(rev_fc[i] - exp_fc[i], 2) for i in range(12)]
+    slope_r, _ = _lr(rev_v)
+    total_rev    = sum(rev_v)
+    total_profit = sum(profit_v)
+    margin       = round(total_profit / total_rev * 100, 1) if total_rev else 0
+    # Health score
+    slope_norm = max(-1.0, min(1.0, slope_r / (max(rev_v) + 1) * 12))
+    sales_score = max(5, min(25, int(15 + slope_norm * 10)))
+    if USE_MEMORY_DB:
+        total_prs = len(getattr(db,'purchase_requisitions',[]))
+        total_pos_count = len(getattr(db,'purchase_orders_v2',[]))
+        vcount = len(set(p.get('vendor_name','') for p in getattr(db,'purchase_orders_v2',[])))
+    else:
+        total_prs = db.purchase_requisitions.count_documents({})
+        total_pos_count = db.purchase_orders_v2.count_documents({})
+        vcount = len(db.purchase_orders_v2.distinct('vendor_name'))
+    conv = total_pos_count / total_prs if total_prs else 0
+    proc_score   = int(min(25, conv * 25))
+    fin_score    = 25 if margin >= 25 else (18 if margin >= 15 else (10 if margin >= 5 else 3))
+    vendor_score = min(25, vcount * 5)
+    health_score = sales_score + proc_score + fin_score + vendor_score
+    year_rev_proj = round(sum(rev_fc), 2)
+    recs = []
+    if health_score >= 80:
+        recs.append({'level':'success','icon':'fa-trophy','title':'Business in Excellent Health',
+                     'message':f'Score {health_score}/100. Outstanding performance across all departments. Focus on scaling operations.'})
+    elif health_score >= 60:
+        recs.append({'level':'info','icon':'fa-chart-bar','title':'Business Performing Well',
+                     'message':f'Score {health_score}/100. Good foundation. Address weaker areas to reach the next performance level.'})
+    elif health_score >= 40:
+        recs.append({'level':'warning','icon':'fa-exclamation-triangle','title':'Business Needs Attention',
+                     'message':f'Score {health_score}/100. Significant gaps detected. Prioritize procurement efficiency and margin improvement.'})
+    else:
+        recs.append({'level':'danger','icon':'fa-exclamation-circle','title':'Business Requires Immediate Action',
+                     'message':f'Score {health_score}/100. Critical issues across multiple areas. Take immediate corrective steps in all departments.'})
+    recs.append({'level':'info','icon':'fa-robot','title':'1-Year Revenue AI Projection',
+                 'message':f'Based on current trend, projected revenue for next 12 months: PKR {year_rev_proj:,.0f}. {"Strong trajectory." if slope_r > 0 else "Declining trend — intervention needed."}'})
+    if margin < 15:
+        recs.append({'level':'warning','icon':'fa-coins','title':'Improve Profit Margins',
+                     'message':f'Current margin {margin:.1f}%. Review your top expense categories and eliminate inefficiencies to reach 20%+.'})
+    return jsonify({
+        'hist_labels': [l for _, l in hist], 'fcast_labels': [l for _, l in fcast],
+        'revenue': rev_v, 'rev_forecast': rev_fc,
+        'expenses': exp_v, 'exp_forecast': exp_fc,
+        'profit': profit_v, 'profit_forecast': profit_fc,
+        'health_score': health_score,
+        'score_breakdown': {'sales': sales_score, 'procurement': proc_score,
+                            'finance': fin_score, 'vendors': vendor_score},
+        'kpis': {'total_revenue': round(total_rev, 2), 'total_profit': round(total_profit, 2),
+                 'profit_margin': margin, 'year_rev_proj': year_rev_proj, 'trend': _trend_label(slope_r)},
+        'recommendations': recs,
+    })
+
+
+@app.route('/admin/predictive')
+def predictive_overview_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') != 'admin': return redirect_to_dashboard(session.get('role'))
+    return render_template('predictive_overview.html')
+
+@app.route('/admin/predictive/sales')
+def predictive_sales_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') != 'admin': return redirect_to_dashboard(session.get('role'))
+    return render_template('predictive_sales.html')
+
+@app.route('/admin/predictive/procurement')
+def predictive_procurement_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') != 'admin': return redirect_to_dashboard(session.get('role'))
+    return render_template('predictive_procurement.html')
+
+@app.route('/admin/predictive/finance')
+def predictive_finance_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') != 'admin': return redirect_to_dashboard(session.get('role'))
+    return render_template('predictive_finance.html')
+
+@app.route('/admin/predictive/vendors')
+def predictive_vendors_page():
+    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if session.get('role') != 'admin': return redirect_to_dashboard(session.get('role'))
+    return render_template('predictive_vendors.html')
+
+
+# =============================================================================
+# DOCUMENTATION ROUTES
+# =============================================================================
+
+@app.route('/docs/user-guide')
+def doc_user_guide():
+    if session.get('role') not in ['admin', 'manual_viewer']:
+        return redirect(url_for('login_page'))
+    return send_file(os.path.join(os.path.dirname(__file__), 'docs', 'user_guide.html'))
+
+
+@app.route('/docs/use-cases')
+def doc_use_cases():
+    if session.get('role') not in ['admin', 'manual_viewer']:
+        return redirect(url_for('login_page'))
+    return send_file(os.path.join(os.path.dirname(__file__), 'docs', 'use_cases.html'))
+
+
+@app.route('/docs')
+def docs_home():
+    """Landing page for manual_viewer role — shows both doc links."""
+    if session.get('role') not in ['admin', 'manual_viewer']:
+        return redirect(url_for('login_page'))
+    name = session.get('full_name', 'User')
+    return f'''<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>POS Documentation</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  *{{margin:0;padding:0;box-sizing:border-box}}
+  body{{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#0d1f3c,#1e3a5f,#2d6a9f);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}}
+  .box{{background:#fff;border-radius:20px;padding:48px 44px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}}
+  .logo{{font-size:52px;margin-bottom:16px}}
+  h1{{font-size:24px;font-weight:900;color:#1e3a5f;margin-bottom:6px}}
+  .sub{{font-size:14px;color:#6b7a99;margin-bottom:36px}}
+  .card{{display:flex;align-items:center;gap:18px;background:#f4f7fb;border:1.5px solid #dde3ee;border-radius:14px;padding:20px 24px;margin-bottom:16px;text-decoration:none;transition:transform .2s,box-shadow .2s;text-align:left}}
+  .card:hover{{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.1)}}
+  .card-icon{{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;color:#fff}}
+  .card-title{{font-size:15px;font-weight:800;color:#1e3a5f;margin-bottom:3px}}
+  .card-desc{{font-size:12.5px;color:#6b7a99}}
+  .logout{{margin-top:28px;font-size:13px;color:#aab}}
+  .logout a{{color:#e74c3c;text-decoration:none;font-weight:700}}
+</style></head>
+<body>
+<div class="box">
+  <div class="logo">📚</div>
+  <h1>POS System Documentation</h1>
+  <div class="sub">Welcome, {name}. Download or read the manuals below.</div>
+  <a href="/docs/user-guide" class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#1e3a5f,#2d6a9f)"><i class="fas fa-book"></i></div>
+    <div>
+      <div class="card-title">User Guide</div>
+      <div class="card-desc">Complete system manual — every screen, every field explained</div>
+    </div>
+  </a>
+  <a href="/docs/use-cases" class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#6c3483,#8e44ad)"><i class="fas fa-clipboard-list"></i></div>
+    <div>
+      <div class="card-title">Use Cases</div>
+      <div class="card-desc">30 real-world business scenarios with step-by-step instructions</div>
+    </div>
+  </a>
+  <div class="logout"><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></div>
+</div>
+</body></html>'''
 
 
 # =============================================================================

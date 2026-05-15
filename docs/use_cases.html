@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POS System — Use Cases Document</title>
+<style>
+  :root {
+    --primary: #1e3a5f;
+    --accent: #2d6a9f;
+    --green: #1e8449;
+    --orange: #d35400;
+    --purple: #6c3483;
+    --teal: #0e6655;
+    --red: #c0392b;
+    --light: #f4f7fb;
+    --border: #dde3ee;
+    --text: #2c3e50;
+    --muted: #6b7a99;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: var(--text); font-size: 14px; line-height: 1.7; }
+
+  /* Cover */
+  .cover { background: linear-gradient(160deg, #0d1f3c 0%, #1a3050 40%, #6c3483 100%); color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 40px; page-break-after: always; }
+  .cover-logo { width: 90px; height: 90px; background: rgba(255,255,255,.15); border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 44px; margin: 0 auto 28px; }
+  .cover h1 { font-size: 42px; font-weight: 900; letter-spacing: -1px; margin-bottom: 10px; }
+  .cover h2 { font-size: 20px; font-weight: 400; opacity: .75; margin-bottom: 40px; }
+  .cover-divider { width: 60px; height: 3px; background: rgba(255,255,255,.4); margin: 0 auto 40px; border-radius: 2px; }
+  .cover-meta { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; }
+  .cover-meta-item { text-align: center; }
+  .cover-meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: .55; margin-bottom: 4px; }
+  .cover-meta-value { font-size: 16px; font-weight: 700; opacity: .9; }
+  .cover-badge { margin-top: 50px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 30px; padding: 8px 24px; font-size: 13px; opacity: .8; }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 40px; }
+
+  /* TOC */
+  .toc { background: var(--light); border-radius: 14px; padding: 32px 36px; margin-bottom: 48px; page-break-after: always; }
+  .toc h2 { font-size: 20px; color: var(--primary); margin-bottom: 24px; }
+  .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 40px; }
+  .toc-item { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--accent); text-decoration: none; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+  .toc-item:hover { color: var(--primary); }
+  .toc-num { font-weight: 800; color: var(--primary); min-width: 26px; }
+  .toc-actors { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+  /* Use Case Cards */
+  .uc-section { margin-bottom: 60px; }
+  .uc-section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding: 18px 22px; border-radius: 12px; }
+  .uc-section-icon { font-size: 28px; }
+  .uc-section-title { font-size: 20px; font-weight: 900; }
+  .uc-section-sub { font-size: 13px; opacity: .75; }
+
+  .uc { background: #fff; border: 1.5px solid var(--border); border-radius: 14px; margin-bottom: 24px; overflow: hidden; page-break-inside: avoid; }
+  .uc-header { padding: 16px 22px; display: flex; align-items: flex-start; gap: 16px; }
+  .uc-num { font-size: 13px; font-weight: 900; color: #fff; padding: 4px 11px; border-radius: 20px; flex-shrink: 0; margin-top: 2px; }
+  .uc-title { font-size: 16px; font-weight: 800; color: var(--primary); flex: 1; }
+  .uc-actors-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .actor-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; }
+  .a-admin { background: #d6e4f7; color: #1e3a5f; }
+  .a-cashier { background: #d5f5e3; color: #1e8449; }
+  .a-proc { background: #e8d5f5; color: #6c3483; }
+  .a-sales { background: #fdebd0; color: #d35400; }
+  .a-sys { background: #e0e0e0; color: #555; }
+
+  .uc-body { padding: 0 22px 20px; border-top: 1px solid var(--border); }
+  .uc-meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 12px; padding: 14px 0; margin-bottom: 10px; }
+  .uc-meta-item { }
+  .uc-meta-label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 3px; }
+  .uc-meta-value { font-size: 13px; color: var(--text); font-weight: 600; }
+
+  h4.step-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: .5px; margin: 14px 0 10px; }
+
+  .steps { list-style: none; counter-reset: step; }
+  .steps li { counter-increment: step; display: flex; gap: 14px; align-items: flex-start; margin-bottom: 10px; font-size: 13.5px; }
+  .steps li::before { content: counter(step); min-width: 24px; height: 24px; border-radius: 50%; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+
+  .uc-outcomes { background: var(--light); border-radius: 8px; padding: 12px 16px; margin-top: 14px; }
+  .uc-outcomes-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 8px; }
+  .outcome { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; margin-bottom: 6px; }
+  .outcome-success::before { content: '✅'; }
+  .outcome-warn::before { content: '⚠️'; }
+  .outcome-info::before { content: '📋'; }
+
+  .alt-flow { background: #fff8e1; border-left: 3px solid #f39c12; border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 10px; font-size: 13px; }
+  .alt-flow-title { font-size: 11px; font-weight: 800; color: #d68910; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
+
+  .screens-used { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .screen-tag { font-size: 11px; font-family: monospace; background: #e8edf8; color: var(--accent); padding: 3px 9px; border-radius: 6px; }
+
+  .tip { background: #e8f4fd; border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 12px; font-size: 13px; }
+  .tip-icon { font-weight: 800; color: var(--accent); margin-right: 6px; }
+
+  hr.sec-divider { border: none; border-top: 2px solid var(--border); margin: 48px 0; }
+
+  .doc-footer { background: var(--primary); color: rgba(255,255,255,.65); text-align: center; padding: 20px; font-size: 12px; margin-top: 60px; }
+
+  @media print {
+    .cover { page-break-after: always; min-height: auto; padding: 40px 30px; }
+    .toc { page-break-after: always; }
+    .uc { page-break-inside: avoid; }
+    body { font-size: 12px; }
+    .page { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-logo">📋</div>
+  <h1>POS System</h1>
+  <h2>Use Cases &amp; Business Scenarios</h2>
+  <div class="cover-divider"></div>
+  <div class="cover-meta">
+    <div class="cover-meta-item"><div class="cover-meta-label">Document Type</div><div class="cover-meta-value">Use Cases</div></div>
+    <div class="cover-meta-item"><div class="cover-meta-label">Total Use Cases</div><div class="cover-meta-value">30 Scenarios</div></div>
+    <div class="cover-meta-item"><div class="cover-meta-label">Prepared For</div><div class="cover-meta-value">POS Owners &amp; Staff</div></div>
+    <div class="cover-meta-item"><div class="cover-meta-label">Version</div><div class="cover-meta-value">1.0 — 2026</div></div>
+  </div>
+  <div class="cover-badge">📋 Confidential — For internal use only</div>
+</div>
+
+<div class="page">
+
+<!-- TOC -->
+<div class="toc">
+  <h2>📑 Use Cases Index</h2>
+  <div class="toc-grid">
+    <a href="#uc1" class="toc-item"><span class="toc-num">UC-01</span> Daily Opening: Open Shift &amp; Start Selling <span class="toc-actors">Cashier</span></a>
+    <a href="#uc2" class="toc-item"><span class="toc-num">UC-02</span> Complete a Cash Sale <span class="toc-actors">Cashier</span></a>
+    <a href="#uc3" class="toc-item"><span class="toc-num">UC-03</span> Complete a Card / Wallet Sale <span class="toc-actors">Cashier</span></a>
+    <a href="#uc4" class="toc-item"><span class="toc-num">UC-04</span> Apply Discount &amp; Promo Code <span class="toc-actors">Cashier</span></a>
+    <a href="#uc5" class="toc-item"><span class="toc-num">UC-05</span> Sell to a Loyalty Customer <span class="toc-actors">Cashier</span></a>
+    <a href="#uc6" class="toc-item"><span class="toc-num">UC-06</span> Process a Sales Return / Refund <span class="toc-actors">Cashier</span></a>
+    <a href="#uc7" class="toc-item"><span class="toc-num">UC-07</span> Record a Credit Sale (On Account) <span class="toc-actors">Cashier / Admin</span></a>
+    <a href="#uc8" class="toc-item"><span class="toc-num">UC-08</span> Close Shift &amp; End of Day <span class="toc-actors">Cashier / Admin</span></a>
+    <a href="#uc9" class="toc-item"><span class="toc-num">UC-09</span> Add a New Product <span class="toc-actors">Admin / Procurement</span></a>
+    <a href="#uc10" class="toc-item"><span class="toc-num">UC-10</span> Bulk Import Products via Excel <span class="toc-actors">Admin</span></a>
+    <a href="#uc11" class="toc-item"><span class="toc-num">UC-11</span> Adjust Stock After Physical Count <span class="toc-actors">Admin / Procurement</span></a>
+    <a href="#uc12" class="toc-item"><span class="toc-num">UC-12</span> Handle Damaged / Expired Stock <span class="toc-actors">Admin</span></a>
+    <a href="#uc13" class="toc-item"><span class="toc-num">UC-13</span> Add a New Vendor <span class="toc-actors">Procurement</span></a>
+    <a href="#uc14" class="toc-item"><span class="toc-num">UC-14</span> Raise a Purchase Requisition <span class="toc-actors">Procurement</span></a>
+    <a href="#uc15" class="toc-item"><span class="toc-num">UC-15</span> Approve &amp; Send a Purchase Order <span class="toc-actors">Admin / Procurement</span></a>
+    <a href="#uc16" class="toc-item"><span class="toc-num">UC-16</span> Receive Goods &amp; Update Stock <span class="toc-actors">Procurement</span></a>
+    <a href="#uc17" class="toc-item"><span class="toc-num">UC-17</span> Pay a Vendor Invoice <span class="toc-actors">Admin / Procurement</span></a>
+    <a href="#uc18" class="toc-item"><span class="toc-num">UC-18</span> Add a New Employee <span class="toc-actors">Admin</span></a>
+    <a href="#uc19" class="toc-item"><span class="toc-num">UC-19</span> Process Monthly Payroll <span class="toc-actors">Admin</span></a>
+    <a href="#uc20" class="toc-item"><span class="toc-num">UC-20</span> Run a Sales Report &amp; Export to Excel <span class="toc-actors">Admin / Sales</span></a>
+    <a href="#uc21" class="toc-item"><span class="toc-num">UC-21</span> Identify Best-Selling Products <span class="toc-actors">Admin</span></a>
+    <a href="#uc22" class="toc-item"><span class="toc-num">UC-22</span> Find Products That Need Reordering <span class="toc-actors">Procurement</span></a>
+    <a href="#uc23" class="toc-item"><span class="toc-num">UC-23</span> Review Profit &amp; Loss for the Month <span class="toc-actors">Admin</span></a>
+    <a href="#uc24" class="toc-item"><span class="toc-num">UC-24</span> Check Vendor Invoice Aging <span class="toc-actors">Admin / Procurement</span></a>
+    <a href="#uc25" class="toc-item"><span class="toc-num">UC-25</span> View AI Business Health Score <span class="toc-actors">Admin</span></a>
+    <a href="#uc26" class="toc-item"><span class="toc-num">UC-26</span> Forecast Next 6 Months of Revenue <span class="toc-actors">Admin</span></a>
+    <a href="#uc27" class="toc-item"><span class="toc-num">UC-27</span> Create a New System User Account <span class="toc-actors">Admin</span></a>
+    <a href="#uc28" class="toc-item"><span class="toc-num">UC-28</span> Investigate a Suspicious Transaction <span class="toc-actors">Admin</span></a>
+    <a href="#uc29" class="toc-item"><span class="toc-num">UC-29</span> Create a Product Bundle / Promotion <span class="toc-actors">Admin</span></a>
+    <a href="#uc30" class="toc-item"><span class="toc-num">UC-30</span> Generate QR Code Labels for Shelves <span class="toc-actors">Admin</span></a>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════ SECTION: DAILY SALES ════════════════════ -->
+<div class="uc-section">
+  <div class="uc-section-header" style="background:linear-gradient(135deg,#d5f5e3,#eafaf1);color:#1e3a5f">
+    <div class="uc-section-icon">🛒</div>
+    <div>
+      <div class="uc-section-title">Section 1 — Daily Sales Operations</div>
+      <div class="uc-section-sub">Use Cases UC-01 through UC-08 — Cashier &amp; POS counter scenarios</div>
+    </div>
+  </div>
+
+  <!-- UC-01 -->
+  <div class="uc" id="uc1">
+    <div class="uc-header" style="background:#f0faf4">
+      <span class="uc-num" style="background:#27ae60">UC-01</span>
+      <div>
+        <div class="uc-title">Daily Opening: Open Shift &amp; Start Selling</div>
+        <div class="uc-actors-row">
+          <span class="actor-chip a-cashier">Cashier</span>
+          <span class="actor-chip a-admin">Admin</span>
+        </div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Cashier arrives at start of their working day</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Frequency</div><div class="uc-meta-value">Every working day, per cashier</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Precondition</div><div class="uc-meta-value">Cashier has an active system account</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li style="--c:#27ae60"><span>Cashier logs in with username and password at <code>/login</code></span></li>
+        <li>Navigated to POS Terminal. System prompts: <em>"No active shift found. Please open a shift to continue."</em></li>
+        <li>Cashier goes to <strong>Shifts</strong> → clicks <strong>Open Shift</strong></li>
+        <li>Counts the opening float (cash in the till) and enters the amount (e.g. PKR 5,000)</li>
+        <li>Clicks <strong>Open</strong> — shift is now active with a timestamp</li>
+        <li>Returns to POS Terminal — system is ready to process sales</li>
+      </ol>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Shift is open and linked to this cashier's user account</div>
+        <div class="outcome outcome-success">All sales processed will be recorded under this shift</div>
+        <div class="outcome outcome-info">Opening float is recorded — used for end-of-day cash reconciliation</div>
+      </div>
+      <div class="screens-used"><span class="screen-tag">/login</span><span class="screen-tag">/pos/shifts</span><span class="screen-tag">/</span></div>
+    </div>
+  </div>
+
+  <!-- UC-02 -->
+  <div class="uc" id="uc2">
+    <div class="uc-header" style="background:#f0faf4">
+      <span class="uc-num" style="background:#27ae60">UC-02</span>
+      <div>
+        <div class="uc-title">Complete a Cash Sale</div>
+        <div class="uc-actors-row"><span class="actor-chip a-cashier">Cashier</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Customer brings goods to the counter</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Frequency</div><div class="uc-meta-value">Dozens to hundreds of times per day</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Precondition</div><div class="uc-meta-value">Shift is open. Products exist in system with stock > 0</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Cashier scans the product barcode (or types name in search box and presses Enter)</li>
+        <li>Product appears in cart with quantity 1. Repeat for all items</li>
+        <li>Adjust quantities using + / − buttons if customer wants more of the same item</li>
+        <li>Select payment method: <strong>Cash</strong></li>
+        <li>Enter the amount the customer hands over (e.g. PKR 1,000)</li>
+        <li>System calculates and displays change due (e.g. PKR 235)</li>
+        <li>Click <strong>CHARGE</strong></li>
+        <li>Receipt is generated — give change and receipt to customer</li>
+      </ol>
+      <div class="alt-flow">
+        <div class="alt-flow-title">⚡ Alternate: Product not found</div>
+        If a barcode scan returns no result, the product is not in the system. Cashier must check with a manager. Do not manually key in a price without a product record.
+      </div>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Sale recorded, receipt generated with unique receipt number</div>
+        <div class="outcome outcome-success">Stock automatically reduced for each item sold</div>
+        <div class="outcome outcome-success">Journal entry posted to Finance: Cash Dr / Sales Revenue Cr</div>
+        <div class="outcome outcome-success">Shift total updated with this sale amount</div>
+      </div>
+      <div class="screens-used"><span class="screen-tag">/</span></div>
+    </div>
+  </div>
+
+  <!-- UC-03 -->
+  <div class="uc" id="uc3">
+    <div class="uc-header" style="background:#f0faf4">
+      <span class="uc-num" style="background:#27ae60">UC-03</span>
+      <div>
+        <div class="uc-title">Complete a Card / Mobile Wallet Sale</div>
+        <div class="uc-actors-row"><span class="actor-chip a-cashier">Cashier</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Customer pays by card or mobile wallet</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Precondition</div><div class="uc-meta-value">Shift is open</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Add products to cart as normal</li>
+        <li>Select payment method: <strong>Card</strong>, <strong>EasyPaisa</strong>, <strong>JazzCash</strong>, <strong>UBL</strong>, or <strong>Meezan</strong></li>
+        <li>Process the card/wallet payment on the physical terminal or mobile</li>
+        <li>Once payment is confirmed by the bank/wallet, click <strong>CHARGE</strong> in the system</li>
+        <li>Receipt is generated — no cash change is given</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">💡</span> For split payments (e.g. PKR 500 cash + PKR 300 card), select <strong>Split Payment</strong> and enter the amount for each method.</div>
+      <div class="screens-used"><span class="screen-tag">/</span></div>
+    </div>
+  </div>
+
+  <!-- UC-04 -->
+  <div class="uc" id="uc4">
+    <div class="uc-header" style="background:#f0faf4">
+      <span class="uc-num" style="background:#27ae60">UC-04</span>
+      <div>
+        <div class="uc-title">Apply Discount &amp; Promo Code</div>
+        <div class="uc-actors-row"><span class="actor-chip a-cashier">Cashier</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Customer has a promo code or manager authorizes a discount</div></div>
+      </div>
+      <h4 class="step-title">Discount Types</h4>
+      <ol class="steps">
+        <li><strong>Product Discount:</strong> Already built into the product price (set in Products page). Applied automatically — no cashier action needed</li>
+        <li><strong>Cart Discount %:</strong> Enter a percentage in the "Cart Discount" field (e.g. 10% off total). Requires manager authorization for amounts above store policy</li>
+        <li><strong>Promo Code:</strong> Customer provides a code. Enter it in the Promo Code field and press Apply. System validates and shows the discount amount</li>
+        <li><strong>Loyalty Points:</strong> If customer has points, cashier selects them and system applies the equivalent PKR value as a deduction</li>
+      </ol>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Discount applied and shown on receipt with original and discounted price</div>
+        <div class="outcome outcome-info">Discount amount is tracked in reports for management review</div>
+      </div>
+      <div class="screens-used"><span class="screen-tag">/</span></div>
+    </div>
+  </div>
+
+  <!-- UC-05 -->
+  <div class="uc" id="uc5">
+    <div class="uc-header" style="background:#f0faf4">
+      <span class="uc-num" style="background:#27ae60">UC-05</span>
+      <div>
+        <div class="uc-title">Sell to a Loyalty Customer &amp; Earn Points</div>
+        <div class="uc-actors-row"><span class="actor-chip a-cashier">Cashier</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Regular customer wants to earn or redeem loyalty points</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Add items to cart as normal</li>
+        <li>In the Customer field, search by name or phone number</li>
+        <li>Select the customer — their current loyalty points balance is shown</li>
+        <li><strong>To earn points:</strong> Complete the sale normally — points are added automatically</li>
+        <li><strong>To redeem points:</strong> Toggle "Use Loyalty Points" — system shows PKR value and deducts from total</li>
+        <li>Click CHARGE — receipt shows points earned and new balance</li>
+      </ol>
+      <div class="screens-used"><span class="screen-tag">/</span><span class="screen-tag">/pos/customers</span></div>
+    </div>
+  </div>
+
+  <!-- UC-06 -->
+  <div class="uc" id="uc6">
+    <div class="uc-header" style="background:#fdf2f2">
+      <span class="uc-num" style="background:#e74c3c">UC-06</span>
+      <div>
+        <div class="uc-title">Process a Sales Return / Refund</div>
+        <div class="uc-actors-row"><span class="actor-chip a-cashier">Cashier</span><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Customer returns a product after purchase</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Precondition</div><div class="uc-meta-value">Original sale exists in system</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Sales Returns</strong> <code>/pos/returns</code></li>
+        <li>Search for the original sale by receipt number or date</li>
+        <li>Select the items being returned and enter quantities</li>
+        <li>Select return reason from dropdown: Defective / Wrong Item / Customer Changed Mind / Other</li>
+        <li>Select refund method (Cash or Reverse to original payment)</li>
+        <li>Click <strong>Process Return</strong></li>
+      </ol>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Return recorded with unique Return ID and timestamp</div>
+        <div class="outcome outcome-success">Stock restored for returned items</div>
+        <div class="outcome outcome-success">Refund amount recorded in Sales Returns report</div>
+        <div class="outcome outcome-info">Loyalty points earned on original sale are reversed if applicable</div>
+      </div>
+      <div class="alt-flow">
+        <div class="alt-flow-title">⚡ Alternate: Receipt not available</div>
+        Customer cannot provide receipt. Cashier searches by date and approximate amount. Manager must authorize the return before proceeding.
+      </div>
+      <div class="screens-used"><span class="screen-tag">/pos/returns</span></div>
+    </div>
+  </div>
+
+  <!-- UC-07 -->
+  <div class="uc" id="uc7">
+    <div class="uc-header" style="background:#fef9f0">
+      <span class="uc-num" style="background:#f39c12">UC-07</span>
+      <div>
+        <div class="uc-title">Record a Credit Sale (On Account)</div>
+        <div class="uc-actors-row"><span class="actor-chip a-cashier">Cashier</span><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Trusted customer wants goods now, will pay later</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Precondition</div><div class="uc-meta-value">Customer is registered in system. Manager approval required</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Add items to cart and select the customer</li>
+        <li>Choose payment method: <strong>Credit / On Account</strong></li>
+        <li>Manager approves and cashier clicks CHARGE</li>
+        <li>Sale is recorded — invoice shows as outstanding in Credit Sales</li>
+        <li>When customer pays later: go to <strong>Credit Sales</strong> → find the customer → record payment</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">⚠️</span> Only extend credit to known, registered customers. Always get manager sign-off. Monitor balances weekly via the Credit Sales report.</div>
+      <div class="screens-used"><span class="screen-tag">/</span><span class="screen-tag">/credit-sales</span></div>
+    </div>
+  </div>
+
+  <!-- UC-08 -->
+  <div class="uc" id="uc8">
+    <div class="uc-header" style="background:#f0faf4">
+      <span class="uc-num" style="background:#27ae60">UC-08</span>
+      <div>
+        <div class="uc-title">Close Shift &amp; End of Day Report</div>
+        <div class="uc-actors-row"><span class="actor-chip a-cashier">Cashier</span><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Cashier finishes their working day</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Frequency</div><div class="uc-meta-value">End of each cashier shift</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Count all cash in the till physically</li>
+        <li>Go to <strong>Shifts</strong> → click <strong>Close Shift</strong></li>
+        <li>Enter the actual closing cash amount (physical count)</li>
+        <li>System compares: Expected Cash = Opening Float + Cash Sales − Cash Refunds</li>
+        <li>Any difference is flagged as Over or Short — must be explained</li>
+        <li>Go to <strong>Z-Report</strong> → print or save the end-of-day summary</li>
+        <li>Manager reviews and signs off the Z-Report</li>
+      </ol>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Shift closed — no more sales can be processed until next shift is opened</div>
+        <div class="outcome outcome-info">Z-Report shows total sales, payment breakdown, discounts, taxes</div>
+        <div class="outcome outcome-success">Daily accounting record is complete</div>
+      </div>
+      <div class="screens-used"><span class="screen-tag">/pos/shifts</span><span class="screen-tag">/z-report</span></div>
+    </div>
+  </div>
+</div>
+
+<hr class="sec-divider">
+
+<!-- ═══════════════════════════ SECTION: INVENTORY ════════════════════ -->
+<div class="uc-section">
+  <div class="uc-section-header" style="background:linear-gradient(135deg,#d6eaf8,#ebf5fb);color:#1e3a5f">
+    <div class="uc-section-icon">📦</div>
+    <div>
+      <div class="uc-section-title">Section 2 — Inventory Management</div>
+      <div class="uc-section-sub">Use Cases UC-09 through UC-12 — Products &amp; stock scenarios</div>
+    </div>
+  </div>
+
+  <!-- UC-09 -->
+  <div class="uc" id="uc9">
+    <div class="uc-header" style="background:#ebf5fb">
+      <span class="uc-num" style="background:#2980b9">UC-09</span>
+      <div>
+        <div class="uc-title">Add a New Product to the System</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span><span class="actor-chip a-proc">Procurement</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">New product being introduced for sale</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Precondition</div><div class="uc-meta-value">Product details (price, barcode) available</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Products</strong> → click <strong>Add Product</strong></li>
+        <li>Enter product name, category, supplier, barcode (scan or type)</li>
+        <li>Enter selling price, cost price, and MRP</li>
+        <li>Enter initial stock quantity and set reorder level</li>
+        <li>If perishable, enter expiry date</li>
+        <li>Click <strong>Save</strong> — product is immediately available at POS counter</li>
+      </ol>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Product appears in POS search and barcode scanner lookup</div>
+        <div class="outcome outcome-success">Product appears in all inventory reports</div>
+        <div class="outcome outcome-info">If stock is at or below reorder level, it will appear in Reorder Alert report immediately</div>
+      </div>
+      <div class="screens-used"><span class="screen-tag">/products</span></div>
+    </div>
+  </div>
+
+  <!-- UC-10 -->
+  <div class="uc" id="uc10">
+    <div class="uc-header" style="background:#ebf5fb">
+      <span class="uc-num" style="background:#2980b9">UC-10</span>
+      <div>
+        <div class="uc-title">Bulk Import Products via Excel</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Large number of products to add at once</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Products</strong> → click <strong>Download Import Template</strong></li>
+        <li>Open the downloaded Excel file and fill in product data row by row</li>
+        <li>Save the Excel file</li>
+        <li>Back in Products, click <strong>Import Excel</strong> and upload your file</li>
+        <li>System validates the file — any errors are shown with row numbers</li>
+        <li>Fix errors, re-upload if needed, then confirm import</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">💡</span> Always use the downloaded template. Do not change column headers — the system requires them to be exactly as provided.</div>
+      <div class="screens-used"><span class="screen-tag">/products</span></div>
+    </div>
+  </div>
+
+  <!-- UC-11 -->
+  <div class="uc" id="uc11">
+    <div class="uc-header" style="background:#ebf5fb">
+      <span class="uc-num" style="background:#2980b9">UC-11</span>
+      <div>
+        <div class="uc-title">Adjust Stock After Physical Count</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span><span class="actor-chip a-proc">Procurement</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Monthly physical stock count reveals discrepancy</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Frequency</div><div class="uc-meta-value">Monthly or after any suspected theft/loss</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Run <strong>Stock Report</strong> from Reports Center — shows system stock for each product</li>
+        <li>Perform physical count of actual items on shelf and in warehouse</li>
+        <li>Identify items where physical count ≠ system stock</li>
+        <li>Go to <strong>Stock Adjustments</strong> → click <strong>New Adjustment</strong></li>
+        <li>Search for the product, enter the adjustment quantity (+ or −)</li>
+        <li>Select reason: Count Correction / Damaged / Theft / Other</li>
+        <li>Add a note and click <strong>Save</strong></li>
+      </ol>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Stock corrected to match physical reality</div>
+        <div class="outcome outcome-info">Adjustment logged in Audit Trail with user, date, time and reason</div>
+      </div>
+      <div class="screens-used"><span class="screen-tag">/inventory/adjustments</span><span class="screen-tag">/reports/stock-report</span></div>
+    </div>
+  </div>
+
+  <!-- UC-12 -->
+  <div class="uc" id="uc12">
+    <div class="uc-header" style="background:#fdf2f2">
+      <span class="uc-num" style="background:#e74c3c">UC-12</span>
+      <div>
+        <div class="uc-title">Handle Damaged or Expired Stock</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span><span class="actor-chip a-proc">Procurement</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Products found damaged or past expiry date</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Run <strong>Expiry Report</strong> to identify products expired or expiring within 30 days</li>
+        <li>Physically remove the products from shelves</li>
+        <li>Go to <strong>Stock Adjustments</strong> → create a negative adjustment</li>
+        <li>Enter quantity to remove and select reason: <strong>Expired</strong> or <strong>Damaged</strong></li>
+        <li>Document the write-off for insurance or vendor claim purposes</li>
+        <li>If vendor is responsible for damaged goods, raise a claim through <strong>Vendor Invoices</strong></li>
+      </ol>
+      <div class="screens-used"><span class="screen-tag">/reports/expiry-report</span><span class="screen-tag">/inventory/adjustments</span></div>
+    </div>
+  </div>
+</div>
+
+<hr class="sec-divider">
+
+<!-- ═══════════════════════════ SECTION: PROCUREMENT ════════════════════ -->
+<div class="uc-section">
+  <div class="uc-section-header" style="background:linear-gradient(135deg,#ede7f6,#f3e5f5);color:#1e3a5f">
+    <div class="uc-section-icon">🚚</div>
+    <div>
+      <div class="uc-section-title">Section 3 — Procurement Workflow</div>
+      <div class="uc-section-sub">Use Cases UC-13 through UC-17 — End-to-end buying process</div>
+    </div>
+  </div>
+
+  <!-- UC-13 -->
+  <div class="uc" id="uc13">
+    <div class="uc-header" style="background:#f3e5f5">
+      <span class="uc-num" style="background:#8e44ad">UC-13</span>
+      <div>
+        <div class="uc-title">Add a New Vendor / Supplier</div>
+        <div class="uc-actors-row"><span class="actor-chip a-proc">Procurement</span><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">New supplier relationship being established</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Precondition</div><div class="uc-meta-value">Vendor details and payment terms agreed</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Procurement → Vendors</strong> → click <strong>Add Vendor</strong></li>
+        <li>Enter vendor name, contact person, phone, email, address</li>
+        <li>Enter payment terms (e.g. Net 30 days) — this feeds Invoice Aging report</li>
+        <li>Enter NTN/STRN for FBR compliance</li>
+        <li>Click <strong>Save</strong></li>
+      </ol>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Vendor available for selection when creating Purchase Orders</div>
+        <div class="outcome outcome-success">Vendor appears in Vendor Reliability Score in Predictive Dashboard</div>
+      </div>
+      <div class="screens-used"><span class="screen-tag">/procurement/vendors</span></div>
+    </div>
+  </div>
+
+  <!-- UC-14 -->
+  <div class="uc" id="uc14">
+    <div class="uc-header" style="background:#f3e5f5">
+      <span class="uc-num" style="background:#8e44ad">UC-14</span>
+      <div>
+        <div class="uc-title">Raise a Purchase Requisition (PR)</div>
+        <div class="uc-actors-row"><span class="actor-chip a-proc">Procurement</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Products are running low or new stock needed</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Check <strong>Reorder Alert Report</strong> to identify what needs ordering</li>
+        <li>Go to <strong>Procurement → Purchase Requisitions</strong> → click <strong>New PR</strong></li>
+        <li>Select the vendor and fill in required items with quantities needed</li>
+        <li>Add any notes or urgency level</li>
+        <li>Submit PR — status becomes <strong>Pending Approval</strong></li>
+        <li>Manager receives the PR and reviews it</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">💡</span> The Reorder Alert report at <code>/reports/reorder-alert</code> is your starting point — it tells you exactly which products and how many to order.</div>
+      <div class="screens-used"><span class="screen-tag">/reports/reorder-alert</span><span class="screen-tag">/procurement/pr</span></div>
+    </div>
+  </div>
+
+  <!-- UC-15 -->
+  <div class="uc" id="uc15">
+    <div class="uc-header" style="background:#f3e5f5">
+      <span class="uc-num" style="background:#8e44ad">UC-15</span>
+      <div>
+        <div class="uc-title">Approve a PR &amp; Create a Purchase Order</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span><span class="actor-chip a-proc">Procurement</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">A Purchase Requisition is pending approval</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Purchase Requisitions</strong> → find the pending PR</li>
+        <li>Review items, quantities and vendor — modify if needed</li>
+        <li>Click <strong>Approve &amp; Convert to PO</strong></li>
+        <li>A Purchase Order is created automatically with a PO number</li>
+        <li>PO status is <strong>Approved</strong> — print or email it to the vendor</li>
+      </ol>
+      <div class="screens-used"><span class="screen-tag">/procurement/pr</span><span class="screen-tag">/procurement/po</span></div>
+    </div>
+  </div>
+
+  <!-- UC-16 -->
+  <div class="uc" id="uc16">
+    <div class="uc-header" style="background:#f3e5f5">
+      <span class="uc-num" style="background:#8e44ad">UC-16</span>
+      <div>
+        <div class="uc-title">Receive Goods &amp; Update Stock (Goods Receipt)</div>
+        <div class="uc-actors-row"><span class="actor-chip a-proc">Procurement</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Vendor delivers goods to the store</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Precondition</div><div class="uc-meta-value">A Purchase Order exists for this vendor</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Vendor arrives with goods and delivery note</li>
+        <li>Go to <strong>Goods Receipt</strong> → click <strong>New GR</strong></li>
+        <li>Select the PO this delivery is against</li>
+        <li>System shows ordered quantities — enter <em>actually received</em> quantities for each item</li>
+        <li>Note any shortages, damage or substitutions</li>
+        <li>Click <strong>Save GR</strong> — stock is updated immediately for received items</li>
+        <li>A vendor invoice is generated automatically for the received amount</li>
+      </ol>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Stock increased for received items — immediately available at POS</div>
+        <div class="outcome outcome-success">PO status updated to Received or Partially Received</div>
+        <div class="outcome outcome-info">Vendor invoice created — visible in Vendor Invoices for payment</div>
+      </div>
+      <div class="screens-used"><span class="screen-tag">/procurement/gr</span><span class="screen-tag">/procurement/invoices</span></div>
+    </div>
+  </div>
+
+  <!-- UC-17 -->
+  <div class="uc" id="uc17">
+    <div class="uc-header" style="background:#f3e5f5">
+      <span class="uc-num" style="background:#8e44ad">UC-17</span>
+      <div>
+        <div class="uc-title">Pay a Vendor Invoice</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span><span class="actor-chip a-proc">Procurement</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Invoice payment is due or management decides to pay</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Check <strong>Invoice Aging Report</strong> to see overdue or upcoming invoices</li>
+        <li>Go to <strong>Vendor Payments</strong> → click <strong>Record Payment</strong></li>
+        <li>Select the vendor invoice being paid</li>
+        <li>Enter the payment amount, date and method (bank transfer, cheque, cash)</li>
+        <li>Click <strong>Save</strong> — invoice status updates to Paid or Partial</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">💡</span> Run the Invoice Aging report weekly to catch invoices approaching 60+ days. Late payments damage vendor relationships and may attract penalties.</div>
+      <div class="screens-used"><span class="screen-tag">/reports/invoice-aging</span><span class="screen-tag">/procurement/payments</span></div>
+    </div>
+  </div>
+</div>
+
+<hr class="sec-divider">
+
+<!-- ═══════════════════════════ SECTION: HR & FINANCE ════════════════════ -->
+<div class="uc-section">
+  <div class="uc-section-header" style="background:linear-gradient(135deg,#e8f8f5,#d5f5e3);color:#1e3a5f">
+    <div class="uc-section-icon">👥</div>
+    <div>
+      <div class="uc-section-title">Section 4 — HR &amp; Finance</div>
+      <div class="uc-section-sub">Use Cases UC-18 through UC-19 — Employees and payroll</div>
+    </div>
+  </div>
+
+  <!-- UC-18 -->
+  <div class="uc" id="uc18">
+    <div class="uc-header" style="background:#e8f8f5">
+      <span class="uc-num" style="background:#16a085">UC-18</span>
+      <div>
+        <div class="uc-title">Add a New Employee</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">New staff member joins the business</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>HR Dashboard</strong> → click <strong>Add Employee</strong></li>
+        <li>Enter name, CNIC, department, designation, join date</li>
+        <li>Enter salary structure: basic salary, allowances (transport, housing), deductions (EOBI, tax)</li>
+        <li>Click <strong>Save</strong> — Employee ID is auto-generated (EMP-001)</li>
+        <li>Create a system user account for them if they need to log in (separate step in System Users)</li>
+      </ol>
+      <div class="screens-used"><span class="screen-tag">/hr</span><span class="screen-tag">/admin/users</span></div>
+    </div>
+  </div>
+
+  <!-- UC-19 -->
+  <div class="uc" id="uc19">
+    <div class="uc-header" style="background:#e8f8f5">
+      <span class="uc-num" style="background:#16a085">UC-19</span>
+      <div>
+        <div class="uc-title">Process Monthly Payroll</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">End of month — salaries due</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Frequency</div><div class="uc-meta-value">Monthly</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>HR Dashboard</strong> → click <strong>Process Payroll</strong></li>
+        <li>Select the payroll month (e.g. May 2026)</li>
+        <li>System auto-fills salary data for all active employees from their profile</li>
+        <li>Review and adjust for any one-off additions or deductions</li>
+        <li>Click <strong>Generate Payroll</strong> — payroll records created for each employee</li>
+        <li>Export to Excel for bank transfer instructions</li>
+        <li>Once salaries are paid, mark payroll as <strong>Paid</strong></li>
+      </ol>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Payroll records created — visible in Payroll Summary report</div>
+        <div class="outcome outcome-success">Payroll expense posted to Finance GL automatically</div>
+        <div class="outcome outcome-info">Appears in Profit &amp; Loss report under Payroll expense for the month</div>
+      </div>
+      <div class="screens-used"><span class="screen-tag">/hr</span><span class="screen-tag">/reports/payroll-summary</span></div>
+    </div>
+  </div>
+</div>
+
+<hr class="sec-divider">
+
+<!-- ═══════════════════════════ SECTION: REPORTS ════════════════════ -->
+<div class="uc-section">
+  <div class="uc-section-header" style="background:linear-gradient(135deg,#f3e5f5,#ede7f6);color:#1e3a5f">
+    <div class="uc-section-icon">📊</div>
+    <div>
+      <div class="uc-section-title">Section 5 — Reports &amp; Analysis</div>
+      <div class="uc-section-sub">Use Cases UC-20 through UC-26 — Management reporting and AI insights</div>
+    </div>
+  </div>
+
+  <!-- UC-20 -->
+  <div class="uc" id="uc20">
+    <div class="uc-header" style="background:#f3e5f5">
+      <span class="uc-num" style="background:#8e44ad">UC-20</span>
+      <div>
+        <div class="uc-title">Run a Sales Report &amp; Export to Excel</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span><span class="actor-chip a-sales">Sales</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Manager wants to review last week's or last month's sales</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Reports Center</strong> → <em>Sales Reports</em> section</li>
+        <li>Click <strong>View</strong> on <em>Sales Report</em></li>
+        <li>In the filter bar, enter date range (From / To)</li>
+        <li>Optionally filter by payment method (e.g. Cash only)</li>
+        <li>Click <strong>Apply</strong> — KPI cards show totals instantly (revenue, transactions, taxes, discounts)</li>
+        <li>Use the search bar to find specific cashiers or customers within the results</li>
+        <li>Click <strong>Download Excel</strong> — real .xlsx file downloads immediately</li>
+        <li>Open in Excel for further analysis or send to accountant</li>
+      </ol>
+      <div class="screens-used"><span class="screen-tag">/reports</span><span class="screen-tag">/reports/sales-report</span></div>
+    </div>
+  </div>
+
+  <!-- UC-21 -->
+  <div class="uc" id="uc21">
+    <div class="uc-header" style="background:#f3e5f5">
+      <span class="uc-num" style="background:#8e44ad">UC-21</span>
+      <div>
+        <div class="uc-title">Identify Best-Selling Products &amp; Boost Strategy</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span><span class="actor-chip a-sales">Sales</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Monthly business review meeting</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Reports → Sales by Product</strong></li>
+        <li>Set date range (e.g. last 30 days)</li>
+        <li>Products are ranked by revenue — top performers at the top</li>
+        <li>Review margin % for each product — low margin products may need price adjustment</li>
+        <li>For AI-powered product insights, go to <strong>Predictive Analysis → Sales</strong></li>
+        <li>AI shows top 10 products, projected growth and which items to push more</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">💡</span> Products with high revenue but low margin are <strong>volume plays</strong>. Products with high margin but low revenue need better promotion. The AI dashboard highlights both.</div>
+      <div class="screens-used"><span class="screen-tag">/reports/sales-by-product</span><span class="screen-tag">/admin/predictive/sales</span></div>
+    </div>
+  </div>
+
+  <!-- UC-22 -->
+  <div class="uc" id="uc22">
+    <div class="uc-header" style="background:#fdf2f2">
+      <span class="uc-num" style="background:#e74c3c">UC-22</span>
+      <div>
+        <div class="uc-title">Find Products That Need Reordering</div>
+        <div class="uc-actors-row"><span class="actor-chip a-proc">Procurement</span><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Weekly procurement review</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Frequency</div><div class="uc-meta-value">Weekly recommended</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Reports → Reorder Alert</strong></li>
+        <li>Report shows all products at or below reorder level, color-coded by urgency</li>
+        <li>Red = Out of Stock (order immediately), Orange = Critical (&lt;50%), Blue = Low</li>
+        <li>Export to Excel and use it as the basis for raising Purchase Requisitions</li>
+        <li>Create PRs in Procurement for the required items</li>
+      </ol>
+      <div class="uc-outcomes">
+        <div class="uc-outcomes-title">Outcomes</div>
+        <div class="outcome outcome-success">Never run out of stock unexpectedly — proactive reordering</div>
+        <div class="outcome outcome-info">Report refreshes live — run it any time, not just weekly</div>
+      </div>
+      <div class="screens-used"><span class="screen-tag">/reports/reorder-alert</span><span class="screen-tag">/procurement/pr</span></div>
+    </div>
+  </div>
+
+  <!-- UC-23 -->
+  <div class="uc" id="uc23">
+    <div class="uc-header" style="background:#fef9f0">
+      <span class="uc-num" style="background:#d68910">UC-23</span>
+      <div>
+        <div class="uc-title">Review Profit &amp; Loss for the Month</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">End of month financial review</div></div>
+        <div class="uc-meta-item"><div class="uc-meta-label">Frequency</div><div class="uc-meta-value">Monthly</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Reports → Profit &amp; Loss</strong></li>
+        <li>Report shows last 24 months of Revenue, Purchases, Payroll, Net Profit and Margin %</li>
+        <li>Identify months with low margin — investigate cause (high returns, promotions, high procurement cost)</li>
+        <li>Export to Excel for your accountant</li>
+        <li>For deeper analysis, go to <strong>Predictive Analysis → Finance</strong> for 6-month profit forecast</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">💡</span> A healthy retail margin is typically 15–25%. If your margin drops below 10% for two consecutive months, review your pricing and procurement costs urgently.</div>
+      <div class="screens-used"><span class="screen-tag">/reports/profit-loss</span><span class="screen-tag">/admin/predictive/finance</span></div>
+    </div>
+  </div>
+
+  <!-- UC-24 -->
+  <div class="uc" id="uc24">
+    <div class="uc-header" style="background:#fdf2f2">
+      <span class="uc-num" style="background:#e74c3c">UC-24</span>
+      <div>
+        <div class="uc-title">Check Vendor Invoice Aging &amp; Pay Overdue Bills</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span><span class="actor-chip a-proc">Procurement</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Weekly accounts payable review</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Reports → Invoice Aging</strong></li>
+        <li>Invoices are bucketed: 0-30 days (green), 31-60 (blue), 61-90 (yellow), 90+ (red)</li>
+        <li>Focus on red bucket first — these are the most overdue</li>
+        <li>Export list and prioritize payments based on vendor terms and relationships</li>
+        <li>Go to <strong>Vendor Payments</strong> and record payments for prioritized invoices</li>
+      </ol>
+      <div class="screens-used"><span class="screen-tag">/reports/invoice-aging</span><span class="screen-tag">/procurement/payments</span></div>
+    </div>
+  </div>
+
+  <!-- UC-25 -->
+  <div class="uc" id="uc25">
+    <div class="uc-header" style="background:#ede7f6">
+      <span class="uc-num" style="background:#6c3483">UC-25</span>
+      <div>
+        <div class="uc-title">View AI Business Health Score</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Weekly or monthly management review</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Admin Dashboard</strong> → click the purple <strong>Predictive Analysis</strong> banner</li>
+        <li>The Overview tab loads with a <strong>Business Health Score</strong> out of 100</li>
+        <li>Score is calculated from 4 components: Sales trend (25pts), Procurement efficiency (25pts), Profit margin (25pts), Vendor reliability (25pts)</li>
+        <li>Read the color-coded AI Insight cards at the bottom: Green = Good, Orange = Watch, Red = Act now</li>
+        <li>Drill into specific tabs (Sales, Finance, etc.) for more detail</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">💡</span> Aim for a Health Score above 70. A score below 50 means at least two major areas of the business need urgent attention.</div>
+      <div class="screens-used"><span class="screen-tag">/admin/predictive</span></div>
+    </div>
+  </div>
+
+  <!-- UC-26 -->
+  <div class="uc" id="uc26">
+    <div class="uc-header" style="background:#ede7f6">
+      <span class="uc-num" style="background:#6c3483">UC-26</span>
+      <div>
+        <div class="uc-title">Forecast Next 6 Months of Revenue</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Planning budget, stock levels, or expansion</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Predictive Analysis → Sales</strong></li>
+        <li>The Revenue Forecast chart shows historical data (solid line) and 6-month AI prediction (dashed line)</li>
+        <li>Review the trend: Is revenue growing, flat, or declining?</li>
+        <li>Go to <strong>Predictive Analysis → Finance</strong> for profit forecast</li>
+        <li>Use these projections to plan: How much stock to order? Can we hire another staff member? Are we on track for the year?</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">💡</span> The AI predictions become more accurate as you have more months of data. The more you use the system, the better the forecasts.</div>
+      <div class="screens-used"><span class="screen-tag">/admin/predictive/sales</span><span class="screen-tag">/admin/predictive/finance</span></div>
+    </div>
+  </div>
+</div>
+
+<hr class="sec-divider">
+
+<!-- ═══════════════════════════ SECTION: SYSTEM ADMIN ════════════════════ -->
+<div class="uc-section">
+  <div class="uc-section-header" style="background:linear-gradient(135deg,#d5d8dc,#eaecee);color:#1e3a5f">
+    <div class="uc-section-icon">⚙️</div>
+    <div>
+      <div class="uc-section-title">Section 6 — System Administration</div>
+      <div class="uc-section-sub">Use Cases UC-27 through UC-30 — Users, security and setup</div>
+    </div>
+  </div>
+
+  <!-- UC-27 -->
+  <div class="uc" id="uc27">
+    <div class="uc-header" style="background:#eaecee">
+      <span class="uc-num" style="background:#2c3e50">UC-27</span>
+      <div>
+        <div class="uc-title">Create a New System User Account</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin Only</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">New staff member needs system access</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>System Users</strong> → click <strong>Add User</strong></li>
+        <li>Enter username (no spaces, e.g. <em>ahmed_cashier</em>), full name, email</li>
+        <li>Set a temporary password — tell the user to change it on first login</li>
+        <li>Select their role: admin / cashier / sales_person / procurement_manager</li>
+        <li>Click <strong>Save</strong></li>
+      </ol>
+      <div class="alt-flow">
+        <div class="alt-flow-title">⚡ Staff leaves the business</div>
+        Go to System Users → find the user → click Deactivate. Do NOT delete the account — this preserves their sales history and audit records.
+      </div>
+      <div class="screens-used"><span class="screen-tag">/admin/users</span></div>
+    </div>
+  </div>
+
+  <!-- UC-28 -->
+  <div class="uc" id="uc28">
+    <div class="uc-header" style="background:#fdf2f2">
+      <span class="uc-num" style="background:#e74c3c">UC-28</span>
+      <div>
+        <div class="uc-title">Investigate a Suspicious Transaction</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin Only</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Cash discrepancy, unusual refund, or suspected theft</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Reports → Sales Report</strong> — filter by the cashier and date in question</li>
+        <li>Look for unusual patterns: large discounts, multiple refunds, transactions with no product</li>
+        <li>Go to <strong>Reports → Sales Returns</strong> — check all returns processed by that cashier</li>
+        <li>Cross-reference with <strong>Audit Trail</strong> — see every action the user took with timestamps</li>
+        <li>Compare Z-Report cash expected vs actual for that shift</li>
+        <li>If fraud confirmed, deactivate the account and escalate as per company policy</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">🔴</span> The Audit Trail is tamper-proof. Every login, sale, return, stock adjustment and setting change is logged permanently.</div>
+      <div class="screens-used"><span class="screen-tag">/reports/sales-report</span><span class="screen-tag">/reports/sales-returns</span><span class="screen-tag">/audit-log</span></div>
+    </div>
+  </div>
+
+  <!-- UC-29 -->
+  <div class="uc" id="uc29">
+    <div class="uc-header" style="background:#eaecee">
+      <span class="uc-num" style="background:#2c3e50">UC-29</span>
+      <div>
+        <div class="uc-title">Create a Product Bundle / Promotion</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">Running a promotional deal (e.g. Eid Bundle, Family Pack)</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>Bundles</strong> → click <strong>Create Bundle</strong></li>
+        <li>Give the bundle a name (e.g. "Ramadan Family Pack")</li>
+        <li>Add the products included in the bundle with their quantities</li>
+        <li>Set the bundle price (typically lower than buying individual items)</li>
+        <li>Set an optional start and end date for time-limited offers</li>
+        <li>Click <strong>Save</strong> — bundle appears as a single item at the POS counter</li>
+      </ol>
+      <div class="screens-used"><span class="screen-tag">/bundles</span></div>
+    </div>
+  </div>
+
+  <!-- UC-30 -->
+  <div class="uc" id="uc30">
+    <div class="uc-header" style="background:#eaecee">
+      <span class="uc-num" style="background:#2c3e50">UC-30</span>
+      <div>
+        <div class="uc-title">Generate QR Code Labels for Shelves</div>
+        <div class="uc-actors-row"><span class="actor-chip a-admin">Admin</span><span class="actor-chip a-proc">Procurement</span></div>
+      </div>
+    </div>
+    <div class="uc-body">
+      <div class="uc-meta">
+        <div class="uc-meta-item"><div class="uc-meta-label">Trigger</div><div class="uc-meta-value">New products added or shelf labels need refreshing</div></div>
+      </div>
+      <h4 class="step-title">Main Flow</h4>
+      <ol class="steps">
+        <li>Go to <strong>QR Codes</strong> <code>/procurement/qr</code></li>
+        <li>Search and select the products that need labels</li>
+        <li>Click <strong>Generate QR Codes</strong></li>
+        <li>Print the label sheet — each label shows product name, price, barcode and QR code</li>
+        <li>Stick labels on shelves or packaging</li>
+      </ol>
+      <div class="tip"><span class="tip-icon">💡</span> Customers can scan the QR code with their phone camera to view product details and pricing — great for customer experience.</div>
+      <div class="screens-used"><span class="screen-tag">/procurement/qr</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Summary Box -->
+<div style="background:linear-gradient(135deg,#1e3a5f,#2d6a9f);color:#fff;border-radius:16px;padding:32px 36px;margin-top:20px;text-align:center">
+  <div style="font-size:28px;margin-bottom:12px">✅</div>
+  <div style="font-size:20px;font-weight:900;margin-bottom:8px">30 Use Cases Covered</div>
+  <div style="font-size:14px;opacity:.8;max-width:600px;margin:0 auto;line-height:1.7">
+    This document covers every major business scenario your team will encounter. Keep it as a reference for staff training, onboarding, and system troubleshooting. For technical system details, refer to the companion <strong>User Guide</strong> document.
+  </div>
+  <div style="margin-top:20px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px 20px;font-size:13px"><strong>8</strong> Sales Scenarios</div>
+    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px 20px;font-size:13px"><strong>4</strong> Inventory Scenarios</div>
+    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px 20px;font-size:13px"><strong>5</strong> Procurement Scenarios</div>
+    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px 20px;font-size:13px"><strong>2</strong> HR Scenarios</div>
+    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px 20px;font-size:13px"><strong>7</strong> Reports &amp; AI Scenarios</div>
+    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px 20px;font-size:13px"><strong>4</strong> System Admin Scenarios</div>
+  </div>
+</div>
+
+</div><!-- end .page -->
+
+<div class="doc-footer">
+  POS System — Use Cases Document v1.0 &nbsp;|&nbsp; All rights reserved &nbsp;|&nbsp; For internal use only
+</div>
+
+</body>
+</html>

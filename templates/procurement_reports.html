@@ -3,119 +3,370 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reports - Procurement</title>
-<link rel="stylesheet" href="../static/css/style.css">
+<title>Reports Center — POS System</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',sans-serif;background:#f5f6fa;min-height:100vh}
-.topbar{background:linear-gradient(135deg,#5c6bc0,#3949ab);color:#fff;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.topbar-left a{color:rgba(255,255,255,.75);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f8;min-height:100vh}
+.topbar{background:linear-gradient(135deg,#1e3a5f,#2d6a9f);color:#fff;padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.topbar-left a{color:rgba(255,255,255,.75);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px;transition:color .2s}
 .topbar-left a:hover{color:#fff}
-.topbar-title{font-size:17px;font-weight:700}
-.container{max-width:1100px;margin:0 auto;padding:24px}
-.page-sub{color:#7f8c8d;font-size:14px;margin-bottom:24px}
-.reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
-.report-card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid;transition:transform .2s,box-shadow .2s}
-.report-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.10)}
-.report-card-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
-.report-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0}
-.report-title{font-size:15px;font-weight:700;color:#2c3e50}
-.report-desc{font-size:13px;color:#7f8c8d;margin-bottom:18px;line-height:1.5}
-.report-actions{display:flex;gap:10px}
-.btn-view{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:opacity .2s;color:#fff}
-.btn-view:hover{opacity:.85}
-.btn-dl{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:opacity .2s;background:#27ae60;color:#fff}
-.btn-dl:hover{opacity:.85}
+.topbar-sep{color:rgba(255,255,255,.3)}
+.topbar-title{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+.container{max-width:1280px;margin:0 auto;padding:28px 24px}
+.page-header{margin-bottom:32px}
+.page-header h2{font-size:22px;font-weight:800;color:#1e3a5f;margin-bottom:4px}
+.page-header p{font-size:14px;color:#6b7a99}
+.section{margin-bottom:36px}
+.section-label{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.section-label .s-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0}
+.section-label .s-text{font-size:15px;font-weight:800;color:#1e3a5f;letter-spacing:.3px}
+.section-label .s-count{font-size:12px;font-weight:600;background:#e8edf8;color:#5c7aad;padding:2px 9px;border-radius:20px}
+.section-divider{height:2px;background:linear-gradient(90deg,rgba(30,58,95,.15),transparent);margin-bottom:18px}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.rc{background:#fff;border-radius:14px;padding:22px;box-shadow:0 2px 10px rgba(0,0,0,.06);border-top:4px solid;transition:transform .2s,box-shadow .2s;position:relative;overflow:hidden}
+.rc::before{content:'';position:absolute;top:0;right:0;width:80px;height:80px;border-radius:50%;opacity:.05;transform:translate(20px,-20px)}
+.rc:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.11)}
+.rc-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:10px}
+.rc-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+.rc-meta{flex:1}
+.rc-title{font-size:14px;font-weight:800;color:#1a2d45;margin-bottom:3px}
+.rc-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+.rc-desc{font-size:12.5px;color:#6b7a99;line-height:1.55;margin-bottom:16px}
+.rc-actions{display:flex;gap:8px}
+.btn-view,.btn-dl{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border:none;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none;transition:opacity .18s,transform .18s}
+.btn-view:hover,.btn-dl:hover{opacity:.88;transform:translateY(-1px)}
+.btn-view{color:#fff}
+.btn-dl{background:#f0faf4;color:#1e7d46;border:1.5px solid #b6e4c8}
+.btn-dl:hover{background:#d4f5e2}
 </style>
 </head>
 <body>
 <div class="topbar">
   <div class="topbar-left">
-    <a href="/procurement-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
-    <span style="color:rgba(255,255,255,.4)">|</span>
-    <span class="topbar-title"><i class="fas fa-chart-bar" style="margin-right:6px"></i>Reports Center</span>
+    <a href="/admin-dashboard"><i class="fas fa-arrow-left"></i> Admin Dashboard</a>
+    <span class="topbar-sep">|</span>
+    <a href="/procurement-dashboard"><i class="fas fa-boxes"></i> Procurement</a>
+    <span class="topbar-sep">|</span>
+    <span class="topbar-title"><i class="fas fa-chart-bar"></i> Reports Center</span>
   </div>
+  <a href="/reports/z-report" style="color:#fff;text-decoration:none;background:rgba(255,255,255,.15);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
+    <i class="fas fa-cash-register"></i> Z-Report
+  </a>
 </div>
 
 <div class="container">
-  <p class="page-sub">View, filter and download procurement and inventory reports.</p>
-  <div class="reports-grid">
-
-    <div class="report-card" style="border-left-color:#3498db">
-      <div class="report-card-header">
-        <div class="report-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-cubes"></i></div>
-        <div class="report-title">Stock Report</div>
-      </div>
-      <div class="report-desc">View current stock levels for all products, grouped by vendor, category or date. Identifies items near reorder levels.</div>
-      <div class="report-actions">
-        <a href="/reports/stock-report" class="btn-view" style="background:#3498db"><i class="fas fa-eye"></i> View</a>
-        <a href="/api/reports/stock-report/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
-      </div>
-    </div>
-
-    <div class="report-card" style="border-left-color:#e67e22">
-      <div class="report-card-header">
-        <div class="report-icon" style="background:linear-gradient(135deg,#e67e22,#d35400)"><i class="fas fa-calendar-times"></i></div>
-        <div class="report-title">Expiry Report</div>
-      </div>
-      <div class="report-desc">Track products approaching or past their expiry date. Essential for FIFO management and waste reduction.</div>
-      <div class="report-actions">
-        <a href="/reports/expiry-report" class="btn-view" style="background:#e67e22"><i class="fas fa-eye"></i> View</a>
-        <a href="/api/reports/expiry-report/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
-      </div>
-    </div>
-
-    <div class="report-card" style="border-left-color:#27ae60">
-      <div class="report-card-header">
-        <div class="report-icon" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-tag"></i></div>
-        <div class="report-title">Price List (PKR)</div>
-      </div>
-      <div class="report-desc">Complete product price list showing cost price, selling price and margin. Filter by category or supplier.</div>
-      <div class="report-actions">
-        <a href="/reports/price-list" class="btn-view" style="background:#27ae60"><i class="fas fa-eye"></i> View</a>
-        <a href="/api/reports/price-list/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
-      </div>
-    </div>
-
-    <div class="report-card" style="border-left-color:#e74c3c">
-      <div class="report-card-header">
-        <div class="report-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-tachometer-alt"></i></div>
-        <div class="report-title">Slow Moving Items</div>
-      </div>
-      <div class="report-desc">Products that have not been sold in the last 30 days. Helps identify dead stock and optimize procurement decisions.</div>
-      <div class="report-actions">
-        <a href="/reports/slow-moving" class="btn-view" style="background:#e74c3c"><i class="fas fa-eye"></i> View</a>
-        <a href="/api/reports/slow-moving/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
-      </div>
-    </div>
-
-    <div class="report-card" style="border-left-color:#9b59b6">
-      <div class="report-card-header">
-        <div class="report-icon" style="background:linear-gradient(135deg,#9b59b6,#8e44ad)"><i class="fas fa-file-invoice-dollar"></i></div>
-        <div class="report-title">Vendor Payments</div>
-      </div>
-      <div class="report-desc">Summary of paid and outstanding amounts per vendor. Useful for accounts payable reconciliation and vendor negotiations.</div>
-      <div class="report-actions">
-        <a href="/reports/vendor-payment" class="btn-view" style="background:#9b59b6"><i class="fas fa-eye"></i> View</a>
-        <a href="/api/reports/vendor-payment/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
-      </div>
-    </div>
-
-    <div class="report-card" style="border-left-color:#1abc9c">
-      <div class="report-card-header">
-        <div class="report-icon" style="background:linear-gradient(135deg,#1abc9c,#16a085)"><i class="fas fa-calendar-day"></i></div>
-        <div class="report-title">Daily Products Added</div>
-      </div>
-      <div class="report-desc">Shows all products registered on a specific date. Track procurement intake and inventory additions over time.</div>
-      <div class="report-actions">
-        <a href="/reports/daily-products" class="btn-view" style="background:#1abc9c"><i class="fas fa-eye"></i> View</a>
-        <a href="/api/reports/daily-products/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Download Excel</a>
-      </div>
-    </div>
-
+  <div class="page-header">
+    <h2><i class="fas fa-chart-bar" style="color:#2d6a9f;margin-right:8px"></i>Reports Center</h2>
+    <p>View, filter and export all business reports as real Excel files (.xlsx).</p>
   </div>
+
+  <!-- ===== SALES REPORTS ===== -->
+  <div class="section">
+    <div class="section-label">
+      <div class="s-icon" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-shopping-cart"></i></div>
+      <div class="s-text">Sales Reports</div>
+      <div class="s-count">3 reports</div>
+    </div>
+    <div class="section-divider"></div>
+    <div class="cards-grid">
+
+      <div class="rc" style="border-top-color:#27ae60">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-receipt"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Sales Report</div>
+            <span class="rc-badge" style="background:#eafaf1;color:#1e8449">All Transactions</span>
+          </div>
+        </div>
+        <div class="rc-desc">Complete list of all POS transactions with receipt number, date, cashier, customer, payment method and totals. Filter by date range or payment type.</div>
+        <div class="rc-actions">
+          <a href="/reports/sales-report" class="btn-view" style="background:#27ae60"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/sales-report/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#2ecc71">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#2ecc71,#27ae60)"><i class="fas fa-box-open"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Sales by Product</div>
+            <span class="rc-badge" style="background:#eafaf1;color:#1e8449">Revenue Analysis</span>
+          </div>
+        </div>
+        <div class="rc-desc">Revenue, cost and profit breakdown per product. Identifies your best and worst selling items. Essential for inventory and pricing strategy.</div>
+        <div class="rc-actions">
+          <a href="/reports/sales-by-product" class="btn-view" style="background:#2ecc71"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/sales-by-product/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#e74c3c">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-undo-alt"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Sales Returns</div>
+            <span class="rc-badge" style="background:#fdf2f2;color:#c0392b">Refunds</span>
+          </div>
+        </div>
+        <div class="rc-desc">All returned sales with original receipt reference, return reason and refund amount. Track refund trends to identify product quality issues.</div>
+        <div class="rc-actions">
+          <a href="/reports/sales-returns" class="btn-view" style="background:#e74c3c"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/sales-returns/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#f39c12">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#f39c12,#e67e22)"><i class="fas fa-credit-card"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Credit Sales (AR)</div>
+            <span class="rc-badge" style="background:#fef9f0;color:#e67e22">Accounts Receivable</span>
+          </div>
+        </div>
+        <div class="rc-desc">Sales made on credit or account. Tracks outstanding customer balances and helps manage accounts receivable and collection follow-up.</div>
+        <div class="rc-actions">
+          <a href="/reports/credit-sales" class="btn-view" style="background:#f39c12"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/credit-sales/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== INVENTORY REPORTS ===== -->
+  <div class="section">
+    <div class="section-label">
+      <div class="s-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-warehouse"></i></div>
+      <div class="s-text">Inventory Reports</div>
+      <div class="s-count">6 reports</div>
+    </div>
+    <div class="section-divider"></div>
+    <div class="cards-grid">
+
+      <div class="rc" style="border-top-color:#3498db">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-cubes"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Stock Report</div>
+            <span class="rc-badge" style="background:#ebf5fb;color:#2980b9">Current Stock</span>
+          </div>
+        </div>
+        <div class="rc-desc">Current stock levels for all products grouped by vendor or category. Identifies items at or near reorder levels. Filter by supplier or product.</div>
+        <div class="rc-actions">
+          <a href="/reports/stock-report" class="btn-view" style="background:#3498db"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/stock-report/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#1abc9c">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#1abc9c,#16a085)"><i class="fas fa-coins"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Stock Valuation</div>
+            <span class="rc-badge" style="background:#e8f8f5;color:#16a085">Asset Value</span>
+          </div>
+        </div>
+        <div class="rc-desc">Calculates the total monetary value of your inventory (stock × cost price and retail price). Useful for balance sheet and insurance purposes.</div>
+        <div class="rc-actions">
+          <a href="/reports/stock-valuation" class="btn-view" style="background:#1abc9c"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/stock-valuation/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#e74c3c">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Reorder Alert</div>
+            <span class="rc-badge" style="background:#fdf2f2;color:#c0392b">Action Required</span>
+          </div>
+        </div>
+        <div class="rc-desc">All products below their reorder level, color-coded by urgency (Low / Critical / Out of Stock). Take action before stockouts occur.</div>
+        <div class="rc-actions">
+          <a href="/reports/reorder-alert" class="btn-view" style="background:#e74c3c"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/reorder-alert/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#e67e22">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#e67e22,#d35400)"><i class="fas fa-calendar-times"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Expiry Report</div>
+            <span class="rc-badge" style="background:#fef5ec;color:#d35400">FIFO Control</span>
+          </div>
+        </div>
+        <div class="rc-desc">Track products approaching or past their expiry date. Filter by date range for proactive stock rotation and waste reduction.</div>
+        <div class="rc-actions">
+          <a href="/reports/expiry-report" class="btn-view" style="background:#e67e22"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/expiry-report/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#9b59b6">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#9b59b6,#8e44ad)"><i class="fas fa-tachometer-alt"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Slow Moving Items</div>
+            <span class="rc-badge" style="background:#f5eef8;color:#8e44ad">Dead Stock</span>
+          </div>
+        </div>
+        <div class="rc-desc">Products not sold in the last 30+ days. Identify dead stock and optimize procurement decisions to free up working capital.</div>
+        <div class="rc-actions">
+          <a href="/reports/slow-moving" class="btn-view" style="background:#9b59b6"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/slow-moving/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#27ae60">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-tag"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Price List (PKR)</div>
+            <span class="rc-badge" style="background:#eafaf1;color:#1e8449">Pricing</span>
+          </div>
+        </div>
+        <div class="rc-desc">Complete product catalogue with cost price, selling price, MRP and margin percentage. Export for external use or supplier negotiations.</div>
+        <div class="rc-actions">
+          <a href="/reports/price-list" class="btn-view" style="background:#27ae60"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/price-list/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== PROCUREMENT REPORTS ===== -->
+  <div class="section">
+    <div class="section-label">
+      <div class="s-icon" style="background:linear-gradient(135deg,#5c6bc0,#3949ab)"><i class="fas fa-truck"></i></div>
+      <div class="s-text">Procurement Reports</div>
+      <div class="s-count">3 reports</div>
+    </div>
+    <div class="section-divider"></div>
+    <div class="cards-grid">
+
+      <div class="rc" style="border-top-color:#5c6bc0">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#5c6bc0,#3949ab)"><i class="fas fa-file-invoice"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Purchase Orders</div>
+            <span class="rc-badge" style="background:#ede7f6;color:#4527a0">PO Tracking</span>
+          </div>
+        </div>
+        <div class="rc-desc">Full list of purchase orders with vendor, delivery date, line items, total and status (Draft / Approved / Received / Cancelled).</div>
+        <div class="rc-actions">
+          <a href="/reports/purchase-orders-report" class="btn-view" style="background:#5c6bc0"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/purchase-orders-report/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#9b59b6">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#9b59b6,#8e44ad)"><i class="fas fa-file-invoice-dollar"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Vendor Payments</div>
+            <span class="rc-badge" style="background:#f5eef8;color:#8e44ad">Accounts Payable</span>
+          </div>
+        </div>
+        <div class="rc-desc">Summary of paid and outstanding amounts per vendor. Useful for accounts payable reconciliation and supplier relationship management.</div>
+        <div class="rc-actions">
+          <a href="/reports/vendor-payment" class="btn-view" style="background:#9b59b6"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/vendor-payment/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#e74c3c">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-clock"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Invoice Aging</div>
+            <span class="rc-badge" style="background:#fdf2f2;color:#c0392b">Overdue Tracking</span>
+          </div>
+        </div>
+        <div class="rc-desc">Vendor invoices bucketed by age: 0-30, 31-60, 61-90 and 90+ days. Critical for cash flow management and avoiding late payment penalties.</div>
+        <div class="rc-actions">
+          <a href="/reports/invoice-aging" class="btn-view" style="background:#e74c3c"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/invoice-aging/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== FINANCE REPORTS ===== -->
+  <div class="section">
+    <div class="section-label">
+      <div class="s-icon" style="background:linear-gradient(135deg,#f39c12,#d68910)"><i class="fas fa-chart-line"></i></div>
+      <div class="s-text">Finance Reports</div>
+      <div class="s-count">1 report</div>
+    </div>
+    <div class="section-divider"></div>
+    <div class="cards-grid">
+
+      <div class="rc" style="border-top-color:#f39c12">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#f39c12,#d68910)"><i class="fas fa-balance-scale"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Profit & Loss</div>
+            <span class="rc-badge" style="background:#fef9f0;color:#d68910">Monthly P&L</span>
+          </div>
+        </div>
+        <div class="rc-desc">Monthly revenue vs total expenses (purchases + payroll) with net profit and margin percentage. Last 24 months. Ideal for management review.</div>
+        <div class="rc-actions">
+          <a href="/reports/profit-loss" class="btn-view" style="background:#f39c12"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/profit-loss/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== HR REPORTS ===== -->
+  <div class="section">
+    <div class="section-label">
+      <div class="s-icon" style="background:linear-gradient(135deg,#16a085,#0e6655)"><i class="fas fa-users"></i></div>
+      <div class="s-text">HR Reports</div>
+      <div class="s-count">2 reports</div>
+    </div>
+    <div class="section-divider"></div>
+    <div class="cards-grid">
+
+      <div class="rc" style="border-top-color:#16a085">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#16a085,#0e6655)"><i class="fas fa-money-check-alt"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Payroll Summary</div>
+            <span class="rc-badge" style="background:#e8f8f5;color:#0e6655">Salary</span>
+          </div>
+        </div>
+        <div class="rc-desc">Employee payroll records with basic salary, allowances, deductions and net pay per month. Filter by month for payroll reconciliation.</div>
+        <div class="rc-actions">
+          <a href="/reports/payroll-summary" class="btn-view" style="background:#16a085"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/payroll-summary/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+      <div class="rc" style="border-top-color:#1abc9c">
+        <div class="rc-head">
+          <div class="rc-icon" style="background:linear-gradient(135deg,#1abc9c,#16a085)"><i class="fas fa-calendar-day"></i></div>
+          <div class="rc-meta">
+            <div class="rc-title">Daily Products Added</div>
+            <span class="rc-badge" style="background:#e8f8f5;color:#16a085">Intake Log</span>
+          </div>
+        </div>
+        <div class="rc-desc">All products registered on a specific date. Track inventory intake and product additions over time. Filter by date, vendor or category.</div>
+        <div class="rc-actions">
+          <a href="/reports/daily-products" class="btn-view" style="background:#1abc9c"><i class="fas fa-eye"></i> View</a>
+          <a href="/api/reports/daily-products/excel" class="btn-dl"><i class="fas fa-file-excel"></i> Excel</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 </body>
 </html>

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predictive Analysis - Overview</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f8;min-height:100vh}
+.nav{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.nav-brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700}
+.nav-brand i{color:#a78bfa;font-size:22px}
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:13px}
+.role-badge{background:rgba(167,139,250,.25);padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.btn-logout{background:rgba(239,68,68,.8);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px}
+.btn-logout:hover{background:#ef4444}
+/* Sub-nav tabs */
+.pred-tabs{background:#fff;border-bottom:2px solid #e5e7eb;display:flex;gap:0;padding:0 24px;overflow-x:auto}
+.pred-tab{padding:14px 20px;font-size:13px;font-weight:600;color:#6b7280;text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px;transition:all .2s}
+.pred-tab:hover{color:#7c3aed;background:#f9f7ff}
+.pred-tab.active{color:#7c3aed;border-bottom-color:#7c3aed}
+.pred-tab i{font-size:13px}
+.container{max-width:1300px;margin:0 auto;padding:24px}
+.page-header{margin-bottom:24px}
+.page-title{font-size:22px;font-weight:800;color:#1e1b4b;display:flex;align-items:center;gap:10px}
+.page-title i{color:#7c3aed}
+.page-sub{color:#6b7280;font-size:13px;margin-top:4px}
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;align-items:center;gap:14px}
+.kpi-icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;flex-shrink:0}
+.kpi-val{font-size:20px;font-weight:800;color:#1e1b4b;line-height:1.1}
+.kpi-lbl{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+.kpi-sub{font-size:11px;margin-top:3px}
+/* Health score */
+.health-section{background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:24px;display:grid;grid-template-columns:260px 1fr;gap:32px;align-items:center}
+.health-gauge{text-align:center}
+.health-score-num{font-size:56px;font-weight:900;line-height:1}
+.health-label{font-size:13px;color:#6b7280;margin-top:4px}
+.health-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.breakdown-item{background:#f8f7ff;border-radius:10px;padding:14px 16px}
+.breakdown-title{font-size:12px;color:#6b7280;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.breakdown-bar-wrap{background:#e5e7eb;border-radius:4px;height:8px;margin-top:6px}
+.breakdown-bar{height:100%;border-radius:4px;transition:width .5s}
+.breakdown-score{font-size:18px;font-weight:800;color:#1e1b4b}
+/* Charts grid */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.chart-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:13px;font-weight:700;color:#1e1b4b;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.chart-title i{color:#7c3aed}
+.chart-sub{font-size:11px;color:#9ca3af;margin-left:auto}
+canvas{max-height:280px}
+/* Trend badge */
+.trend-up{color:#10b981;font-weight:700}
+.trend-down{color:#ef4444;font-weight:700}
+.trend-stable{color:#f59e0b;font-weight:700}
+/* Insights */
+.insights-section{margin-top:8px}
+.insights-title{font-size:16px;font-weight:800;color:#1e1b4b;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.insights-title i{color:#7c3aed}
+.insight-card{border-radius:10px;padding:16px 20px;display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;border-left:4px solid}
+.insight-card.success{background:#f0fdf4;border-color:#10b981}
+.insight-card.warning{background:#fffbeb;border-color:#f59e0b}
+.insight-card.danger{background:#fef2f2;border-color:#ef4444}
+.insight-card.info{background:#eff6ff;border-color:#3b82f6}
+.insight-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.insight-card.success .insight-icon{background:#d1fae5;color:#065f46}
+.insight-card.warning .insight-icon{background:#fef3c7;color:#92400e}
+.insight-card.danger .insight-icon{background:#fee2e2;color:#991b1b}
+.insight-card.info .insight-icon{background:#dbeafe;color:#1e40af}
+.insight-title{font-size:13px;font-weight:700;color:#1e1b4b;margin-bottom:3px}
+.insight-msg{font-size:12px;color:#4b5563;line-height:1.5}
+.legend-item{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#6b7280;margin-right:12px}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+.legend-dash{width:16px;height:3px;border-top:2px dashed}
+.forecast-note{font-size:11px;color:#9ca3af;font-style:italic;margin-top:6px}
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr}.health-section{grid-template-columns:1fr}.kpi-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-brand"><i class="fas fa-brain"></i><span>POS System — Predictive Analysis</span></div>
+  <div class="nav-right">
+    <div class="nav-user"><i class="fas fa-user-circle" style="font-size:20px"></i><span id="navUser">Admin</span><span class="role-badge">Admin</span></div>
+    <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+<div class="pred-tabs">
+  <a href="/admin/predictive" class="pred-tab active"><i class="fas fa-globe"></i> Overview</a>
+  <a href="/admin/predictive/sales" class="pred-tab"><i class="fas fa-chart-line"></i> Sales</a>
+  <a href="/admin/predictive/procurement" class="pred-tab"><i class="fas fa-truck-loading"></i> Procurement</a>
+  <a href="/admin/predictive/finance" class="pred-tab"><i class="fas fa-coins"></i> Finance</a>
+  <a href="/admin/predictive/vendors" class="pred-tab"><i class="fas fa-handshake"></i> Vendors</a>
+</div>
+<div class="container">
+  <div class="page-header">
+    <div class="page-title"><i class="fas fa-brain"></i> Predictive Analysis — Business Overview</div>
+    <div class="page-sub">AI-powered business health scoring and 12-month revenue projection based on all system data</div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"><i class="fas fa-coins"></i></div>
+      <div><div class="kpi-val" id="kpiRevenue">—</div><div class="kpi-lbl">12-Month Revenue</div><div class="kpi-sub" id="kpiTrend">—</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#10b981,#34d399)"><i class="fas fa-chart-pie"></i></div>
+      <div><div class="kpi-val" id="kpiProfit">—</div><div class="kpi-lbl">12-Month Profit</div><div class="kpi-sub" id="kpiMargin">—</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)"><i class="fas fa-rocket"></i></div>
+      <div><div class="kpi-val" id="kpiProjection">—</div><div class="kpi-lbl">1-Year Projection</div><div class="kpi-sub" style="color:#f59e0b">AI Forecast</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#ef4444,#f87171)"><i class="fas fa-heartbeat"></i></div>
+      <div><div class="kpi-val" id="kpiHealth">—</div><div class="kpi-lbl">Health Score</div><div class="kpi-sub" id="kpiHealthLabel">—</div></div>
+    </div>
+  </div>
+
+  <!-- Health Score Breakdown -->
+  <div class="health-section">
+    <div class="health-gauge">
+      <canvas id="healthChart" width="220" height="220"></canvas>
+      <div class="health-label">Business Health Score</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:4px">Based on Sales · Procurement · Finance · Vendors</div>
+    </div>
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#1e1b4b;margin-bottom:14px"><i class="fas fa-layer-group" style="color:#7c3aed"></i> Score Breakdown</div>
+      <div class="health-breakdown" id="scoreBreakdown"></div>
+    </div>
+  </div>
+
+  <!-- Revenue + Profit Charts -->
+  <div class="charts-grid">
+    <div class="chart-card full">
+      <div class="chart-title">
+        <i class="fas fa-chart-area"></i> Revenue Trend + 12-Month AI Forecast
+        <span class="chart-sub">
+          <span class="legend-item"><span class="legend-dot" style="background:#7c3aed"></span>Revenue</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Expenses</span>
+          <span class="legend-item"><span class="legend-dash" style="border-color:#7c3aed"></span>Forecast</span>
+        </span>
+      </div>
+      <canvas id="revenueChart"></canvas>
+      <div class="forecast-note">Shaded area = AI forecast zone based on linear regression of last 12 months</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><i class="fas fa-chart-bar"></i> Monthly Profit / Loss</div>
+      <canvas id="profitChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><i class="fas fa-balance-scale"></i> Revenue vs Expenses Trend</div>
+      <canvas id="revExpChart"></canvas>
+    </div>
+  </div>
+
+  <!-- AI Insights -->
+  <div class="insights-section">
+    <div class="insights-title"><i class="fas fa-robot"></i> AI Business Insights & Action Plan</div>
+    <div id="insightsContainer"></div>
+  </div>
+</div>
+
+<script>
+const fmt = v => 'PKR ' + parseFloat(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fmtK = v => { v = parseFloat(v); if(v>=1000000) return 'PKR '+(v/1000000).toFixed(1)+'M'; if(v>=1000) return 'PKR '+(v/1000).toFixed(1)+'K'; return 'PKR '+v.toFixed(0); };
+let healthChart, revenueChart, profitChart, revExpChart;
+
+async function handleLogout() {
+  await fetch('/api/auth/logout', {method:'POST'});
+  window.location.href = '/login';
+}
+
+function buildInsights(recs) {
+  const c = document.getElementById('insightsContainer');
+  c.innerHTML = recs.map(r => `
+    <div class="insight-card ${r.level}">
+      <div class="insight-icon"><i class="fas ${r.icon}"></i></div>
+      <div><div class="insight-title">${r.title}</div><div class="insight-msg">${r.message}</div></div>
+    </div>`).join('');
+}
+
+function buildScoreBreakdown(bd) {
+  const modules = [
+    {key:'sales',label:'Sales Performance',icon:'fa-chart-line',color:'#7c3aed',max:25},
+    {key:'procurement',label:'Procurement Efficiency',icon:'fa-truck-loading',color:'#3b82f6',max:25},
+    {key:'finance',label:'Financial Health',icon:'fa-coins',color:'#10b981',max:25},
+    {key:'vendors',label:'Vendor Reliability',icon:'fa-handshake',color:'#f59e0b',max:25},
+  ];
+  document.getElementById('scoreBreakdown').innerHTML = modules.map(m => {
+    const val = bd[m.key] || 0;
+    const pct = val / m.max * 100;
+    return `<div class="breakdown-item">
+      <div class="breakdown-title"><i class="fas ${m.icon}" style="color:${m.color}"></i>${m.label}</div>
+      <div class="breakdown-score" style="color:${m.color}">${val}<span style="font-size:13px;color:#9ca3af">/${m.max}</span></div>
+      <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${pct}%;background:${m.color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function scoreColor(s) {
+  if(s >= 80) return '#10b981';
+  if(s >= 60) return '#3b82f6';
+  if(s >= 40) return '#f59e0b';
+  return '#ef4444';
+}
+
+function scoreLabel(s) {
+  if(s >= 80) return 'Excellent';
+  if(s >= 60) return 'Good';
+  if(s >= 40) return 'Fair';
+  return 'Critical';
+}
+
+async function loadData() {
+  try {
+    const d = await fetch('/api/predictive/overview').then(r => r.json());
+    if(d.error) { window.location.href='/login'; return; }
+
+    const k = d.kpis;
+    document.getElementById('kpiRevenue').textContent   = fmtK(k.total_revenue);
+    document.getElementById('kpiTrend').innerHTML       = `<span class="trend-${k.trend === 'growing' ? 'up' : k.trend === 'declining' ? 'down' : 'stable'}">${k.trend === 'growing' ? '▲ Growing' : k.trend === 'declining' ? '▼ Declining' : '→ Stable'}</span>`;
+    document.getElementById('kpiProfit').textContent    = fmtK(k.total_profit);
+    document.getElementById('kpiMargin').textContent    = `Margin: ${k.profit_margin}%`;
+    document.getElementById('kpiProjection').textContent = fmtK(k.year_rev_proj);
+    document.getElementById('kpiHealth').textContent    = d.health_score + '/100';
+    document.getElementById('kpiHealthLabel').innerHTML = `<span style="color:${scoreColor(d.health_score)};font-weight:700">${scoreLabel(d.health_score)}</span>`;
+
+    buildScoreBreakdown(d.score_breakdown);
+    buildInsights(d.recommendations);
+
+    const color = scoreColor(d.health_score);
+    if(healthChart) healthChart.destroy();
+    healthChart = new Chart(document.getElementById('healthChart'), {
+      type:'doughnut',
+      data:{datasets:[{data:[d.health_score, 100 - d.health_score],backgroundColor:[color,'#f3f4f6'],borderWidth:0,circumference:270,rotation:225}]},
+      options:{cutout:'78%',plugins:{legend:{display:false},tooltip:{enabled:false}},
+        animation:{onComplete:function(){
+          const ctx = this.ctx;
+          ctx.save(); ctx.font='bold 28px Segoe UI'; ctx.fillStyle=color; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(d.health_score, this.width/2, this.height/2 - 6);
+          ctx.font='13px Segoe UI'; ctx.fillStyle='#6b7280';
+          ctx.fillText('/ 100', this.width/2, this.height/2 + 22); ctx.restore();
+        }}
+      }
+    });
+
+    // Revenue chart (historical + forecast)
+    const allLabels = [...d.hist_labels, ...d.fcast_labels];
+    const revHist   = [...d.revenue, ...new Array(12).fill(null)];
+    const revFc     = [...new Array(11).fill(null), d.revenue[11], ...d.rev_forecast];
+    const expHist   = [...d.expenses, ...new Array(12).fill(null)];
+
+    if(revenueChart) revenueChart.destroy();
+    revenueChart = new Chart(document.getElementById('revenueChart'), {
+      type:'line',
+      data:{labels: allLabels, datasets:[
+        {label:'Revenue',data:revHist,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.08)',fill:true,tension:.4,pointRadius:3},
+        {label:'Expenses',data:expHist,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.05)',fill:true,tension:.4,pointRadius:3},
+        {label:'Forecast',data:revFc,borderColor:'#7c3aed',borderDash:[6,4],backgroundColor:'rgba(124,58,237,.04)',fill:true,tension:.4,pointRadius:0},
+      ]},
+      options:{responsive:true,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.parsed.y||0)}`}}},
+        scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'#f3f4f6'}},x:{grid:{display:false}}}
+      }
+    });
+
+    // Profit chart
+    const colors = d.profit.map(v => v >= 0 ? 'rgba(16,185,129,.7)' : 'rgba(239,68,68,.7)');
+    if(profitChart) profitChart.destroy();
+    profitChart = new Chart(document.getElementById('profitChart'), {
+      type:'bar',
+      data:{labels:d.hist_labels, datasets:[{label:'Profit',data:d.profit,backgroundColor:colors,borderRadius:4}]},
+      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Profit: ${fmt(ctx.parsed.y)}`}}},
+        scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'#f3f4f6'}},x:{grid:{display:false}}}
+      }
+    });
+
+    // Rev vs Exp trend
+    if(revExpChart) revExpChart.destroy();
+    revExpChart = new Chart(document.getElementById('revExpChart'), {
+      type:'line',
+      data:{labels:d.hist_labels, datasets:[
+        {label:'Revenue',data:d.revenue,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.08)',fill:true,tension:.4,pointRadius:3},
+        {label:'Expenses',data:d.expenses,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.06)',fill:true,tension:.4,pointRadius:3},
+      ]},
+      options:{responsive:true,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.parsed.y||0)}`}}},
+        scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'#f3f4f6'}},x:{grid:{display:false}}}
+      }
+    });
+
+  } catch(e) { console.error(e); }
+}
+
+loadData();
+</script>
+</body>
+</html>

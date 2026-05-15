@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POS System — User Guide</title>
+<style>
+  :root {
+    --primary: #1e3a5f;
+    --accent: #2d6a9f;
+    --green: #1e8449;
+    --orange: #d35400;
+    --purple: #6c3483;
+    --teal: #0e6655;
+    --red: #c0392b;
+    --light: #f4f7fb;
+    --border: #dde3ee;
+    --text: #2c3e50;
+    --muted: #6b7a99;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: var(--text); font-size: 14px; line-height: 1.7; }
+
+  /* Cover Page */
+  .cover { background: linear-gradient(160deg, #0d1f3c 0%, #1e3a5f 50%, #2d6a9f 100%); color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 40px; page-break-after: always; }
+  .cover-logo { width: 90px; height: 90px; background: rgba(255,255,255,.15); border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 42px; margin: 0 auto 28px; }
+  .cover h1 { font-size: 42px; font-weight: 900; letter-spacing: -1px; margin-bottom: 10px; }
+  .cover h2 { font-size: 20px; font-weight: 400; opacity: .75; margin-bottom: 40px; }
+  .cover-divider { width: 60px; height: 3px; background: rgba(255,255,255,.4); margin: 0 auto 40px; border-radius: 2px; }
+  .cover-meta { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; }
+  .cover-meta-item { text-align: center; }
+  .cover-meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: .55; margin-bottom: 4px; }
+  .cover-meta-value { font-size: 16px; font-weight: 700; opacity: .9; }
+  .cover-badge { margin-top: 50px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 30px; padding: 8px 24px; font-size: 13px; opacity: .8; }
+
+  /* Layout */
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 40px; }
+
+  /* TOC */
+  .toc { background: var(--light); border-radius: 14px; padding: 32px 36px; margin-bottom: 48px; page-break-after: always; }
+  .toc h2 { font-size: 20px; color: var(--primary); margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+  .toc-section { margin-bottom: 18px; }
+  .toc-section-title { font-weight: 800; color: var(--primary); font-size: 13px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+  .toc-items { display: flex; flex-direction: column; gap: 5px; }
+  .toc-item { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--accent); text-decoration: none; }
+  .toc-item:hover { color: var(--primary); }
+  .toc-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .toc-num { margin-left: auto; font-size: 11px; color: var(--muted); font-weight: 600; }
+
+  /* Module Sections */
+  .module { margin-bottom: 56px; page-break-inside: avoid; }
+  .module-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 2px solid var(--border); }
+  .module-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; color: #fff; }
+  .module-title { font-size: 22px; font-weight: 800; color: var(--primary); }
+  .module-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  /* Screen Cards */
+  .screen { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 18px; overflow: hidden; }
+  .screen-header { background: var(--light); padding: 14px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .screen-badge { font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; }
+  .screen-title { font-size: 15px; font-weight: 700; color: var(--primary); flex: 1; }
+  .screen-url { font-family: monospace; font-size: 12px; color: var(--muted); background: rgba(0,0,0,.05); padding: 3px 8px; border-radius: 5px; }
+  .screen-body { padding: 18px 20px; }
+  .screen-desc { font-size: 14px; color: var(--text); margin-bottom: 14px; line-height: 1.65; }
+
+  /* Field tables */
+  .field-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 13px; }
+  .field-table th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+  .field-table td { padding: 9px 12px; border-bottom: 1px solid #eef1f8; vertical-align: top; }
+  .field-table tr:last-child td { border-bottom: none; }
+  .field-table tr:nth-child(even) td { background: var(--light); }
+  .field-name { font-weight: 700; color: var(--primary); font-family: monospace; font-size: 12.5px; }
+  .field-req { font-size: 10px; font-weight: 800; color: #fff; padding: 2px 7px; border-radius: 10px; display: inline-block; }
+  .req { background: var(--red); }
+  .opt { background: #7f8c8d; }
+  .auto { background: var(--accent); }
+
+  /* Steps */
+  .steps { list-style: none; counter-reset: step; }
+  .steps li { counter-increment: step; display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
+  .steps li::before { content: counter(step); min-width: 26px; height: 26px; background: var(--accent); color: #fff; border-radius: 50%; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+
+  /* Tips / Notes */
+  .tip { background: #e8f4fd; border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 12px 0; font-size: 13px; }
+  .tip-icon { font-weight: 800; color: var(--accent); margin-right: 6px; }
+  .warn { background: #fef3e2; border-left-color: #e67e22; }
+  .warn .tip-icon { color: #e67e22; }
+  .danger { background: #fde8e8; border-left-color: var(--red); }
+  .danger .tip-icon { color: var(--red); }
+
+  /* Roles */
+  .role-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin: 2px; }
+  .role-admin { background: #1e3a5f; color: #fff; }
+  .role-cashier { background: #1e8449; color: #fff; }
+  .role-procurement { background: #2d6a9f; color: #fff; }
+  .role-sales { background: #8e44ad; color: #fff; }
+  .role-all { background: #555; color: #fff; }
+
+  /* Section headers */
+  .section-divider { border: none; border-top: 2px solid var(--border); margin: 40px 0; }
+  h3.sub-heading { font-size: 15px; font-weight: 800; color: var(--primary); margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; }
+
+  /* Footer */
+  .doc-footer { background: var(--primary); color: rgba(255,255,255,.65); text-align: center; padding: 20px; font-size: 12px; margin-top: 60px; }
+
+  @media print {
+    .cover { page-break-after: always; min-height: auto; padding: 40px 30px; }
+    .module { page-break-inside: auto; }
+    .screen { page-break-inside: avoid; }
+    .toc { page-break-after: always; }
+    body { font-size: 12px; }
+    .page { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ COVER ════════════════ -->
+<div class="cover">
+  <div class="cover-logo">🏪</div>
+  <h1>POS System</h1>
+  <h2>Complete Point of Sale & Business Management System</h2>
+  <div class="cover-divider"></div>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Document Type</div>
+      <div class="cover-meta-value">User Guide</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Version</div>
+      <div class="cover-meta-value">1.0</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Prepared For</div>
+      <div class="cover-meta-value">POS Owners & Staff</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Date</div>
+      <div class="cover-meta-value">2026</div>
+    </div>
+  </div>
+  <div class="cover-badge">📋 Confidential — For internal use only</div>
+</div>
+
+<div class="page">
+
+<!-- ═══════════════════════════════════════════ TOC ════════════════ -->
+<div class="toc" id="toc">
+  <h2>📑 Table of Contents</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px 40px;">
+    <div>
+      <div class="toc-section">
+        <div class="toc-section-title">1. System Overview</div>
+        <div class="toc-items">
+          <a href="#overview" class="toc-item"><span class="toc-dot"></span> What is this system?</a>
+          <a href="#roles" class="toc-item"><span class="toc-dot"></span> User Roles & Permissions</a>
+          <a href="#login" class="toc-item"><span class="toc-dot"></span> Login & Authentication</a>
+        </div>
+      </div>
+      <div class="toc-section">
+        <div class="toc-section-title">2. Admin Dashboard</div>
+        <div class="toc-items">
+          <a href="#admin-dash" class="toc-item"><span class="toc-dot"></span> Admin Home</a>
+          <a href="#system-users" class="toc-item"><span class="toc-dot"></span> System Users</a>
+          <a href="#audit" class="toc-item"><span class="toc-dot"></span> Audit Trail</a>
+        </div>
+      </div>
+      <div class="toc-section">
+        <div class="toc-section-title">3. Point of Sale (POS)</div>
+        <div class="toc-items">
+          <a href="#pos-terminal" class="toc-item"><span class="toc-dot"></span> POS Terminal</a>
+          <a href="#shifts" class="toc-item"><span class="toc-dot"></span> Shifts</a>
+          <a href="#returns" class="toc-item"><span class="toc-dot"></span> Sales Returns</a>
+          <a href="#credit-sales" class="toc-item"><span class="toc-dot"></span> Credit Sales</a>
+          <a href="#customers" class="toc-item"><span class="toc-dot"></span> Customers & Loyalty</a>
+          <a href="#z-report" class="toc-item"><span class="toc-dot"></span> Z-Report</a>
+        </div>
+      </div>
+      <div class="toc-section">
+        <div class="toc-section-title">4. Products & Inventory</div>
+        <div class="toc-items">
+          <a href="#products" class="toc-item"><span class="toc-dot"></span> Products</a>
+          <a href="#stock-adj" class="toc-item"><span class="toc-dot"></span> Stock Adjustments</a>
+          <a href="#bundles" class="toc-item"><span class="toc-dot"></span> Bundles & Promotions</a>
+          <a href="#qr" class="toc-item"><span class="toc-dot"></span> QR Codes</a>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="toc-section">
+        <div class="toc-section-title">5. Procurement</div>
+        <div class="toc-items">
+          <a href="#vendors" class="toc-item"><span class="toc-dot"></span> Vendors</a>
+          <a href="#pr" class="toc-item"><span class="toc-dot"></span> Purchase Requisitions</a>
+          <a href="#po" class="toc-item"><span class="toc-dot"></span> Purchase Orders</a>
+          <a href="#gr" class="toc-item"><span class="toc-dot"></span> Goods Receipt</a>
+          <a href="#invoices" class="toc-item"><span class="toc-dot"></span> Vendor Invoices</a>
+          <a href="#proc-payments" class="toc-item"><span class="toc-dot"></span> Vendor Payments</a>
+          <a href="#catalog" class="toc-item"><span class="toc-dot"></span> Product Catalog</a>
+        </div>
+      </div>
+      <div class="toc-section">
+        <div class="toc-section-title">6. Finance</div>
+        <div class="toc-items">
+          <a href="#finance-dash" class="toc-item"><span class="toc-dot"></span> Finance Dashboard</a>
+          <a href="#coa" class="toc-item"><span class="toc-dot"></span> Chart of Accounts</a>
+          <a href="#journal" class="toc-item"><span class="toc-dot"></span> Journal Entries</a>
+          <a href="#gl" class="toc-item"><span class="toc-dot"></span> General Ledger</a>
+          <a href="#payments" class="toc-item"><span class="toc-dot"></span> Payments</a>
+        </div>
+      </div>
+      <div class="toc-section">
+        <div class="toc-section-title">7. HR & Reports</div>
+        <div class="toc-items">
+          <a href="#hr" class="toc-item"><span class="toc-dot"></span> HR & Payroll</a>
+          <a href="#reports" class="toc-item"><span class="toc-dot"></span> Reports Center (16 Reports)</a>
+          <a href="#predictive" class="toc-item"><span class="toc-dot"></span> Predictive AI Dashboard</a>
+          <a href="#fbr" class="toc-item"><span class="toc-dot"></span> FBR Integration</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════ 1. OVERVIEW ════════════════ -->
+<div class="module" id="overview">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#1e3a5f,#2d6a9f)">🏪</div>
+    <div>
+      <div class="module-title">1. System Overview</div>
+      <div class="module-sub">What is this POS system and what can it do?</div>
+    </div>
+  </div>
+
+  <div class="screen-body" style="background:var(--light);border-radius:12px;margin-bottom:20px;padding:20px 24px;">
+    <p style="font-size:15px;line-height:1.8;color:var(--text)">
+      This is a <strong>complete Point of Sale and Business Management System</strong> built for retail supermarkets and stores. It handles everything from ringing up a sale at the counter to generating a Profit &amp; Loss statement at the end of the month.
+    </p>
+    <br>
+    <p>The system is organized into <strong>7 main modules</strong>, each designed for a specific team in the business:</p>
+    <br>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-top:4px">
+      <div style="background:#fff;border-radius:10px;padding:14px;border-left:4px solid #27ae60"><strong style="color:#1e8449">🛒 POS</strong><br><span style="font-size:12px;color:var(--muted)">Sales counter, receipts, shifts</span></div>
+      <div style="background:#fff;border-radius:10px;padding:14px;border-left:4px solid #3498db"><strong style="color:#2980b9">📦 Inventory</strong><br><span style="font-size:12px;color:var(--muted)">Products, stock, QR codes</span></div>
+      <div style="background:#fff;border-radius:10px;padding:14px;border-left:4px solid #5c6bc0"><strong style="color:#3949ab">🚚 Procurement</strong><br><span style="font-size:12px;color:var(--muted)">Vendors, POs, deliveries</span></div>
+      <div style="background:#fff;border-radius:10px;padding:14px;border-left:4px solid #f39c12"><strong style="color:#d68910">💰 Finance</strong><br><span style="font-size:12px;color:var(--muted)">Accounts, journal, ledger</span></div>
+      <div style="background:#fff;border-radius:10px;padding:14px;border-left:4px solid #16a085"><strong style="color:#0e6655">👥 HR</strong><br><span style="font-size:12px;color:var(--muted)">Employees, payroll</span></div>
+      <div style="background:#fff;border-radius:10px;padding:14px;border-left:4px solid #9b59b6"><strong style="color:#8e44ad">📊 Reports</strong><br><span style="font-size:12px;color:var(--muted)">16 reports, Excel export</span></div>
+      <div style="background:#fff;border-radius:10px;padding:14px;border-left:4px solid #7c3aed"><strong style="color:#6d28d9">🤖 AI Analytics</strong><br><span style="font-size:12px;color:var(--muted)">Predictive forecasts</span></div>
+    </div>
+  </div>
+
+  <div id="roles">
+    <h3 class="sub-heading">👤 User Roles &amp; Permissions</h3>
+    <p style="margin-bottom:14px;color:var(--muted)">Every person who logs in has a role. The role controls which parts of the system they can see and use.</p>
+    <table class="field-table">
+      <thead><tr><th>Role</th><th>Who Uses It</th><th>Access Level</th></tr></thead>
+      <tbody>
+        <tr><td><span class="role-chip role-admin">Admin</span></td><td>Business Owner / Manager</td><td>Full access to every screen and setting in the system.</td></tr>
+        <tr><td><span class="role-chip role-cashier">Cashier</span></td><td>Counter Staff</td><td>POS terminal, shifts, returns. Cannot access finance or procurement.</td></tr>
+        <tr><td><span class="role-chip role-sales">Sales Person</span></td><td>Sales Team</td><td>Sales dashboard, customers, credit sales, reports.</td></tr>
+        <tr><td><span class="role-chip role-procurement">Procurement Manager</span></td><td>Buying / Store Manager</td><td>Full procurement module, vendors, inventory, reports.</td></tr>
+      </tbody>
+    </table>
+    <div class="tip"><span class="tip-icon">💡 TIP:</span> Only an Admin can create or edit other user accounts. If someone cannot see a screen, check their role in System Users.</div>
+  </div>
+</div>
+
+<div class="module" id="login">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#2c3e50,#34495e)">🔐</div>
+    <div>
+      <div class="module-title">Login &amp; Authentication</div>
+      <div class="module-sub">Screens: Login, Forgot Password, Reset Password</div>
+    </div>
+  </div>
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#2c3e50;color:#fff">Login</span>
+      <span class="screen-title">Login Page</span>
+      <span class="screen-url">/login</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">The first page every user sees. Enter your username and password to access the system. The system will redirect you to the correct dashboard based on your role.</div>
+      <ol class="steps">
+        <li>Open your browser and go to the system URL (e.g. <code>http://localhost:5000</code>)</li>
+        <li>Enter your <strong>Username</strong> and <strong>Password</strong></li>
+        <li>Click <strong>Sign In</strong> — you will be taken to your dashboard</li>
+        <li>If you forget your password, click <strong>"Forgot Password?"</strong></li>
+      </ol>
+      <div class="tip warn"><span class="tip-icon">⚠️</span> After 3 failed login attempts the system will block the account. Contact your Admin to reset it.</div>
+    </div>
+  </div>
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#7f8c8d;color:#fff">Password</span>
+      <span class="screen-title">Forgot / Reset Password</span>
+      <span class="screen-url">/forgot-password</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">If you forget your password, the system can send a reset link to your registered email address.</div>
+      <ol class="steps">
+        <li>Click <strong>Forgot Password?</strong> on the login page</li>
+        <li>Enter your registered email address and click Send</li>
+        <li>Check your email inbox for a reset link (valid for 1 hour)</li>
+        <li>Click the link, enter your new password, and confirm it</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════ 2. ADMIN DASHBOARD ════════════════ -->
+<div class="module" id="admin-dash">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#1e3a5f,#2d6a9f)">🖥️</div>
+    <div>
+      <div class="module-title">2. Admin Dashboard</div>
+      <div class="module-sub">Central navigation hub for business owners and managers</div>
+    </div>
+  </div>
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:var(--primary);color:#fff">Admin</span>
+      <span class="screen-title">Admin Dashboard</span>
+      <span class="screen-url">/admin-dashboard</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">The main home screen for Admin users. It is organized into 4 sections so the manager can quickly reach any part of the system:</div>
+      <table class="field-table">
+        <thead><tr><th>Section</th><th>What's Here</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Business Intelligence</strong></td><td>Predictive AI Dashboard, Finance, Sales, Reports, Z-Report</td></tr>
+          <tr><td><strong>Daily Operations</strong></td><td>POS Terminal, Returns, Credit Sales, Payments, Bundles</td></tr>
+          <tr><td><strong>Inventory &amp; Procurement</strong></td><td>Products, Low Stock Alerts, Stock Adjustments, Vendors, Catalog</td></tr>
+          <tr><td><strong>People &amp; System</strong></td><td>System Users, HR, Audit Trail, QR Codes, FBR</td></tr>
+        </tbody>
+      </table>
+      <div class="tip"><span class="tip-icon">💡</span> The purple banner at the top of Business Intelligence opens the AI-powered Predictive Analysis Dashboard — your most powerful management tool.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="system-users">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#2c3e50;color:#fff">Admin Only</span>
+      <span class="screen-title">System Users</span>
+      <span class="screen-url">/admin/users</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Create, edit and deactivate user accounts. Assign roles to control who can access what.</div>
+      <h3 class="sub-heading">Available Actions</h3>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Username</td><td><span class="field-req req">Required</span></td><td>Unique login name for the user (no spaces)</td></tr>
+          <tr><td class="field-name">Full Name</td><td><span class="field-req req">Required</span></td><td>Display name shown throughout the system</td></tr>
+          <tr><td class="field-name">Email</td><td><span class="field-req req">Required</span></td><td>Used for password reset emails</td></tr>
+          <tr><td class="field-name">Password</td><td><span class="field-req req">Required</span></td><td>Minimum 6 characters. User should change on first login</td></tr>
+          <tr><td class="field-name">Role</td><td><span class="field-req req">Required</span></td><td>admin / cashier / sales_person / procurement_manager</td></tr>
+        </tbody>
+      </table>
+      <div class="tip warn"><span class="tip-icon">⚠️</span> Deleting a user does not delete their sales history. Historical records are preserved.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="audit">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#2c3e50;color:#fff">Admin Only</span>
+      <span class="screen-title">Audit Trail</span>
+      <span class="screen-url">/audit-log</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">A timestamped log of every important action taken in the system — who did what and when. Use this to investigate discrepancies, track changes, and maintain accountability.</div>
+      <div class="tip"><span class="tip-icon">💡</span> The audit trail cannot be deleted or edited, even by admins. This ensures data integrity.</div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════ 3. POS TERMINAL ════════════════ -->
+<div class="module" id="pos-terminal">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#1e8449,#27ae60)">🛒</div>
+    <div>
+      <div class="module-title">3. Point of Sale (POS)</div>
+      <div class="module-sub">The cashier counter — scan, sell, collect payment</div>
+    </div>
+  </div>
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#27ae60;color:#fff">Cashier</span>
+      <span class="screen-title">POS Terminal</span>
+      <span class="screen-url">/</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">The main cashier screen. This is where every sale happens. Scan or search for products, apply discounts, collect payment and print receipts.</div>
+      <h3 class="sub-heading">How to Complete a Sale</h3>
+      <ol class="steps">
+        <li><strong>Start Shift</strong> — A shift must be open before selling. The system will prompt you if no shift is active.</li>
+        <li><strong>Add Products</strong> — Scan a barcode with a scanner or type the product name in the search box and press Enter.</li>
+        <li><strong>Adjust Quantities</strong> — Click the + / − buttons on each item or type the quantity directly.</li>
+        <li><strong>Apply Discounts</strong> — Use the cart discount field for a percentage off the total, or enter a promo code.</li>
+        <li><strong>Select Customer</strong> (optional) — Search for a registered customer to earn loyalty points.</li>
+        <li><strong>Choose Payment Method</strong> — Cash, Card, UBL, Meezan, EasyPaisa or split payment.</li>
+        <li><strong>Enter Amount Tendered</strong> — System calculates change automatically for cash payments.</li>
+        <li><strong>Click CHARGE</strong> — Receipt is generated. Inventory is updated instantly.</li>
+      </ol>
+      <table class="field-table" style="margin-top:14px">
+        <thead><tr><th>Payment Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Cash</strong></td><td>Enter amount tendered, system shows change due</td></tr>
+          <tr><td><strong>Card</strong></td><td>Debit/Credit card payment (no change)</td></tr>
+          <tr><td><strong>UBL / Meezan</strong></td><td>Bank transfer payment</td></tr>
+          <tr><td><strong>EasyPaisa / JazzCash</strong></td><td>Mobile wallet payment</td></tr>
+          <tr><td><strong>Split</strong></td><td>Customer pays with multiple methods (e.g. half cash, half card)</td></tr>
+          <tr><td><strong>Credit / Account</strong></td><td>Sale recorded as owed — goes to Credit Sales AR</td></tr>
+        </tbody>
+      </table>
+      <div class="tip warn"><span class="tip-icon">⚠️</span> You cannot sell a product that has zero stock. The system will block the sale and show an alert.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="shifts">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#27ae60;color:#fff">Cashier</span>
+      <span class="screen-title">Shift Management</span>
+      <span class="screen-url">/pos/shifts</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Shifts track all sales made by a cashier during their working period. Each shift records the opening and closing float, total sales, and payment breakdown.</div>
+      <ol class="steps">
+        <li>Click <strong>Open Shift</strong> and enter the opening cash float amount</li>
+        <li>Process sales during the shift as normal</li>
+        <li>At end of shift, click <strong>Close Shift</strong> and enter the closing cash count</li>
+        <li>System shows the expected vs actual cash — any difference is flagged</li>
+        <li>Print the Z-Report for a complete shift summary</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="screen" id="returns">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#e74c3c;color:#fff">Cashier</span>
+      <span class="screen-title">Sales Returns</span>
+      <span class="screen-url">/pos/returns</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Process a refund when a customer returns goods. The system reverses the sale and restores inventory.</div>
+      <ol class="steps">
+        <li>Search for the original sale by receipt number or date</li>
+        <li>Select the items being returned and the quantity</li>
+        <li>Enter the return reason (e.g. defective, wrong item, customer changed mind)</li>
+        <li>Select refund method (cash or reverse to original payment)</li>
+        <li>Click <strong>Process Return</strong> — stock is restored, refund is recorded</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="screen" id="credit-sales">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#f39c12;color:#fff">Admin / Sales</span>
+      <span class="screen-title">Credit Sales (Accounts Receivable)</span>
+      <span class="screen-url">/credit-sales</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">View and manage all sales that were made on credit (payment deferred). Track outstanding balances per customer and record payments when received.</div>
+      <div class="tip"><span class="tip-icon">💡</span> Always link credit sales to a registered customer so you can track who owes what. Walk-in credit sales should be avoided.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="customers">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#3498db;color:#fff">Cashier / Admin</span>
+      <span class="screen-title">Customers &amp; Loyalty</span>
+      <span class="screen-url">/pos/customers</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Manage your customer database. Registered customers earn loyalty points on every purchase and can redeem them for discounts on future sales.</div>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Required</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Name</td><td><span class="field-req req">Required</span></td><td>Customer full name</td></tr>
+          <tr><td class="field-name">Phone</td><td><span class="field-req req">Required</span></td><td>Used for lookup at the counter</td></tr>
+          <tr><td class="field-name">Email</td><td><span class="field-req opt">Optional</span></td><td>For receipts and promotions</td></tr>
+          <tr><td class="field-name">Loyalty Points</td><td><span class="field-req auto">Auto</span></td><td>Earned automatically on each purchase</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="screen" id="z-report">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#2c3e50;color:#fff">Admin / Cashier</span>
+      <span class="screen-title">Z-Report (End of Day Report)</span>
+      <span class="screen-url">/z-report</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">The Z-Report is the official end-of-day report. It shows total sales, payment method breakdown, discounts given, taxes collected, number of transactions, and cashier performance for the selected shift or date. Print this for daily accounting records.</div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════ 4. PRODUCTS ════════════════ -->
+<div class="module" id="products">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)">📦</div>
+    <div>
+      <div class="module-title">4. Products &amp; Inventory</div>
+      <div class="module-sub">Manage your product catalogue, stock levels, QR codes and promotions</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#3498db;color:#fff">Admin / Procurement</span>
+      <span class="screen-title">Products</span>
+      <span class="screen-url">/products</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">The master product catalogue. Add, edit and manage every product sold in the store. Products added here are immediately searchable at the POS counter.</div>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Product Name</td><td><span class="field-req req">Required</span></td><td>Full product name as displayed at counter and on receipts</td></tr>
+          <tr><td class="field-name">Barcode</td><td><span class="field-req opt">Optional</span></td><td>EAN/UPC barcode — scan at counter or enter manually</td></tr>
+          <tr><td class="field-name">Category</td><td><span class="field-req opt">Optional</span></td><td>Used for filtering and reports (e.g. Beverages, Dairy)</td></tr>
+          <tr><td class="field-name">Supplier</td><td><span class="field-req opt">Optional</span></td><td>Vendor name linked to this product</td></tr>
+          <tr><td class="field-name">Selling Price (PKR)</td><td><span class="field-req req">Required</span></td><td>Price charged to customer at counter</td></tr>
+          <tr><td class="field-name">Cost Price (PKR)</td><td><span class="field-req opt">Optional</span></td><td>What you paid to buy it — used for profit calculation</td></tr>
+          <tr><td class="field-name">MRP</td><td><span class="field-req opt">Optional</span></td><td>Maximum Retail Price printed on the package</td></tr>
+          <tr><td class="field-name">Stock</td><td><span class="field-req req">Required</span></td><td>Current quantity in stock</td></tr>
+          <tr><td class="field-name">Reorder Level</td><td><span class="field-req opt">Optional</span></td><td>When stock falls to this level, Reorder Alert report flags it</td></tr>
+          <tr><td class="field-name">Expiry Date</td><td><span class="field-req opt">Optional</span></td><td>For perishable goods — tracked in Expiry Report</td></tr>
+          <tr><td class="field-name">Discount %</td><td><span class="field-req opt">Optional</span></td><td>Permanent product-level discount applied at POS automatically</td></tr>
+        </tbody>
+      </table>
+      <div class="tip"><span class="tip-icon">💡</span> You can bulk-import products using the Excel import template. Download it from the Products page.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="stock-adj">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#e67e22;color:#fff">Admin / Procurement</span>
+      <span class="screen-title">Stock Adjustments</span>
+      <span class="screen-url">/inventory/adjustments</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Manually correct stock levels when there is a discrepancy due to damage, theft, counting errors, or spoilage. Every adjustment is logged with a reason and timestamp for audit purposes.</div>
+      <table class="field-table">
+        <thead><tr><th>Adjustment Type</th><th>When to Use</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Add Stock</strong></td><td>Goods received without a PO (e.g. direct delivery, donation)</td></tr>
+          <tr><td><strong>Remove Stock</strong></td><td>Damaged goods, spoilage, theft, expired products</td></tr>
+          <tr><td><strong>Count Correction</strong></td><td>After a physical stock count — set stock to actual counted quantity</td></tr>
+        </tbody>
+      </table>
+      <div class="tip danger"><span class="tip-icon">🔴</span> Every adjustment reduces or increases stock immediately. Always enter a clear reason as this appears in the Audit Trail.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="bundles">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#9b59b6;color:#fff">Admin</span>
+      <span class="screen-title">Bundles &amp; Promotions</span>
+      <span class="screen-url">/bundles</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Create product bundles and promotional packages. A bundle groups multiple products together at a special combined price (e.g. "Family Pack — 3 items for PKR 500"). Bundles appear as a single line item at the POS counter.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="qr">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#16a085;color:#fff">Admin</span>
+      <span class="screen-title">QR Code Generator</span>
+      <span class="screen-url">/procurement/qr</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Generate and print QR codes for products. Customers can scan QR codes to view product details and pricing. Also useful for shelf labels. Select products and print a sheet of labels.</div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════ 5. PROCUREMENT ════════════════ -->
+<div class="module" id="vendors">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#5c6bc0,#3949ab)">🚚</div>
+    <div>
+      <div class="module-title">5. Procurement</div>
+      <div class="module-sub">Vendors, purchase orders, deliveries, invoices and payments</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#5c6bc0;color:#fff">Procurement</span>
+      <span class="screen-title">Vendors</span>
+      <span class="screen-url">/procurement/vendors</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Manage your supplier database. Every vendor you buy from should be registered here before creating a purchase order.</div>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Required</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Vendor Name</td><td><span class="field-req req">Required</span></td><td>Official company name</td></tr>
+          <tr><td class="field-name">Contact Person</td><td><span class="field-req opt">Optional</span></td><td>Sales rep name at the vendor</td></tr>
+          <tr><td class="field-name">Phone / Email</td><td><span class="field-req opt">Optional</span></td><td>For ordering and communication</td></tr>
+          <tr><td class="field-name">Payment Terms</td><td><span class="field-req opt">Optional</span></td><td>e.g. Net 30, Net 60 — used for invoice aging</td></tr>
+          <tr><td class="field-name">NTN / STRN</td><td><span class="field-req opt">Optional</span></td><td>Tax numbers for FBR compliance</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="screen" id="pr">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#5c6bc0;color:#fff">Procurement</span>
+      <span class="screen-title">Purchase Requisitions (PR)</span>
+      <span class="screen-url">/procurement/pr</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">A Purchase Requisition is an internal request to buy something. It starts the procurement process. A PR is raised by the store team and then approved by management to become a Purchase Order.</div>
+      <ol class="steps">
+        <li>Click <strong>New Requisition</strong></li>
+        <li>Select the vendor and add the products needed with quantities</li>
+        <li>Submit the PR — it shows as <strong>Pending</strong></li>
+        <li>Manager approves it → it becomes a <strong>Purchase Order</strong></li>
+      </ol>
+      <div class="tip"><span class="tip-icon">💡</span> PRs create a paper trail. Never skip this step even for urgent purchases — it protects the business.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="po">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#5c6bc0;color:#fff">Procurement</span>
+      <span class="screen-title">Purchase Orders (PO)</span>
+      <span class="screen-url">/procurement/po</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">A Purchase Order is the official buying document sent to the vendor. It confirms the items, quantities and agreed price. The PO status tracks the delivery lifecycle.</div>
+      <table class="field-table">
+        <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Draft</strong></td><td>Created but not yet sent to vendor</td></tr>
+          <tr><td><strong>Approved</strong></td><td>Management approved — sent to vendor</td></tr>
+          <tr><td><strong>Partially Received</strong></td><td>Some items arrived, waiting for the rest</td></tr>
+          <tr><td><strong>Received</strong></td><td>All items delivered and checked in via Goods Receipt</td></tr>
+          <tr><td><strong>Cancelled</strong></td><td>Order was cancelled</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="screen" id="gr">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#5c6bc0;color:#fff">Procurement</span>
+      <span class="screen-title">Goods Receipt (GR)</span>
+      <span class="screen-url">/procurement/gr</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">When a delivery arrives at the store, record it here. The Goods Receipt confirms what was actually received against the Purchase Order. Stock is added to inventory automatically on GR creation.</div>
+      <ol class="steps">
+        <li>Select the Purchase Order the delivery is for</li>
+        <li>Enter the actual quantities received per item (may differ from ordered)</li>
+        <li>Note any damaged or missing items</li>
+        <li>Click <strong>Save GR</strong> — stock is updated immediately</li>
+        <li>A Vendor Invoice is generated automatically for billing</li>
+      </ol>
+      <div class="tip danger"><span class="tip-icon">🔴</span> Only create a GR when goods are physically in the warehouse. Never GR before delivery — this inflates stock incorrectly.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="invoices">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#5c6bc0;color:#fff">Procurement</span>
+      <span class="screen-title">Vendor Invoices</span>
+      <span class="screen-url">/procurement/invoices</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">All invoices received from vendors. Invoices are auto-created from Goods Receipts. Track payment status, due dates and outstanding amounts here. This is your Accounts Payable record.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="proc-payments">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#5c6bc0;color:#fff">Procurement</span>
+      <span class="screen-title">Vendor Payments</span>
+      <span class="screen-url">/procurement/payments</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Record payments made to vendors against their invoices. Select the invoice, enter the amount paid and payment method. The invoice status updates to Paid or Partial automatically.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="catalog">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#5c6bc0;color:#fff">Procurement</span>
+      <span class="screen-title">Product Catalog</span>
+      <span class="screen-url">/procurement/catalog</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">A vendor-linked product catalog for procurement. Link products to specific vendors with vendor pricing and lead times. Makes creating purchase orders faster as products are pre-associated with their suppliers.</div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════ 6. FINANCE ════════════════ -->
+<div class="module" id="finance-dash">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#d68910,#f39c12)">💰</div>
+    <div>
+      <div class="module-title">6. Finance</div>
+      <div class="module-sub">Chart of accounts, journal entries, general ledger and financial overview</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#d68910;color:#fff">Admin</span>
+      <span class="screen-title">Finance Dashboard</span>
+      <span class="screen-url">/finance</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">A real-time financial summary showing total revenue, expenses, net profit, and key financial ratios. Includes charts for revenue trends, expense breakdown, and monthly profit. This is the first screen managers check for financial health.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="coa">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#d68910;color:#fff">Admin</span>
+      <span class="screen-title">Chart of Accounts (COA)</span>
+      <span class="screen-url">/finance/coa</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">The master list of all financial accounts used in the business (e.g. Cash, Sales Revenue, Cost of Goods Sold, Payroll). The system comes with standard accounts pre-configured. Add custom accounts if needed.</div>
+      <table class="field-table">
+        <thead><tr><th>Account Type</th><th>Examples</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Assets</strong></td><td>Cash, Bank, Inventory, Receivables</td></tr>
+          <tr><td><strong>Liabilities</strong></td><td>Accounts Payable, Loans</td></tr>
+          <tr><td><strong>Equity</strong></td><td>Owner's Capital, Retained Earnings</td></tr>
+          <tr><td><strong>Revenue</strong></td><td>Sales Revenue, Other Income</td></tr>
+          <tr><td><strong>Expenses</strong></td><td>Cost of Goods Sold, Payroll, Rent</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="screen" id="journal">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#d68910;color:#fff">Admin</span>
+      <span class="screen-title">Journal Entries</span>
+      <span class="screen-url">/finance/journal</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">View all financial journal entries. Sales, purchases and payroll are posted automatically. Manual journal entries can be made here for adjustments (e.g. depreciation, accruals, corrections).</div>
+      <div class="tip"><span class="tip-icon">💡</span> Every sale creates a journal entry automatically: Debit Cash, Credit Sales Revenue. You don't need to post these manually.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="gl">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#d68910;color:#fff">Admin</span>
+      <span class="screen-title">General Ledger</span>
+      <span class="screen-url">/finance/gl</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">A complete transaction-by-transaction record for each account. Select any account from the COA to see every debit and credit posted to it, with running balances. Used for month-end reconciliation.</div>
+    </div>
+  </div>
+
+  <div class="screen" id="payments">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#d68910;color:#fff">Admin</span>
+      <span class="screen-title">Payments</span>
+      <span class="screen-url">/payments</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Record and view all outgoing and incoming payments: vendor payments, utility bills, rent, salaries and other business expenses. Keeps cash flow records accurate.</div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════ 7. HR ════════════════ -->
+<div class="module" id="hr">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#0e6655,#16a085)">👥</div>
+    <div>
+      <div class="module-title">7. HR &amp; Payroll</div>
+      <div class="module-sub">Employee management and monthly salary processing</div>
+    </div>
+  </div>
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#16a085;color:#fff">Admin</span>
+      <span class="screen-title">HR Dashboard</span>
+      <span class="screen-url">/hr</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Manage your workforce. Add employees, record their salary structure, track departments and process monthly payroll.</div>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Required</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">Employee Name</td><td><span class="field-req req">Required</span></td><td>Full legal name</td></tr>
+          <tr><td class="field-name">Employee ID</td><td><span class="field-req auto">Auto</span></td><td>Auto-generated (EMP-001, EMP-002…)</td></tr>
+          <tr><td class="field-name">Department</td><td><span class="field-req req">Required</span></td><td>e.g. Sales, Procurement, Finance</td></tr>
+          <tr><td class="field-name">Basic Salary (PKR)</td><td><span class="field-req req">Required</span></td><td>Monthly base salary</td></tr>
+          <tr><td class="field-name">Allowances</td><td><span class="field-req opt">Optional</span></td><td>Housing, transport allowances</td></tr>
+          <tr><td class="field-name">Deductions</td><td><span class="field-req opt">Optional</span></td><td>Tax, EOBI, loan repayments</td></tr>
+        </tbody>
+      </table>
+      <div class="tip"><span class="tip-icon">💡</span> Payroll entries are posted to the Finance GL automatically when processed, creating proper accounting records.</div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════ 8. REPORTS ════════════════ -->
+<div class="module" id="reports">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#8e44ad,#9b59b6)">📊</div>
+    <div>
+      <div class="module-title">8. Reports Center</div>
+      <div class="module-sub">16 business reports — view, filter, print and export to real Excel (.xlsx)</div>
+    </div>
+  </div>
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#9b59b6;color:#fff">Admin / Procurement</span>
+      <span class="screen-title">Reports Center</span>
+      <span class="screen-url">/reports</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">All reports are organized into 5 sections. Every report can be viewed on screen with live filters, or downloaded as a real Excel (.xlsx) file. KPI summary cards at the top of each report give instant insight.</div>
+      <table class="field-table">
+        <thead><tr><th>Section</th><th>Reports Available</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Sales</strong></td>
+            <td>Sales Report, Sales by Product, Sales Returns, Credit Sales (AR)</td>
+          </tr>
+          <tr>
+            <td><strong>Inventory</strong></td>
+            <td>Stock Report, Stock Valuation, Reorder Alert, Expiry Report, Slow Moving Items, Price List</td>
+          </tr>
+          <tr>
+            <td><strong>Procurement</strong></td>
+            <td>Purchase Orders Report, Vendor Payments, Invoice Aging</td>
+          </tr>
+          <tr>
+            <td><strong>Finance</strong></td>
+            <td>Profit &amp; Loss (monthly, last 24 months)</td>
+          </tr>
+          <tr>
+            <td><strong>HR</strong></td>
+            <td>Payroll Summary, Daily Products Added</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="tip"><span class="tip-icon">💡</span> Each report viewer has a <strong>Search</strong> bar to filter results on screen, a <strong>Print</strong> button for clean printouts, and an <strong>Excel Download</strong> button for real .xlsx files.</div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════ 9. PREDICTIVE AI ════════════════ -->
+<div class="module" id="predictive">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#4c1d95,#7c3aed)">🤖</div>
+    <div>
+      <div class="module-title">9. Predictive Analysis — AI Dashboard</div>
+      <div class="module-sub">AI-powered forecasts, KPI health scores and business insights</div>
+    </div>
+  </div>
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#7c3aed;color:#fff">Admin Only</span>
+      <span class="screen-title">Predictive Analysis Overview</span>
+      <span class="screen-url">/admin/predictive</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">The most powerful management tool in the system. Uses all your historical data to predict where the business is heading and gives actionable insights.</div>
+      <table class="field-table">
+        <thead><tr><th>Tab</th><th>What It Shows</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Overview</strong></td><td>Business Health Score (0–100), revenue forecast, profit chart, AI Insight cards</td></tr>
+          <tr><td><strong>Sales</strong></td><td>6-month revenue forecast, top products, payment method trends, avg transaction value</td></tr>
+          <tr><td><strong>Procurement</strong></td><td>PO value forecast, PR→PO→GR funnel, vendor spend analysis</td></tr>
+          <tr><td><strong>Finance</strong></td><td>Revenue vs expenses, profit margin trends, 6-month profit forecast</td></tr>
+          <tr><td><strong>Vendors</strong></td><td>Vendor reliability scores, overdue invoices, spend vs payment comparison</td></tr>
+        </tbody>
+      </table>
+      <div class="tip"><span class="tip-icon">💡</span> The AI uses linear regression on your historical data — no internet or external API required. All predictions are calculated from your actual business data.</div>
+      <div class="tip"><span class="tip-icon">💡</span> Check the colored Insight cards at the bottom of each page — <span style="color:#27ae60">green = good</span>, <span style="color:#e67e22">orange = caution</span>, <span style="color:#e74c3c">red = action needed</span>.</div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════ 10. FBR ════════════════ -->
+<div class="module" id="fbr">
+  <div class="module-header">
+    <div class="module-icon" style="background:linear-gradient(135deg,#1e3a5f,#2c3e50)">🏛️</div>
+    <div>
+      <div class="module-title">10. FBR Integration</div>
+      <div class="module-sub">Federal Board of Revenue tax compliance</div>
+    </div>
+  </div>
+  <div class="screen">
+    <div class="screen-header">
+      <span class="screen-badge" style="background:#2c3e50;color:#fff">Admin Only</span>
+      <span class="screen-title">FBR Dashboard</span>
+      <span class="screen-url">/fbr</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-desc">Manages FBR (Pakistan Federal Board of Revenue) tax integration. Tracks sales tax collected, generates FBR-compliant reports and manages NTN/STRN numbers for the business and its vendors. Required for businesses registered with FBR under the Point of Sale Integration scheme.</div>
+      <div class="tip warn"><span class="tip-icon">⚠️</span> FBR integration settings should only be changed by the Admin in consultation with your tax advisor. Incorrect settings can cause compliance issues.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .page -->
+
+<div class="doc-footer">
+  POS System — User Guide v1.0 &nbsp;|&nbsp; All rights reserved &nbsp;|&nbsp; For internal use only
+</div>
+
+</body>
+</html>

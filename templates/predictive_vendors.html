@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predictive Analysis - Vendors</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f8;min-height:100vh}
+.nav{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:0 24px;display:flex;justify-content:space-between;align-items:center;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.nav-brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700}
+.nav-brand i{color:#a78bfa;font-size:22px}
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:13px}
+.role-badge{background:rgba(167,139,250,.25);padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.btn-logout{background:rgba(239,68,68,.8);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px}
+.pred-tabs{background:#fff;border-bottom:2px solid #e5e7eb;display:flex;gap:0;padding:0 24px;overflow-x:auto}
+.pred-tab{padding:14px 20px;font-size:13px;font-weight:600;color:#6b7280;text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px;transition:all .2s}
+.pred-tab:hover{color:#06b6d4;background:#ecfeff}
+.pred-tab.active{color:#0891b2;border-bottom-color:#0891b2}
+.container{max-width:1300px;margin:0 auto;padding:24px}
+.page-title{font-size:22px;font-weight:800;color:#164e63;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.page-title i{color:#0891b2}
+.page-sub{color:#6b7280;font-size:13px;margin-bottom:24px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;align-items:center;gap:14px}
+.kpi-icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;flex-shrink:0}
+.kpi-val{font-size:19px;font-weight:800;color:#164e63;line-height:1.1}
+.kpi-lbl{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+.kpi-sub{font-size:11px;margin-top:3px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.chart-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:13px;font-weight:700;color:#164e63;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.chart-title i{color:#0891b2}
+.chart-sub{font-size:11px;color:#9ca3af;margin-left:auto}
+canvas{max-height:280px}
+/* Vendor cards grid */
+.vendor-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px}
+.vendor-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-top:4px solid}
+.vc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.vc-name{font-size:14px;font-weight:700;color:#164e63}
+.score-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.score-hi{background:#d1fae5;color:#065f46}
+.score-mid{background:#fef3c7;color:#92400e}
+.score-low{background:#fee2e2;color:#991b1b}
+.vc-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.vc-stat{background:#f8fafc;border-radius:8px;padding:8px 10px}
+.vc-stat-val{font-size:14px;font-weight:800;color:#164e63}
+.vc-stat-lbl{font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.3px}
+.score-bar-wrap{background:#e5e7eb;border-radius:4px;height:6px;margin-top:10px}
+.score-bar{height:100%;border-radius:4px;transition:width .5s}
+.overdue-tag{background:#fee2e2;color:#991b1b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px}
+/* Vendor table */
+.vendor-table{width:100%;border-collapse:collapse;font-size:13px}
+.vendor-table th{background:#f8fafc;padding:10px 14px;text-align:left;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e5e7eb}
+.vendor-table td{padding:11px 14px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+.vendor-table tr:hover td{background:#f8fafc}
+.score-pill{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.insights-title{font-size:16px;font-weight:800;color:#164e63;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.insights-title i{color:#0891b2}
+.insight-card{border-radius:10px;padding:16px 20px;display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;border-left:4px solid}
+.insight-card.success{background:#f0fdf4;border-color:#10b981}
+.insight-card.warning{background:#fffbeb;border-color:#f59e0b}
+.insight-card.danger{background:#fef2f2;border-color:#ef4444}
+.insight-card.info{background:#eff6ff;border-color:#3b82f6}
+.insight-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.insight-card.success .insight-icon{background:#d1fae5;color:#065f46}
+.insight-card.warning .insight-icon{background:#fef3c7;color:#92400e}
+.insight-card.danger .insight-icon{background:#fee2e2;color:#991b1b}
+.insight-card.info .insight-icon{background:#dbeafe;color:#1e40af}
+.insight-title{font-size:13px;font-weight:700;color:#1e1b4b;margin-bottom:3px}
+.insight-msg{font-size:12px;color:#4b5563;line-height:1.5}
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr}.kpi-grid{grid-template-columns:1fr 1fr}.vendor-cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-brand"><i class="fas fa-brain"></i><span>POS System — Predictive Analysis</span></div>
+  <div class="nav-right">
+    <div class="nav-user"><i class="fas fa-user-circle" style="font-size:20px"></i><span>Admin</span><span class="role-badge">Admin</span></div>
+    <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+<div class="pred-tabs">
+  <a href="/admin/predictive" class="pred-tab"><i class="fas fa-globe"></i> Overview</a>
+  <a href="/admin/predictive/sales" class="pred-tab"><i class="fas fa-chart-line"></i> Sales</a>
+  <a href="/admin/predictive/procurement" class="pred-tab"><i class="fas fa-truck-loading"></i> Procurement</a>
+  <a href="/admin/predictive/finance" class="pred-tab"><i class="fas fa-coins"></i> Finance</a>
+  <a href="/admin/predictive/vendors" class="pred-tab active"><i class="fas fa-handshake"></i> Vendors</a>
+</div>
+<div class="container">
+  <div class="page-title"><i class="fas fa-handshake"></i> Vendor Predictive Analysis</div>
+  <div class="page-sub">Vendor reliability scores, spend distribution, overdue invoices, and strategic recommendations</div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#0891b2,#22d3ee)"><i class="fas fa-building"></i></div>
+      <div><div class="kpi-val" id="kpiVendors">—</div><div class="kpi-lbl">Active Vendors</div><div class="kpi-sub" style="color:#0891b2">In last 12 months</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"><i class="fas fa-coins"></i></div>
+      <div><div class="kpi-val" id="kpiSpend">—</div><div class="kpi-lbl">Total Vendor Spend</div><div class="kpi-sub" style="color:#7c3aed">Last 12 months</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#10b981,#34d399)"><i class="fas fa-star"></i></div>
+      <div><div class="kpi-val" id="kpiAvgScore">—</div><div class="kpi-lbl">Avg Reliability Score</div><div class="kpi-sub" id="kpiScoreLabel">—</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:linear-gradient(135deg,#ef4444,#f87171)"><i class="fas fa-clock"></i></div>
+      <div><div class="kpi-val" id="kpiOverdue">—</div><div class="kpi-lbl">Vendors w/ Overdue</div><div class="kpi-sub" style="color:#ef4444">Needs attention</div></div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title"><i class="fas fa-chart-pie"></i> Vendor Spend Distribution</div>
+      <canvas id="spendPieChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><i class="fas fa-star"></i> Vendor Reliability Scores</div>
+      <canvas id="scoreChart"></canvas>
+    </div>
+    <div class="chart-card full">
+      <div class="chart-title"><i class="fas fa-chart-bar"></i> Top Vendors — Spend vs Paid Amount</div>
+      <canvas id="spendVsPaidChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Vendor Score Cards -->
+  <div style="margin-bottom:20px">
+    <div class="chart-title" style="margin-bottom:14px"><i class="fas fa-id-card" style="color:#0891b2"></i> <span style="font-size:14px;font-weight:700;color:#164e63">Vendor Score Cards</span></div>
+    <div class="vendor-cards" id="vendorCards"></div>
+  </div>
+
+  <!-- Vendor Detail Table -->
+  <div class="chart-card" style="margin-bottom:24px">
+    <div class="chart-title"><i class="fas fa-table"></i> Full Vendor Analysis Table</div>
+    <div style="overflow-x:auto">
+      <table class="vendor-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Vendor</th><th>Total Spend</th><th>POs</th>
+            <th>Invoices</th><th>Paid Amount</th><th>Overdue</th><th>Reliability</th>
+          </tr>
+        </thead>
+        <tbody id="vendorTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="insights-title"><i class="fas fa-robot"></i> AI Vendor Insights & Action Plan</div>
+    <div id="insightsContainer"></div>
+  </div>
+</div>
+
+<script>
+const fmt  = v => 'PKR ' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fmtK = v => { v=parseFloat(v||0); if(v>=1000000) return 'PKR '+(v/1000000).toFixed(1)+'M'; if(v>=1000) return 'PKR '+(v/1000).toFixed(1)+'K'; return 'PKR '+v.toFixed(0); };
+let spendPieChart, scoreChart, spendVsPaidChart;
+
+async function handleLogout() {
+  await fetch('/api/auth/logout',{method:'POST'});
+  window.location.href='/login';
+}
+
+function buildInsights(recs) {
+  document.getElementById('insightsContainer').innerHTML = recs.map(r=>`
+    <div class="insight-card ${r.level}">
+      <div class="insight-icon"><i class="fas ${r.icon}"></i></div>
+      <div><div class="insight-title">${r.title}</div><div class="insight-msg">${r.message}</div></div>
+    </div>`).join('');
+}
+
+function scoreClass(s) { return s>=80?'score-hi':s>=60?'score-mid':'score-low'; }
+function scoreColor(s) { return s>=80?'#10b981':s>=60?'#f59e0b':'#ef4444'; }
+function scoreBorderColor(s) { return s>=80?'#10b981':s>=60?'#f59e0b':'#ef4444'; }
+function scoreLabel(s) { return s>=80?'Reliable':s>=60?'Average':'At Risk'; }
+
+function buildVendorCards(vendors) {
+  document.getElementById('vendorCards').innerHTML = vendors.map(v => `
+    <div class="vendor-card" style="border-top-color:${scoreBorderColor(v.score)}">
+      <div class="vc-header">
+        <div class="vc-name"><i class="fas fa-building" style="color:${scoreColor(v.score)};margin-right:6px"></i>${v.name}</div>
+        <div>
+          <span class="score-badge ${scoreClass(v.score)}">${scoreLabel(v.score)}: ${v.score}/100</span>
+          ${v.overdue > 0 ? `<span class="overdue-tag" style="margin-left:4px">${v.overdue} Overdue</span>` : ''}
+        </div>
+      </div>
+      <div class="vc-stats">
+        <div class="vc-stat"><div class="vc-stat-val">${fmtK(v.spend)}</div><div class="vc-stat-lbl">Total Spend</div></div>
+        <div class="vc-stat"><div class="vc-stat-val">${v.pos}</div><div class="vc-stat-lbl">Purchase Orders</div></div>
+        <div class="vc-stat"><div class="vc-stat-val">${v.invoices}</div><div class="vc-stat-lbl">Invoices</div></div>
+        <div class="vc-stat"><div class="vc-stat-val">${fmtK(v.paid)}</div><div class="vc-stat-lbl">Amount Paid</div></div>
+      </div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:4px">Reliability Score</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar" style="width:${v.score}%;background:${scoreColor(v.score)}"></div>
+      </div>
+    </div>`).join('');
+}
+
+async function loadData() {
+  try {
+    const d = await fetch('/api/predictive/vendors').then(r=>r.json());
+    if(d.error){window.location.href='/login';return;}
+    const k = d.kpis;
+
+    document.getElementById('kpiVendors').textContent   = k.total_vendors;
+    document.getElementById('kpiSpend').textContent     = fmtK(k.total_spend);
+    document.getElementById('kpiAvgScore').textContent  = k.avg_score + '/100';
+    document.getElementById('kpiAvgScore').style.color  = scoreColor(k.avg_score);
+    document.getElementById('kpiScoreLabel').innerHTML  = `<span style="color:${scoreColor(k.avg_score)};font-weight:700">${scoreLabel(k.avg_score)}</span>`;
+    document.getElementById('kpiOverdue').textContent   = k.overdue_count;
+
+    buildInsights(d.recommendations);
+    buildVendorCards(d.vendors);
+
+    // Spend pie
+    const vColors = ['#0891b2','#7c3aed','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#d97706','#6b7280','#ec4899'];
+    if(spendPieChart) spendPieChart.destroy();
+    spendPieChart = new Chart(document.getElementById('spendPieChart'), {
+      type:'doughnut',
+      data:{labels:d.vendors.map(v=>v.name), datasets:[{data:d.vendors.map(v=>v.spend),backgroundColor:vColors.slice(0,d.vendors.length),borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,cutout:'62%',plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.parsed)}`}}}}
+    });
+
+    // Reliability score bar chart
+    if(scoreChart) scoreChart.destroy();
+    scoreChart = new Chart(document.getElementById('scoreChart'), {
+      type:'bar',
+      data:{labels:d.vendors.map(v=>v.name.length>12?v.name.slice(0,12)+'…':v.name),
+            datasets:[
+              {label:'Reliability Score',data:d.vendors.map(v=>v.score),backgroundColor:d.vendors.map(v=>scoreColor(v.score)+'cc'),borderRadius:5},
+              {label:'Target (80)',data:new Array(d.vendors.length).fill(80),type:'line',borderColor:'#9ca3af',borderDash:[4,4],pointRadius:0,borderWidth:1.5},
+            ]},
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11}}},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?`Score: ${ctx.parsed.y}/100`:`Target: ${ctx.parsed.y}`}}},
+        scales:{y:{min:0,max:100,ticks:{callback:v=>v+'/100'},grid:{color:'#f3f4f6'}},x:{grid:{display:false},ticks:{font:{size:10}}}}
+      }
+    });
+
+    // Spend vs Paid
+    if(spendVsPaidChart) spendVsPaidChart.destroy();
+    spendVsPaidChart = new Chart(document.getElementById('spendVsPaidChart'), {
+      type:'bar',
+      data:{labels:d.vendors.map(v=>v.name),
+            datasets:[
+              {label:'Total Spend (POs)',data:d.vendors.map(v=>v.spend),backgroundColor:'rgba(8,145,178,.7)',borderRadius:4},
+              {label:'Amount Paid',data:d.vendors.map(v=>v.paid),backgroundColor:'rgba(16,185,129,.7)',borderRadius:4},
+            ]},
+      options:{responsive:true,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{position:'bottom',labels:{font:{size:11}}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`}}},
+        scales:{x:{grid:{display:false},ticks:{maxRotation:30,font:{size:11}}},y:{ticks:{callback:v=>fmtK(v)},grid:{color:'#f3f4f6'}}}
+      }
+    });
+
+    // Vendor table
+    document.getElementById('vendorTable').innerHTML = d.vendors.map((v,i) => `
+      <tr>
+        <td style="font-weight:700;color:#0891b2">#${i+1}</td>
+        <td style="font-weight:600">${v.name}</td>
+        <td>${fmt(v.spend)}</td>
+        <td>${v.pos}</td>
+        <td>${v.invoices}</td>
+        <td>${fmt(v.paid)}</td>
+        <td>${v.overdue > 0 ? `<span class="overdue-tag">${v.overdue} overdue</span>` : '<span style="color:#10b981;font-weight:600">None</span>'}</td>
+        <td><span class="score-pill ${scoreClass(v.score)}">${v.score}/100 — ${scoreLabel(v.score)}</span></td>
+      </tr>`).join('');
+
+  } catch(e){console.error(e);}
+}
+loadData();
+</script>
+</body>
+</html>

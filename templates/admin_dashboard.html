@@ -190,48 +190,121 @@ tr:hover td{background:#fafafa}
     </div>
   </div>
 
-  <!-- Today's Stats (kept for quick-access links) -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:28px">
-    <div class="stat-card">
-      <div class="stat-icon" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-cash-register"></i></div>
-      <div><div class="stat-num" id="kSales">—</div><div class="stat-lbl">Today's Sales</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-receipt"></i></div>
-      <div><div class="stat-num" id="kTxn">—</div><div class="stat-lbl">Transactions</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-exclamation-triangle"></i></div>
-      <div><div class="stat-num" id="kLowStock">—</div><div class="stat-lbl">Low Stock Items</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon" style="background:linear-gradient(135deg,#667eea,#764ba2)"><i class="fas fa-clock"></i></div>
-      <div><div class="stat-num" id="kPendingPR">—</div><div class="stat-lbl">Pending Approvals</div></div>
+  <!-- ══ SECTION 1: BUSINESS INTELLIGENCE (Featured) ══ -->
+  <div style="margin-bottom:28px">
+    <div class="sec-heading" style="margin-bottom:14px"><i class="fas fa-brain" style="color:#7c3aed"></i> Business Intelligence</div>
+
+    <!-- Predictive Analysis — Featured Banner -->
+    <a href="/admin/predictive" style="text-decoration:none;display:block;background:linear-gradient(135deg,#1e1b4b,#4c1d95,#7c3aed);border-radius:14px;padding:20px 26px;margin-bottom:16px;box-shadow:0 4px 18px rgba(124,58,237,.3);transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(124,58,237,.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 18px rgba(124,58,237,.3)'">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:52px;height:52px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;border:1px solid rgba(255,255,255,.2)"><i class="fas fa-brain"></i></div>
+          <div>
+            <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:3px">Predictive Analysis — AI KPI Dashboard</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.7)">Sales forecasts · Procurement trends · Profit projections · Vendor reliability · Business health score</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;flex-shrink:0">
+          <span style="background:rgba(255,255,255,.15);color:#fff;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,.25)">AI POWERED</span>
+          <span style="background:#fff;color:#7c3aed;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700">Open Dashboard &rarr;</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Finance + Sales + Reports row -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px">
+      <a href="/finance-dashboard" class="kpi-new" style="border-top:4px solid #f59e0b">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#d97706,#f59e0b)"><i class="fas fa-coins"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Finance Dashboard</div>
+        </div>
+        <div style="font-size:12px;color:#636e72">GL · Journal · COA · Reports</div>
+        <div class="kpi-footer" style="background:#fffbeb;color:#d97706">Open Finance &rarr;</div>
+      </a>
+      <a href="/sales-dashboard" class="kpi-new" style="border-top:4px solid #27ae60">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-cash-register"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Sales Dashboard</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Today's Revenue</span><strong id="kSales2" style="color:#27ae60">—</strong></div>
+        <div class="kpi-footer" style="background:#eafaf1;color:#27ae60">Sales Dashboard &rarr;</div>
+      </a>
+      <a href="/procurement/reports" class="kpi-new" style="border-top:4px solid #5c6bc0">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#5c6bc0,#3949ab)"><i class="fas fa-chart-bar"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Reports</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Report Types</span><strong style="color:#5c6bc0">6</strong></div>
+        <div class="kpi-footer" style="background:#f3f4fd;color:#5c6bc0">View Reports &rarr;</div>
+      </a>
+      <a href="/reports/z-report" class="kpi-new" style="border-top:4px solid #2c3e50">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#2c3e50,#34495e)"><i class="fas fa-file-invoice"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Z-Report</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>End-of-Day Report</span><i class="fas fa-print" style="color:#636e72"></i></div>
+        <div class="kpi-footer" style="background:#f0f2f5;color:#2c3e50">View Z-Report &rarr;</div>
+      </a>
     </div>
   </div>
 
-  <!-- Quick Access -->
+  <!-- ══ SECTION 2: DAILY OPERATIONS ══ -->
   <div style="margin-bottom:28px">
-    <div class="sec-heading"><i class="fas fa-th-large"></i> Quick Access</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+    <div class="sec-heading" style="margin-bottom:14px"><i class="fas fa-bolt" style="color:#27ae60"></i> Daily Operations</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
 
-      <a href="/admin/users" class="kpi-new" style="border-top:4px solid #e74c3c">
+      <a href="/pos" class="kpi-new" style="border-top:4px solid #27ae60">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-users"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Users</div>
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-store"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">POS Terminal</div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>System Users</span><strong id="kpiUsers" style="color:#2d3436">—</strong></div>
-        <div class="kpi-footer" style="background:#fde8e8;color:#e74c3c">Manage Users &rarr;</div>
+        <div style="font-size:12px;color:#636e72">Open cash register</div>
+        <div class="kpi-footer" style="background:#eafaf1;color:#27ae60">Launch POS &rarr;</div>
       </a>
 
-      <a href="/procurement/vendors" class="kpi-new" style="border-top:4px solid #3498db">
+      <a href="/pos/returns" class="kpi-new" style="border-top:4px solid #e74c3c">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-building"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Vendors</div>
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-undo-alt"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Sales Returns</div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Total Vendors</span><strong id="kVendors" style="color:#2d3436">—</strong></div>
-        <div class="kpi-footer" style="background:#ebf5fb;color:#3498db">Manage Vendors &rarr;</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Refunds &amp; Restocks</span><strong id="kReturns" style="color:#e74c3c">—</strong></div>
+        <div class="kpi-footer" style="background:#fde8e8;color:#e74c3c">Returns Module &rarr;</div>
       </a>
+
+      <a href="/credit-sales" class="kpi-new" style="border-top:4px solid #2980b9">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#2980b9,#1a6b9a)"><i class="fas fa-hand-holding-usd"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Credit Sales</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Outstanding AR</span><strong id="kCreditBal" style="color:#2980b9">—</strong></div>
+        <div class="kpi-footer" style="background:#ebf5fb;color:#2980b9">Accounts Receivable &rarr;</div>
+      </a>
+
+      <a href="/payments" class="kpi-new" style="border-top:4px solid #6366f1">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#6366f1,#4f46e5)"><i class="fas fa-money-check-alt"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Payments</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>This Month</span><strong id="kPmtMonth" style="color:#6366f1">—</strong></div>
+        <div class="kpi-footer" style="background:#eef2ff;color:#6366f1">Payment Module &rarr;</div>
+      </a>
+
+      <a href="/bundles" class="kpi-new" style="border-top:4px solid #8b5cf6">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)"><i class="fas fa-gift"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Bundles</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Combo Deals</span><strong id="kBundles" style="color:#8b5cf6">—</strong></div>
+        <div class="kpi-footer" style="background:#f5f3ff;color:#8b5cf6">Manage Bundles &rarr;</div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ══ SECTION 3: INVENTORY & PROCUREMENT ══ -->
+  <div style="margin-bottom:28px">
+    <div class="sec-heading" style="margin-bottom:14px"><i class="fas fa-boxes" style="color:#e67e22"></i> Inventory &amp; Procurement</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
 
       <a href="/products" class="kpi-new" style="border-top:4px solid #9b59b6">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
@@ -245,82 +318,10 @@ tr:hover td{background:#fafafa}
       <a href="/procurement/stock" class="kpi-new" style="border-top:4px solid #e67e22">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <div class="kpi-icon-box" style="background:linear-gradient(135deg,#e67e22,#d35400)"><i class="fas fa-exclamation-circle"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Low Stock</div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Low Stock Alerts</div>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Below Reorder Level</span><strong id="kLowStock2" style="color:#e74c3c">—</strong></div>
         <div class="kpi-footer" style="background:#fef5e7;color:#e67e22">View Alerts &rarr;</div>
-      </a>
-
-      <a href="/sales-dashboard" class="kpi-new" style="border-top:4px solid #27ae60">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#27ae60,#1e8449)"><i class="fas fa-cash-register"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Sales</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Today's Revenue</span><strong id="kSales2" style="color:#27ae60">—</strong></div>
-        <div class="kpi-footer" style="background:#eafaf1;color:#27ae60">Sales Dashboard &rarr;</div>
-      </a>
-
-      <a href="/procurement/reports" class="kpi-new" style="border-top:4px solid #5c6bc0">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#5c6bc0,#3949ab)"><i class="fas fa-chart-bar"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Reports</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Report Types</span><strong style="color:#5c6bc0">6</strong></div>
-        <div class="kpi-footer" style="background:#f3f4fd;color:#5c6bc0">View Reports &rarr;</div>
-      </a>
-
-      <a href="/procurement/catalog" class="kpi-new" style="border-top:4px solid #1abc9c">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#1abc9c,#16a085)"><i class="fas fa-layer-group"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Catalog</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Units / Categories / Groups</span></div>
-        <div class="kpi-footer" style="background:#e8f8f5;color:#1abc9c">Manage Catalog &rarr;</div>
-      </a>
-
-      <a href="/procurement/qr" class="kpi-new" style="border-top:4px solid #2c3e50">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#2c3e50,#34495e)"><i class="fas fa-qrcode"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">QR Codes</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Generate & Print</span><i class="fas fa-print" style="color:#636e72"></i></div>
-        <div class="kpi-footer" style="background:#f0f2f5;color:#2c3e50">Generate QR &rarr;</div>
-      </a>
-
-      <a href="/hr" class="kpi-new" style="border-top:4px solid #0288d1">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#0288d1,#01579b)"><i class="fas fa-users-cog"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Human Resources</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Active Employees</span><strong id="kHrEmp" style="color:#0288d1">—</strong></div>
-        <div class="kpi-footer" style="background:#e1f5fe;color:#0288d1">HR Module &rarr;</div>
-      </a>
-
-      <a href="/payments" class="kpi-new" style="border-top:4px solid #6366f1">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#6366f1,#4f46e5)"><i class="fas fa-money-check-alt"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Payments</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>This Month</span><strong id="kPmtMonth" style="color:#6366f1">—</strong></div>
-        <div class="kpi-footer" style="background:#eef2ff;color:#6366f1">Payment Module &rarr;</div>
-      </a>
-
-      <a href="/pos/returns" class="kpi-new" style="border-top:4px solid #e74c3c">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-undo-alt"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Sales Returns</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Refunds &amp; Restocks</span><strong id="kReturns" style="color:#e74c3c">—</strong></div>
-        <div class="kpi-footer" style="background:#fde8e8;color:#e74c3c">Returns Module &rarr;</div>
-      </a>
-
-      <a href="/reports/z-report" class="kpi-new" style="border-top:4px solid #2c3e50">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#2c3e50,#34495e)"><i class="fas fa-file-invoice"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Z-Report</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>End-of-Day Report</span><i class="fas fa-print" style="color:#636e72"></i></div>
-        <div class="kpi-footer" style="background:#f0f2f5;color:#2c3e50">View Z-Report &rarr;</div>
       </a>
 
       <a href="/inventory/adjustments" class="kpi-new" style="border-top:4px solid #8b4513">
@@ -332,13 +333,48 @@ tr:hover td{background:#fafafa}
         <div class="kpi-footer" style="background:#fdf3e7;color:#8b4513">Adjust Stock &rarr;</div>
       </a>
 
-      <a href="/credit-sales" class="kpi-new" style="border-top:4px solid #2980b9">
+      <a href="/procurement/vendors" class="kpi-new" style="border-top:4px solid #3498db">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#2980b9,#1a6b9a)"><i class="fas fa-hand-holding-usd"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Credit Sales</div>
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#3498db,#2980b9)"><i class="fas fa-building"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Vendors</div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Outstanding AR</span><strong id="kCreditBal" style="color:#2980b9">—</strong></div>
-        <div class="kpi-footer" style="background:#ebf5fb;color:#2980b9">Accounts Receivable &rarr;</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Total Vendors</span><strong id="kVendors" style="color:#2d3436">—</strong></div>
+        <div class="kpi-footer" style="background:#ebf5fb;color:#3498db">Manage Vendors &rarr;</div>
+      </a>
+
+      <a href="/procurement/catalog" class="kpi-new" style="border-top:4px solid #1abc9c">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#1abc9c,#16a085)"><i class="fas fa-layer-group"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Catalog</div>
+        </div>
+        <div style="font-size:12px;color:#636e72">Units / Categories / Groups</div>
+        <div class="kpi-footer" style="background:#e8f8f5;color:#1abc9c">Manage Catalog &rarr;</div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ══ SECTION 4: PEOPLE & SYSTEM ══ -->
+  <div style="margin-bottom:28px">
+    <div class="sec-heading" style="margin-bottom:14px"><i class="fas fa-users-cog" style="color:#0288d1"></i> People &amp; System</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
+
+      <a href="/admin/users" class="kpi-new" style="border-top:4px solid #e74c3c">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"><i class="fas fa-users"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">System Users</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Total Users</span><strong id="kpiUsers" style="color:#2d3436">—</strong></div>
+        <div class="kpi-footer" style="background:#fde8e8;color:#e74c3c">Manage Users &rarr;</div>
+      </a>
+
+      <a href="/hr" class="kpi-new" style="border-top:4px solid #0288d1">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#0288d1,#01579b)"><i class="fas fa-users-cog"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">Human Resources</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Active Employees</span><strong id="kHrEmp" style="color:#0288d1">—</strong></div>
+        <div class="kpi-footer" style="background:#e1f5fe;color:#0288d1">HR Module &rarr;</div>
       </a>
 
       <a href="/audit-log" class="kpi-new" style="border-top:4px solid #475569">
@@ -350,13 +386,13 @@ tr:hover td{background:#fafafa}
         <div class="kpi-footer" style="background:#f1f5f9;color:#475569">View Audit Log &rarr;</div>
       </a>
 
-      <a href="/bundles" class="kpi-new" style="border-top:4px solid #8b5cf6">
+      <a href="/procurement/qr" class="kpi-new" style="border-top:4px solid #2c3e50">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)"><i class="fas fa-gift"></i></div>
-          <div style="font-size:13px;font-weight:700;color:#2d3436">Bundles</div>
+          <div class="kpi-icon-box" style="background:linear-gradient(135deg,#2c3e50,#34495e)"><i class="fas fa-qrcode"></i></div>
+          <div style="font-size:13px;font-weight:700;color:#2d3436">QR Codes</div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Combo Deals</span><strong id="kBundles" style="color:#8b5cf6">—</strong></div>
-        <div class="kpi-footer" style="background:#f5f3ff;color:#8b5cf6">Manage Bundles &rarr;</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#636e72"><span>Generate &amp; Print</span><i class="fas fa-print" style="color:#636e72"></i></div>
+        <div class="kpi-footer" style="background:#f0f2f5;color:#2c3e50">Generate QR &rarr;</div>
       </a>
 
       <a href="/fbr" class="kpi-new" style="border-top:4px solid #006241">
